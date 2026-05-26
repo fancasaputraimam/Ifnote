@@ -1,0 +1,52 @@
+# --- Node / npm ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# --- Env / secrets (NEVER commit these) ---
+.env
+.env.local
+.env.production
+.env.development.local
+.env.test.local
+*.pem
+*.key
+
+# --- Build output ---
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# --- Prisma generated client ---
+ifnote-api/node_modules/.prisma/
+
+# --- Heroku / deploy artifacts ---
+.heroku/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Vercel ---
+.vercel/
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Coverage ---
+coverage/
+*.lcov
+.nyc_output/
+
+# --- Misc ---
+*.tgz
+.cache/

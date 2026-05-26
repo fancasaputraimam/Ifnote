@@ -1,0 +1,354 @@
+# 8. Perintah — Buat Screen AI Tutor
+
+```text
+Read PRD_ifNote_Web.md first.
+
+Implement the AI Tutor screen for ifNote Web.
+
+Route:
+- /app/ai
+
+AI Tutor is a task-based study assistant.
+It is not a blank chatbot.
+
+==================================================
+HEADER
+==================================================
+
+Eyebrow:
+✨ Study Assistant
+
+Title:
+AI Tutor
+
+Subtitle:
+Asisten belajar Jepang untuk kotoba, bunpou, dan hafalan
+
+==================================================
+AI MODES
+==================================================
+
+Create mode cards:
+
+1. Jelaskan Kotoba
+2. Jelaskan Bunpou
+3. Koreksi Kalimat
+4. Buat Contoh
+5. Buat Quiz
+6. Tambahkan ke Hafalan
+7. Import Kotoba Massal
+8. Analisa Kalimat
+
+Each card:
+- icon
+- title
+- subtitle
+- active state
+
+==================================================
+CONTEXT CARD
+==================================================
+
+Show selected mode context:
+- Mode
+- Expected input
+- Expected output
+- AI status
+
+AI status:
+- AI aktif
+- Mock fallback
+- AI belum tersedia
+
+==================================================
+COMPOSER
+==================================================
+
+Use textarea.
+
+Placeholder changes based on mode:
+
+Kotoba:
+Masukkan kotoba, contoh: 食べます
+
+Bunpou:
+Masukkan bunpou, contoh: 〜ながら
+
+Bulk:
+Paste banyak kotoba, satu baris satu kata
+
+Sentence Analysis:
+Masukkan kalimat Jepang
+
+==================================================
+API
+==================================================
+
+Use backend AI proxy:
+
+POST /api/ai/explain-kotoba
+POST /api/ai/explain-bunpou
+POST /api/ai/correct-sentence
+POST /api/ai/make-example
+POST /api/ai/generate-quiz
+POST /api/ai/create-hafalan
+POST /api/ai/bulk-kotoba
+POST /api/ai/analyze-sentence
+
+Never call AI provider directly from frontend.
+
+==================================================
+RESPONSES
+==================================================
+
+AI responses must look like study note cards.
+
+Kotoba response:
+- topic
+- meaning
+- type
+- level
+- romaji
+- example
+- note
+- actions:
+  - Simpan ke Catatan
+  - Tambahkan ke Hafalan
+  - Buat Quiz
+  - Copy
+
+Bunpou response:
+- pattern
+- meaning
+- formula
+- usage
+- example
+- common mistake
+- actions
+
+Correction response:
+- input
+- correction
+- explanation
+- natural version
+- actions
+
+==================================================
+BULK KOTOBA IMPORT
+==================================================
+
+Flow:
+1. User pastes many kotoba.
+2. Click analyze.
+3. Call backend.
+4. Show preview.
+5. Status:
+   - new
+   - exists
+   - manual
+6. Actions:
+   - Tambahkan semua yang baru
+   - Tambahkan satu
+   - Edit manual
+   - Abaikan
+
+Important:
+- Do not auto-save.
+- Show confirmation before saving.
+- Backend checks duplicates by user.
+
+==================================================
+SENTENCE ANALYSIS
+==================================================
+
+Output:
+- sentence
+- meaning
+- bunpouFound
+- kotobaFound
+- particles
+- recommendations
+
+Actions:
+- Save Bunpou
+- Save Kotoba New
+- Add to Hafalan
+- Generate Quiz
+- Copy
+
+==================================================
+ERROR HANDLING
+==================================================
+
+- Loading state
+- Error state
+- Mock fallback if backend/AI fails
+- Toast notification
+- No crash
+
+==================================================
+ACCEPTANCE
+==================================================
+
+1. AI Tutor renders.
+2. Mode cards work.
+3. Context updates.
+4. Textarea placeholder updates.
+5. Study note response works.
+6. Bulk import preview works.
+7. Sentence analysis works.
+8. Confirmation before save.
+9. No frontend AI key.
+10. No Flashcard text.
+```
+
+---
+
+# 9. Perintah — Buat Screen Settings
+
+```text
+Read PRD_ifNote_Web.md first.
+
+Implement the Settings screen for ifNote Web.
+
+Route:
+- /app/settings
+
+Settings must not be in bottom nav.
+Settings opens from gear/topbar.
+
+==================================================
+HEADER
+==================================================
+
+Eyebrow:
+⚙️ Preferensi Belajar
+
+Title:
+Settings
+
+Subtitle:
+Atur tampilan, mode Jepang, AI, dan backup data
+
+==================================================
+DATA
+==================================================
+
+Use backend API:
+
+GET /api/settings
+PUT /api/settings
+
+Backup:
+GET /api/backup/export
+POST /api/backup/import
+POST /api/backup/reset
+
+Auth:
+GET /api/auth/me
+POST /api/auth/logout
+
+==================================================
+SECTIONS
+==================================================
+
+1. Account
+   - user email
+   - display name
+   - logout button
+
+2. Appearance
+   - theme:
+     - system
+     - light
+     - dark
+   - Japanese display mode:
+     - beginner
+     - normal
+     - furigana
+
+3. AI Configuration
+   Fields:
+   - Provider Name
+   - Base URL
+   - Model ID
+   - Request Format:
+     - OpenAI Compatible
+     - Azure OpenAI
+     - Custom JSON
+   - Use Real AI toggle
+
+Important:
+- Do not expose backend AI_API_KEY.
+- If per-user AI key is supported later, it must be encrypted server-side.
+- For now, settings can store provider/model preferences only.
+
+Buttons:
+- Save AI Settings
+- Test Connection
+- Clear AI Settings
+
+4. Backup / Import / Export
+   - Export Data
+   - Import Data
+   - Reset Data
+
+Export includes:
+- kotoba
+- bunpou
+- hafalan_order
+- quiz_progress
+- settings
+- kanji_cache
+
+No secrets.
+
+Import:
+- upload JSON
+- validate
+- confirm before overwrite
+- backend processes import
+
+Reset:
+- confirm
+- backend clears user data
+- reseeds defaults
+- rebuilds hafalan_order
+
+5. Danger Zone
+   - Reset data
+   - Delete account optional/future
+
+==================================================
+UI
+==================================================
+
+Use:
+- cards
+- clear section titles
+- warning boxes
+- confirmation dialogs
+- toast notifications
+
+Responsive:
+- mobile-friendly
+- desktop card layout
+
+==================================================
+ACCEPTANCE
+==================================================
+
+1. Settings opens from gear.
+2. Settings not in bottom nav.
+3. Account section works.
+4. Theme setting saves.
+5. JP mode saves.
+6. AI config saves.
+7. No API key exposed.
+8. Export works.
+9. Import works.
+10. Reset confirms first.
+11. Logout works.
+12. No Flashcard text.
+13. No console error.
+```

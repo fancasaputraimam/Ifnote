@@ -1,0 +1,248 @@
+// ============================================================
+// ifNote — Prisma schema
+// Database: Heroku Postgres (PostgreSQL 14+)
+// All user data is partitioned by userId. No global / shared rows.
+// No "Flashcard" entity — Hafalan replaces the legacy concept.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Auth & profile
+// ============================================================
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      Profile?
+  settings     UserSettings?
+  kotoba       Kotoba[]
+  bunpou       Bunpou[]
+  hafalanOrder HafalanOrder[]
+  quizProgress QuizProgress[]
+  kanjiCache   KanjiCache[]
+  aiLogs       AiLog[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  displayName String?
+  avatarUrl   String?
+  jlptGoal    String?
+  dailyTarget Int      @default(10)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ============================================================
+// Notes: Kotoba (vocabulary) and Bunpou (grammar)
+// Combined client-side into "Catatan" view.
+// ============================================================
+
+model Kotoba {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  jp              String
+  romaji          String?
+  meaning         String
+  type            String?
+  level           String?
+  tags            String[] @default([])
+  beginnerExample String?
+  normalExample   String?
+  furiganaExample String?
+  exampleMeaning  String?
+  mastery         String   @default("mid") // good | mid | weak
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, jp])
+  @@index([userId, level])
+  @@index([userId, mastery])
+  @@map("kotoba")
+}
+
+model Bunpou {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  pattern         String
+  meaning         String
+  formula         String?
+  usage           String?
+  level           String?
+  tags            String[] @default([])
+  beginnerExample String?
+  normalExample   String?
+  furiganaExample String?
+  exampleMeaning  String?
+  note            String?
+  commonMistake   String?
+  mastery         String   @default("mid") // good | mid | weak
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, pattern])
+  @@index([userId, level])
+  @@index([userId, mastery])
+  @@map("bunpou")
+}
+
+// ============================================================
+// Hafalan order (fixed slide deck of 20)
+//
+// Business rules (enforced in service layer, NOT here):
+// - New item: append to MAX(orderIndex) + 1 for the user
+// - Never rebalance existing rows
+// - Never insert at the beginning
+// - Last slide may have fewer than 20 items
+// - Shuffle is UI-only (never persisted)
+// ============================================================
+
+model HafalanOrder {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  itemType   String // "kotoba" | "bunpou"
+  itemId     String   @db.Uuid
+  orderIndex Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // No FK to Kotoba/Bunpou: itemId is polymorphic by itemType.
+  // Service layer must clean up rows on note delete.
+
+  @@unique([userId, itemType, itemId], name: "uniq_user_item")
+  @@unique([userId, orderIndex], name: "uniq_user_order")
+  @@index([userId])
+  @@index([userId, itemType])
+  @@index([itemId])
+  @@index([orderIndex])
+  @@map("hafalan_order")
+}
+
+// ============================================================
+// Quiz progress per user per quiz type
+// ============================================================
+
+model QuizProgress {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  quizType      String // "kotoba" | "bunpou" | "mixed" | "ai"
+  correctCount  Int      @default(0)
+  wrongCount    Int      @default(0)
+  totalAnswered Int      @default(0)
+  lastScore     Int?
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizType], name: "uniq_user_quiztype")
+  @@index([userId])
+  @@map("quiz_progress")
+}
+
+// ============================================================
+// Kanji cache per user (results from AI lookup)
+// ============================================================
+
+model KanjiCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  kanji       String
+  meaning     String?
+  onyomi      String?
+  kunyomi     String?
+  explanation String?
+  wordsJson   Json?
+  exampleJp   String?
+  exampleId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kanji], name: "uniq_user_kanji")
+  @@index([userId])
+  @@map("kanji_cache")
+}
+
+// ============================================================
+// User settings (theme, jp display mode, AI provider config)
+//
+// SECURITY:
+// - Do NOT store user-supplied AI API keys plaintext here.
+// - Server-side AI key MUST live in Heroku Config Vars, not DB.
+// - If per-user keys are needed later, encrypt with KMS / pgcrypto.
+// ============================================================
+
+model UserSettings {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @db.Uuid
+  theme           String   @default("system") // system | light | dark
+  jpMode          String   @default("beginner") // beginner | normal | furigana
+  onboardingSeen  Boolean  @default(false)
+  aiProvider      String?
+  aiBaseUrl       String?
+  aiModelId       String?
+  aiRequestFormat String   @default("openai") // openai | azure | custom
+  useRealAi       Boolean  @default(false)
+  // aiApiKeyEnc  Bytes?   // TODO if per-user keys ever stored, use server-side encryption
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ============================================================
+// AI logs (optional, for monitoring + rate limit)
+// Keep payloads short. Never store full secrets / PII.
+// ============================================================
+
+model AiLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  mode          String
+  inputPreview  String?  @db.VarChar(280)
+  outputPreview String?  @db.VarChar(280)
+  status        String // ok | fallback | error
+  errorMessage  String?  @db.VarChar(500)
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, mode])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("ai_logs")
+}

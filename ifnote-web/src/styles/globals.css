@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", "Inter", sans-serif;
+  --font-serif: ui-serif, Georgia, "Iowan Old Style", "Apple Garamond", serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
+}
+
+body {
+  background-color: theme(colors.paper.50);
+  color: theme(colors.ink.800);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.dark body {
+  background-color: theme(colors.paper.900);
+  color: theme(colors.ink.50);
+}
+
+/* Notebook ruled-paper accent for cards */
+.notebook-rule {
+  background-image: linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(1.6rem - 1px),
+    rgba(94, 110, 224, 0.06) calc(1.6rem - 1px),
+    rgba(94, 110, 224, 0.06) 1.6rem
+  );
+  background-size: 100% 1.6rem;
+}
+
+.dark .notebook-rule {
+  background-image: linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(1.6rem - 1px),
+    rgba(199, 210, 254, 0.06) calc(1.6rem - 1px),
+    rgba(199, 210, 254, 0.06) 1.6rem
+  );
+}
+
+/* Mobile-first: keep content above bottom nav */
+.app-content-bottompad {
+  padding-bottom: 5.5rem;
+}
+
+@media (min-width: 768px) {
+  .app-content-bottompad { padding-bottom: 2rem; }
+}
+
+/* Furigana (real-data only — never used for placeholder text) */
+ruby rt {
+  font-size: 0.6em;
+  color: theme(colors.ink.400);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.dark ruby rt {
+  color: theme(colors.ink.50);
+  opacity: 0.7;
+}

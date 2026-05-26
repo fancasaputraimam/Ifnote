@@ -1,0 +1,1620 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf7f2" />
+    <title>ifNote — Japanese Notes with AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-jp-mode="beginner">
+    <!-- Splash (briefly shown on app open) -->
+    <div class="splash" id="splash">
+      <div class="splash__inner">
+        <div class="splash__mark" aria-hidden="true">if</div>
+        <div class="splash__name">ifNote</div>
+        <div class="splash__sub">Japanese Notes with AI</div>
+        <div class="splash__dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+    <!-- App shell -->
+    <div class="app" id="app">
+      <!-- Sidebar (visible on desktop) -->
+      <aside class="sidebar" aria-label="Navigasi utama">
+        <div class="sidebar__brand">
+          <div class="brand-mark" aria-hidden="true">if</div>
+          <div>
+            <div class="brand-name">ifNote</div>
+            <div class="brand-sub">Japanese Notes with AI</div>
+          </div>
+        </div>
+
+        <nav class="sidebar__nav">
+          <button class="side-link is-active" data-nav="home">
+            <span class="side-link__icon" aria-hidden="true">🏠</span> Home
+          </button>
+          <button class="side-link" data-nav="catatan">
+            <span class="side-link__icon" aria-hidden="true">📚</span> Catatan
+          </button>
+          <button class="side-link" data-nav="hafalan">
+            <span class="side-link__icon" aria-hidden="true">🧠</span> Hafalan
+          </button>
+          <button class="side-link" data-nav="ai">
+            <span class="side-link__icon" aria-hidden="true">✨</span> AI Tutor
+          </button>
+
+          <div class="sidebar__divider" role="separator"></div>
+
+          <button class="side-link" data-nav="quiz">
+            <span class="side-link__icon" aria-hidden="true">❓</span> Quiz
+          </button>
+          <button class="side-link" data-nav="settings">
+            <span class="side-link__icon" aria-hidden="true">⚙️</span> Settings
+          </button>
+        </nav>
+
+        <div class="sidebar__foot">
+          <div class="streak-pill" title="Streak harian">
+            <span aria-hidden="true">🔥</span>
+            <span><strong>5</strong> hari beruntun</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Phone-like main column -->
+      <main class="main" id="main">
+        <!-- ============ HOME ============ -->
+        <section class="screen is-active" data-screen="home">
+          <header class="topbar topbar--screen topbar--home">
+            <div>
+              <div class="topbar__eyebrow">🌸 Daily Dashboard</div>
+              <h1 class="topbar__title">ifNote</h1>
+              <p class="topbar__sub" id="homeGreeting">きょうも がんばろう · Belajar Jepang hari ini</p>
+            </div>
+            <button class="icon-btn" id="themeToggle" aria-label="Ganti tema">
+              <span aria-hidden="true">🌙</span>
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <!-- Welcome-back card (returning users) -->
+            <div class="welcome-back-card" id="welcomeBackCard" hidden>
+              <div class="welcome-back-card__row">
+                <div>
+                  <div class="welcome-back-card__jp jp">おかえりなさい</div>
+                  <div class="welcome-back-card__text">Lanjutkan belajar hari ini</div>
+                </div>
+                <div class="welcome-back-card__stats">
+                  <div class="welcome-back-card__stat">
+                    <strong>18</strong>
+                    <span>review menunggu</span>
+                  </div>
+                  <div class="welcome-back-card__stat welcome-back-card__stat--streak">
+                    <strong>🔥 5</strong>
+                    <span>hari streak</span>
+                  </div>
+                </div>
+              </div>
+              <div class="welcome-back-card__actions">
+                <button class="btn btn--primary btn--sm" data-nav="hafalan">Mulai Hafalan</button>
+                <button class="btn btn--ghost btn--sm" data-nav="catatan">Buka Catatan</button>
+              </div>
+            </div>
+
+            <!-- Today Mission Hero -->
+            <div class="home-hero">
+              <div class="home-hero__head">
+                <span class="badge badge--accent">Misi Hari Ini</span>
+                <span class="home-hero__date" id="homeHeroDate">Senin</span>
+              </div>
+              <h2 class="home-hero__title">Yuk, mulai belajar pelan-pelan.</h2>
+              <p class="home-hero__text">
+                Review <strong>10 kotoba N5</strong>, latihan <strong>1 bunpou</strong>,
+                dan pelajari <strong>1 kanji baru</strong>.
+              </p>
+              <div class="today-progress">
+                <div class="today-progress__row">
+                  <span class="today-progress__label">6 / 18 selesai</span>
+                  <span class="today-progress__pct">32%</span>
+                </div>
+                <div class="progress">
+                  <div class="progress__bar progress__bar--green" style="width: 32%"></div>
+                </div>
+              </div>
+              <div class="home-hero__actions">
+                <button class="btn btn--primary" data-nav="hafalan">Mulai Belajar</button>
+                <button class="btn btn--ghost" data-nav="ai">Tanya AI</button>
+              </div>
+            </div>
+
+            <!-- Stat grid (learning-focused) -->
+            <div class="stat-grid">
+              <div class="stat-card stat-card--blue">
+                <div class="stat-card__num">128</div>
+                <div class="stat-card__label">Kotoba</div>
+              </div>
+              <div class="stat-card stat-card--green">
+                <div class="stat-card__num">42</div>
+                <div class="stat-card__label">Bunpou</div>
+              </div>
+              <div class="stat-card stat-card--amber">
+                <div class="stat-card__num">18</div>
+                <div class="stat-card__label">Review</div>
+              </div>
+              <div class="stat-card stat-card--lilac">
+                <div class="stat-card__num">5</div>
+                <div class="stat-card__label">Hari Streak</div>
+              </div>
+            </div>
+
+            <!-- AI Study Plan -->
+            <div class="card card--ai study-plan-card">
+              <div class="card__header">
+                <span class="badge badge--accent">AI Study Plan</span>
+                <span class="card__meta">5 menit</span>
+              </div>
+              <p class="card__lead">
+                Kamu sering salah di partikel <strong>に / で</strong>.
+                Hari ini fokus 5 menit latihan bunpou itu dulu, lalu lanjut review kotoba.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--primary" data-nav="catatan">Latihan Bunpou</button>
+                <button class="btn btn--ghost" data-nav="quiz">Buat Quiz</button>
+              </div>
+            </div>
+
+            <!-- Kanji Hari Ini -->
+            <section class="block">
+              <div class="block__head">
+                <h2 class="block__title">Kanji Hari Ini</h2>
+                <span class="card__meta">N5</span>
+              </div>
+              <div class="daily-kanji-card">
+                <div class="daily-kanji-char" aria-hidden="true">食</div>
+                <div class="daily-kanji-body">
+                  <div class="daily-kanji-meaning">makan / makanan</div>
+                  <div class="daily-kanji-meta">
+                    <span><strong>On:</strong> ショク</span>
+                    <span><strong>Kun:</strong> た.べる</span>
+                  </div>
+                  <div class="daily-kanji-example">
+                    <div class="jp">ごはんを食べます。</div>
+                    <div class="mini-item__sub">Saya makan nasi.</div>
+                  </div>
+                  <div class="daily-kanji-actions">
+                    <button class="btn btn--primary" data-action="open-daily-kanji" data-kanji="食">
+                      Lihat Penjelasan Kanji
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Bunpou Fokus Hari Ini -->
+            <section class="block">
+              <div class="block__head">
+                <h2 class="block__title">Bunpou Fokus Hari Ini</h2>
+                <span class="card__meta">N4</span>
+              </div>
+              <div class="focus-bunpou-card">
+                <div class="focus-bunpou-card__head">
+                  <div class="focus-bunpou-card__pattern jp">〜ながら</div>
+                  <span class="chip chip--green">sambil</span>
+                </div>
+                <div class="focus-bunpou-card__formula">
+                  <strong>Rumus:</strong>
+                  kata kerja bentuk ます tanpa ます + ながら
+                </div>
+                <div class="focus-bunpou-card__example">
+                  <div class="jp">おんがくを ききながら、べんきょうします。</div>
+                  <div class="mini-item__sub">Saya belajar sambil mendengarkan musik.</div>
+                </div>
+                <div class="focus-bunpou-card__actions">
+                  <button class="btn btn--ghost" data-nav="catatan">Lihat Bunpou</button>
+                  <button class="btn btn--primary" data-nav="quiz">Latihan Quiz</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Recent kotoba -->
+            <section class="block">
+              <div class="block__head">
+                <h2 class="block__title">Recent Kotoba</h2>
+                <button class="link" data-nav="catatan">Lihat semua</button>
+              </div>
+              <div class="mini-list">
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">たべます</div>
+                    <div class="mini-item__sub">tabemasu · makan</div>
+                  </div>
+                  <div class="mini-item__badges">
+                    <span class="home-note-badge home-note-badge--new">Baru</span>
+                    <span class="chip chip--blue">N5</span>
+                  </div>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">のみます</div>
+                    <div class="mini-item__sub">nomimasu · minum</div>
+                  </div>
+                  <div class="mini-item__badges">
+                    <span class="home-note-badge home-note-badge--review">Review</span>
+                    <span class="chip chip--blue">N5</span>
+                  </div>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">ゆっくり</div>
+                    <div class="mini-item__sub">yukkuri · pelan-pelan</div>
+                  </div>
+                  <div class="mini-item__badges">
+                    <span class="home-note-badge home-note-badge--weak">Weak</span>
+                    <span class="chip chip--green">N4</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Recent bunpou -->
+            <section class="block">
+              <div class="block__head">
+                <h2 class="block__title">Recent Bunpou</h2>
+                <button class="link" data-nav="catatan">Lihat semua</button>
+              </div>
+              <div class="mini-list">
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">〜ながら</div>
+                    <div class="mini-item__sub">sambil</div>
+                  </div>
+                  <div class="mini-item__badges">
+                    <span class="home-note-badge home-note-badge--review">Review</span>
+                    <span class="chip chip--green">N4</span>
+                  </div>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">〜たい</div>
+                    <div class="mini-item__sub">ingin</div>
+                  </div>
+                  <div class="mini-item__badges">
+                    <span class="home-note-badge home-note-badge--new">Baru</span>
+                    <span class="chip chip--blue">N5</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Quick actions -->
+            <section class="block">
+              <h2 class="block__title">Quick Actions</h2>
+              <div class="quick-grid">
+                <button class="quick" data-action="add-kotoba">
+                  <span class="quick__icon">＋</span>
+                  <span class="quick__label">Tambah Kotoba</span>
+                  <span class="quick__sub">Simpan kata baru</span>
+                </button>
+                <button class="quick" data-action="add-bunpou">
+                  <span class="quick__icon">＋</span>
+                  <span class="quick__label">Tambah Bunpou</span>
+                  <span class="quick__sub">Catat pola grammar</span>
+                </button>
+                <button class="quick" data-nav="ai">
+                  <span class="quick__icon">✨</span>
+                  <span class="quick__label">Tanya AI Tutor</span>
+                  <span class="quick__sub">Tanya contoh &amp; arti</span>
+                </button>
+                <button class="quick" data-nav="hafalan">
+                  <span class="quick__icon">🔁</span>
+                  <span class="quick__label">Mulai Review</span>
+                  <span class="quick__sub">Latihan kartu hari ini</span>
+                </button>
+              </div>
+            </section>
+
+            <div class="screen__pad"></div>
+          </div>
+        </section>
+
+        <!-- ============ CATATAN (combined Kotoba + Bunpou) ============ -->
+        <section class="screen" data-screen="catatan">
+          <header class="topbar topbar--screen topbar--catatan">
+            <div>
+              <div class="topbar__eyebrow">📚 Study Notes</div>
+              <h1 class="topbar__title">Catatan</h1>
+              <p class="topbar__sub">Gabungan kotoba, bunpou, contoh kalimat, dan review</p>
+            </div>
+            <button class="icon-btn" data-nav="settings" aria-label="Pengaturan">
+              <span aria-hidden="true">⚙️</span>
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <div class="search-filter">
+              <div class="search search--with-filter">
+                <span class="search__icon" aria-hidden="true">🔎</span>
+                <input
+                  type="search"
+                  id="catatanSearch"
+                  placeholder="Cari kotoba atau bunpou..."
+                  aria-label="Cari catatan"
+                />
+                <button
+                  type="button"
+                  class="filter-toggle"
+                  data-filter-toggle="catatan"
+                  aria-label="Filter catatan"
+                  aria-expanded="false"
+                  aria-controls="catatanFilterPanel"
+                >
+                  <span aria-hidden="true">☷</span>
+                </button>
+              </div>
+
+              <div class="filter-panel filter-panel--rich" id="catatanFilterPanel" hidden>
+                <div class="filter-panel__head">
+                  <div>
+                    <div class="filter-panel__title">Filter Catatan</div>
+                    <div class="filter-panel__sub">Pilih tipe, level, atau status belajar.</div>
+                  </div>
+                  <button type="button" class="filter-panel__reset" data-clear-filter="catatan">Reset</button>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">Tipe</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option is-active" data-filter-target="catatan" data-filter="Semua">
+                      <span class="filter-option__icon">※</span>
+                      <span class="filter-option__text">Semua</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Kotoba">
+                      <span class="filter-option__icon">📖</span>
+                      <span class="filter-option__text">Kotoba</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Bunpou">
+                      <span class="filter-option__icon">📐</span>
+                      <span class="filter-option__text">Bunpou</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">JLPT Level</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option" data-filter-target="catatan" data-filter="N5"><span class="filter-option__icon">N5</span><span class="filter-option__text">Pemula</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="N4"><span class="filter-option__icon">N4</span><span class="filter-option__text">Dasar</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="N3"><span class="filter-option__icon">N3</span><span class="filter-option__text">Menengah</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="N2"><span class="filter-option__icon">N2</span><span class="filter-option__text">Lanjut</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="N1"><span class="filter-option__icon">N1</span><span class="filter-option__text">Mahir</span></button>
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">Status</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Weak"><span class="filter-option__icon">⚠</span><span class="filter-option__text">Weak</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Review"><span class="filter-option__icon">🔁</span><span class="filter-option__text">Review</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Baru"><span class="filter-option__icon">✨</span><span class="filter-option__text">Baru</span></button>
+                    <button class="filter-option" data-filter-target="catatan" data-filter="Lainnya"><span class="filter-option__icon">…</span><span class="filter-option__text">Lainnya</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="active-filter-label" id="catatanActiveLabel" hidden>
+              <span class="muted small">Filter aktif:</span>
+              <span class="active-filter-pill" id="catatanActiveText">Semua</span>
+              <button type="button" class="active-filter-clear" data-clear-filter="catatan" aria-label="Hapus filter">×</button>
+            </div>
+
+            <!-- Catatan summary -->
+            <div class="catatan-summary">
+              <div class="kotoba-summary__item">
+                <div class="kotoba-summary__num" id="catatanCountKotoba">128</div>
+                <div class="kotoba-summary__label">Kotoba</div>
+              </div>
+              <div class="kotoba-summary__item">
+                <div class="kotoba-summary__num" id="catatanCountBunpou">42</div>
+                <div class="kotoba-summary__label">Bunpou</div>
+              </div>
+              <div class="kotoba-summary__item kotoba-summary__item--review">
+                <div class="kotoba-summary__num" id="catatanCountReview">0</div>
+                <div class="kotoba-summary__label">Review</div>
+              </div>
+              <div class="kotoba-summary__item kotoba-summary__item--weak">
+                <div class="kotoba-summary__num" id="catatanCountWeak">0</div>
+                <div class="kotoba-summary__label">Weak</div>
+              </div>
+            </div>
+
+            <!-- Catatan focus card -->
+            <div class="catatan-focus-card">
+              <div class="kotoba-focus-card__head">
+                <span class="badge badge--accent">Fokus Hari Ini</span>
+                <span class="card__meta">± 5 menit</span>
+              </div>
+              <h3 class="kotoba-focus-card__title">Fokus Catatan Hari Ini</h3>
+              <p class="kotoba-focus-card__text">
+                Review kata kerja N5 dan bunpou yang sering salah.
+              </p>
+              <div class="kotoba-focus-card__actions">
+                <button class="btn btn--primary" data-nav="hafalan">Mulai Hafalan</button>
+                <button class="btn btn--ghost" data-nav="quiz">Buat Quiz</button>
+              </div>
+            </div>
+
+            <div class="note-list" id="noteList"></div>
+            <div class="empty-state" id="noteEmpty" hidden>
+              <div class="empty-state__icon">📖</div>
+              <h3>Belum ada catatan yang cocok</h3>
+              <p>Coba reset filter atau tambah catatan baru.</p>
+              <button class="btn btn--ghost" data-clear-filter="catatan">Reset Filter</button>
+              <button class="btn btn--ghost" data-action="add-kotoba" style="margin-top:6px;">＋ Tambah Kotoba</button>
+              <button class="btn btn--primary" data-action="add-bunpou" style="margin-top:6px;">＋ Tambah Bunpou</button>
+            </div>
+
+            <div class="screen__pad"></div>
+          </div>
+
+          <button class="fab" data-action="add-kotoba" aria-label="Tambah catatan">
+            ＋
+          </button>
+        </section>
+
+        <!-- ============ KOTOBA ============ -->
+        <!-- Legacy Kotoba screen: kept for renderKotoba() compatibility, not reachable from main UI -->
+        <section class="screen screen--legacy" data-screen="kotoba" aria-hidden="true" hidden>
+          <header class="topbar topbar--screen topbar--kotoba">
+            <div>
+              <div class="topbar__eyebrow">📖 Vocabulary Notebook</div>
+              <h1 class="topbar__title">Kotoba Notes</h1>
+              <p class="topbar__sub">Kelola kosakata, contoh kalimat, dan review harian</p>
+            </div>
+            <button class="icon-btn" data-nav="settings" aria-label="Pengaturan">
+              <span aria-hidden="true">⚙️</span>
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <div class="search-filter">
+              <div class="search search--with-filter">
+                <span class="search__icon" aria-hidden="true">🔎</span>
+                <input
+                  type="search"
+                  placeholder="Cari kotoba..."
+                  aria-label="Cari kotoba"
+                />
+                <button
+                  type="button"
+                  class="filter-toggle"
+                  data-filter-toggle="kotoba"
+                  aria-label="Filter kotoba"
+                  aria-expanded="false"
+                  aria-controls="kotobaFilterPanel"
+                >
+                  <span aria-hidden="true">☷</span>
+                </button>
+              </div>
+
+              <div class="filter-panel filter-panel--rich" id="kotobaFilterPanel" hidden>
+                <div class="filter-panel__head">
+                  <div>
+                    <div class="filter-panel__title">Filter Kotoba</div>
+                    <div class="filter-panel__sub">Pilih level, jenis kata, atau status belajar.</div>
+                  </div>
+                  <button type="button" class="filter-panel__reset" data-clear-filter="kotoba">Reset</button>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">JLPT Level</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option is-active" data-filter-target="kotoba" data-filter="Semua">
+                      <span class="filter-option__icon">※</span>
+                      <span class="filter-option__text">Semua</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="N5">
+                      <span class="filter-option__icon">N5</span>
+                      <span class="filter-option__text">Pemula</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="N4">
+                      <span class="filter-option__icon">N4</span>
+                      <span class="filter-option__text">Dasar</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="N3">
+                      <span class="filter-option__icon">N3</span>
+                      <span class="filter-option__text">Menengah</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="N2">
+                      <span class="filter-option__icon">N2</span>
+                      <span class="filter-option__text">Lanjut</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="N1">
+                      <span class="filter-option__icon">N1</span>
+                      <span class="filter-option__text">Mahir</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">Jenis Kata</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="kata kerja">
+                      <span class="filter-option__icon">動</span>
+                      <span class="filter-option__text">Kata kerja</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="sifat-i">
+                      <span class="filter-option__icon">い</span>
+                      <span class="filter-option__text">Sifat-i</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="sifat-na">
+                      <span class="filter-option__icon">な</span>
+                      <span class="filter-option__text">Sifat-na</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="kotoba" data-filter="Lainnya">
+                      <span class="filter-option__icon">…</span>
+                      <span class="filter-option__text">Lainnya</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="active-filter-label" id="kotobaActiveLabel" hidden>
+              <span class="muted small">Filter aktif:</span>
+              <span class="active-filter-pill" id="kotobaActiveText">Semua</span>
+              <button type="button" class="active-filter-clear" data-clear-filter="kotoba" aria-label="Hapus filter">×</button>
+            </div>
+
+            <!-- Kotoba summary -->
+            <div class="kotoba-summary">
+              <div class="kotoba-summary__item">
+                <div class="kotoba-summary__num">128</div>
+                <div class="kotoba-summary__label">Total</div>
+              </div>
+              <div class="kotoba-summary__item kotoba-summary__item--weak">
+                <div class="kotoba-summary__num">7</div>
+                <div class="kotoba-summary__label">Weak</div>
+              </div>
+              <div class="kotoba-summary__item kotoba-summary__item--review">
+                <div class="kotoba-summary__num">18</div>
+                <div class="kotoba-summary__label">Review</div>
+              </div>
+              <div class="kotoba-summary__item kotoba-summary__item--focus">
+                <div class="kotoba-summary__num">N5</div>
+                <div class="kotoba-summary__label">Focus</div>
+              </div>
+            </div>
+
+            <!-- Kotoba focus card -->
+            <div class="kotoba-focus-card">
+              <div class="kotoba-focus-card__head">
+                <span class="badge badge--accent">Fokus Hari Ini</span>
+                <span class="card__meta">± 5 menit</span>
+              </div>
+              <h3 class="kotoba-focus-card__title">Fokus Kotoba Hari Ini</h3>
+              <p class="kotoba-focus-card__text">
+                Review kata kerja N5 dulu:
+                <span class="jp">たべます</span>,
+                <span class="jp">のみます</span>,
+                <span class="jp">いきます</span>.
+              </p>
+              <div class="kotoba-focus-card__actions">
+                <button class="btn btn--primary" data-nav="hafalan">Mulai Review</button>
+                <button class="btn btn--ghost" data-nav="quiz">Buat Quiz</button>
+              </div>
+            </div>
+
+            <div class="kotoba-list" id="kotobaList"></div>
+            <div class="empty-state" id="kotobaEmpty" hidden>
+              <div class="empty-state__icon">📖</div>
+              <h3>Belum ada kotoba yang cocok</h3>
+              <p>Coba reset filter atau tambah kosakata baru.</p>
+              <button class="btn btn--ghost" data-clear-filter="kotoba">Reset Filter</button>
+              <button class="btn btn--primary" data-action="add-kotoba" style="margin-top:6px;">
+                ＋ Tambah Kotoba
+              </button>
+            </div>
+
+            <div class="screen__pad"></div>
+          </div>
+
+          <button class="fab" data-action="add-kotoba" aria-label="Tambah kotoba">
+            ＋
+          </button>
+        </section>
+
+        <!-- ============ BUNPOU ============ -->
+        <!-- Legacy Bunpou screen: kept for renderBunpou() compatibility, not reachable from main UI -->
+        <section class="screen screen--legacy" data-screen="bunpou" aria-hidden="true" hidden>
+          <header class="topbar topbar--screen topbar--bunpou">
+            <div>
+              <div class="topbar__eyebrow">📐 Grammar Library</div>
+              <h1 class="topbar__title">Bunpou Notes</h1>
+              <p class="topbar__sub">Pahami pola grammar dengan contoh mudah</p>
+            </div>
+            <button class="icon-btn" data-nav="settings" aria-label="Pengaturan">
+              <span aria-hidden="true">⚙️</span>
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <div class="search-filter">
+              <div class="search search--with-filter">
+                <span class="search__icon" aria-hidden="true">🔎</span>
+                <input
+                  type="search"
+                  placeholder="Cari bunpou..."
+                  aria-label="Cari bunpou"
+                />
+                <button
+                  type="button"
+                  class="filter-toggle"
+                  data-filter-toggle="bunpou"
+                  aria-label="Filter bunpou"
+                  aria-expanded="false"
+                  aria-controls="bunpouFilterPanel"
+                >
+                  <span aria-hidden="true">☷</span>
+                </button>
+              </div>
+
+              <div class="filter-panel filter-panel--rich" id="bunpouFilterPanel" hidden>
+                <div class="filter-panel__head">
+                  <div>
+                    <div class="filter-panel__title">Filter Bunpou</div>
+                    <div class="filter-panel__sub">Pilih level atau pola yang sering salah.</div>
+                  </div>
+                  <button type="button" class="filter-panel__reset" data-clear-filter="bunpou">Reset</button>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">JLPT Level</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option is-active" data-filter-target="bunpou" data-filter="Semua">
+                      <span class="filter-option__icon">※</span>
+                      <span class="filter-option__text">Semua</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="N5">
+                      <span class="filter-option__icon">N5</span>
+                      <span class="filter-option__text">Pemula</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="N4">
+                      <span class="filter-option__icon">N4</span>
+                      <span class="filter-option__text">Dasar</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="N3">
+                      <span class="filter-option__icon">N3</span>
+                      <span class="filter-option__text">Menengah</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="N2">
+                      <span class="filter-option__icon">N2</span>
+                      <span class="filter-option__text">Lanjut</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="N1">
+                      <span class="filter-option__icon">N1</span>
+                      <span class="filter-option__text">Mahir</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <div class="filter-group__label">Status</div>
+                  <div class="filter-options-grid">
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="Sering salah">
+                      <span class="filter-option__icon">⚠</span>
+                      <span class="filter-option__text">Sering salah</span>
+                    </button>
+                    <button class="filter-option" data-filter-target="bunpou" data-filter="Lainnya">
+                      <span class="filter-option__icon">…</span>
+                      <span class="filter-option__text">Lainnya</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="active-filter-label" id="bunpouActiveLabel" hidden>
+              <span class="muted small">Filter aktif:</span>
+              <span class="active-filter-pill" id="bunpouActiveText">Semua</span>
+              <button type="button" class="active-filter-clear" data-clear-filter="bunpou" aria-label="Hapus filter">×</button>
+            </div>
+
+            <div class="bunpou-list" id="bunpouList"></div>
+            <div class="empty-state" id="bunpouEmpty" hidden>
+              <div class="empty-state__icon">📭</div>
+              <h3>Tidak ada bunpou yang cocok</h3>
+              <p>Coba ubah kata pencarian atau filter.</p>
+              <button class="btn btn--ghost" data-action="add-bunpou">
+                ＋ Tambah Bunpou
+              </button>
+              <button class="btn btn--ghost" style="margin-top:6px;" data-clear-filter="bunpou">Reset Filter</button>
+            </div>
+
+            <div class="screen__pad"></div>
+          </div>
+
+          <button class="fab" data-action="add-bunpou" aria-label="Tambah bunpou">
+            ＋
+          </button>
+        </section>
+
+        <!-- ============ FLASHCARD (legacy DOM, hidden from nav, kept for internal renderer back-compat) ============ -->
+        <!-- ============ HAFALAN (slide-based fixed batch) ============ -->
+        <section class="screen" data-screen="hafalan">
+          <header class="topbar topbar--screen topbar--hafalan">
+            <button
+              class="icon-btn"
+              data-nav="home"
+              aria-label="Kembali"
+            >
+              ←
+            </button>
+            <div class="topbar__center">
+              <div class="topbar__eyebrow">🧠 Memory Deck</div>
+              <h1 class="topbar__title">Hafalan</h1>
+              <p class="topbar__sub">Hafalkan kotoba dan bunpou dengan slide tetap</p>
+            </div>
+            <button class="icon-btn" data-nav="settings" aria-label="Pengaturan">
+              <span aria-hidden="true">⚙️</span>
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <!-- Hafalan session card -->
+            <div class="hafalan-session-card">
+              <div class="hafalan-session-card__head">
+                <div>
+                  <div class="hafalan-session-card__title">Hafalan Hari Ini</div>
+                  <div class="hafalan-session-card__sub">Slide tetap · 20 item per slide</div>
+                </div>
+                <div class="hafalan-session-card__stats">
+                  <span id="hafalanSlideStat">Slide 1 / 1</span>
+                  <span class="hafalan-session-card__sep" aria-hidden="true">·</span>
+                  <span id="hafalanItemStat">0 item</span>
+                  <span class="hafalan-session-card__sep" aria-hidden="true">·</span>
+                  <span id="hafalanTimeStat">~5 menit</span>
+                </div>
+              </div>
+              <div class="hafalan-session-card__actions">
+                <button type="button" class="btn btn--ghost btn--sm" id="toggleMeaningBtn" data-action="toggle-hafalan-meaning">
+                  👁 Sembunyikan Arti
+                </button>
+                <button type="button" class="btn btn--ghost btn--sm" data-action="shuffle-current-slide">
+                  🔀 Acak Sementara
+                </button>
+              </div>
+            </div>
+
+            <!-- Hafalan mode cards -->
+            <div class="hafalan-mode-grid" role="tablist" aria-label="Mode hafalan">
+              <button type="button" class="hafalan-mode-card" data-hafalan-mode="kotoba">
+                <span class="hafalan-mode-card__icon" aria-hidden="true">📖</span>
+                <span class="hafalan-mode-card__title">Kotoba</span>
+                <span class="hafalan-mode-card__sub">hafalan kosakata</span>
+              </button>
+              <button type="button" class="hafalan-mode-card" data-hafalan-mode="bunpou">
+                <span class="hafalan-mode-card__icon" aria-hidden="true">📐</span>
+                <span class="hafalan-mode-card__title">Bunpou</span>
+                <span class="hafalan-mode-card__sub">hafalan pola grammar</span>
+              </button>
+              <button type="button" class="hafalan-mode-card is-active" data-hafalan-mode="mixed">
+                <span class="hafalan-mode-card__icon" aria-hidden="true">🎲</span>
+                <span class="hafalan-mode-card__title">Mixed</span>
+                <span class="hafalan-mode-card__sub">campuran catatan</span>
+              </button>
+              <button type="button" class="hafalan-mode-card" data-hafalan-mode="weak">
+                <span class="hafalan-mode-card__icon" aria-hidden="true">⚠️</span>
+                <span class="hafalan-mode-card__title">Weak Only</span>
+                <span class="hafalan-mode-card__sub">fokus yang lemah</span>
+              </button>
+            </div>
+
+            <!-- Slide nav -->
+            <div class="hafalan-slide-nav">
+              <button type="button" class="btn btn--ghost btn--sm" id="hafalanPrevBtn" data-action="hafalan-prev" aria-label="Slide sebelumnya">
+                ← Sebelumnya
+              </button>
+              <div class="hafalan-slide-indicator" id="hafalanSlideIndicator">Slide 1 / 1</div>
+              <button type="button" class="btn btn--ghost btn--sm" id="hafalanNextBtn" data-action="hafalan-next" aria-label="Slide berikutnya">
+                Berikutnya →
+              </button>
+            </div>
+
+            <!-- Slide table -->
+            <div class="hafalan-table" id="hafalanTable">
+              <div class="hafalan-table__head">
+                <span>Jepang</span>
+                <span>Arti</span>
+              </div>
+              <div class="hafalan-table__body" id="hafalanTableBody">
+                <!-- Rows rendered by script.js -->
+              </div>
+            </div>
+
+            <div class="empty-state" id="hafalanEmpty" hidden>
+              <div class="empty-state__icon">🧠</div>
+              <h3>Belum ada catatan untuk dihafal</h3>
+              <p>Tambahkan kotoba atau bunpou di Catatan, lalu kembali ke sini.</p>
+              <button class="btn btn--primary" data-nav="catatan">Buka Catatan</button>
+            </div>
+
+            <div class="screen__pad"></div>
+          </div>
+        </section>
+
+        <!-- ============ QUIZ ============ -->
+        <section class="screen" data-screen="quiz">
+          <header class="topbar topbar--screen topbar--quiz">
+            <button class="icon-btn" data-nav="home" aria-label="Kembali">
+              ←
+            </button>
+            <div class="topbar__center">
+              <div class="topbar__eyebrow">🎯 Practice Mode</div>
+              <h1 class="topbar__title">Quiz</h1>
+              <p class="topbar__sub" id="quizMeta">Kotoba Quiz · 1 / 10</p>
+            </div>
+            <button class="icon-btn" data-nav="review" aria-label="Review">
+              📊
+            </button>
+          </header>
+
+          <div class="screen__body">
+            <!-- Quiz Session Card -->
+            <div class="quiz-session-card">
+              <div class="quiz-session-card__head">
+                <div>
+                  <div class="quiz-session-card__title">Latihan Hari Ini</div>
+                  <div class="quiz-session-card__sub" id="quizSessionSub">10 soal · Kotoba N5 · estimasi 3 menit</div>
+                </div>
+                <div class="quiz-session-card__progress-num" id="quizSessionNum">1 / 10</div>
+              </div>
+              <div class="quiz-score-strip" id="quizScoreStrip">
+                <span class="quiz-score-strip__item"><strong id="quizCorrect">0</strong> Benar</span>
+                <span class="quiz-score-strip__sep" aria-hidden="true">·</span>
+                <span class="quiz-score-strip__item"><strong id="quizWrong">0</strong> Salah</span>
+                <span class="quiz-score-strip__sep" aria-hidden="true">·</span>
+                <span class="quiz-score-strip__item">Akurasi <strong id="quizAccuracy">—</strong></span>
+              </div>
+            </div>
+
+            <!-- Quiz type cards (compatibility class chip-btn kept for existing JS) -->
+            <div class="quiz-type-grid" id="quizTypeChips" role="tablist" aria-label="Pilih tipe quiz">
+              <button type="button" class="quiz-type-card chip-btn is-active" data-quiztype="kotoba">
+                <span class="quiz-type-card__icon" aria-hidden="true">📖</span>
+                <span class="quiz-type-card__title">Kotoba Quiz</span>
+                <span class="quiz-type-card__sub">arti &amp; jenis kata</span>
+              </button>
+              <button type="button" class="quiz-type-card chip-btn" data-quiztype="bunpou">
+                <span class="quiz-type-card__icon" aria-hidden="true">📐</span>
+                <span class="quiz-type-card__title">Bunpou Quiz</span>
+                <span class="quiz-type-card__sub">pola &amp; contoh</span>
+              </button>
+              <button type="button" class="quiz-type-card chip-btn" data-quiztype="mixed">
+                <span class="quiz-type-card__icon" aria-hidden="true">🎯</span>
+                <span class="quiz-type-card__title">Mixed Quiz</span>
+                <span class="quiz-type-card__sub">campuran</span>
+              </button>
+              <button type="button" class="quiz-type-card chip-btn quiz-type-card--ai" data-quiztype="ai">
+                <span class="quiz-type-card__icon" aria-hidden="true">✨</span>
+                <span class="quiz-type-card__title">AI Generated</span>
+                <span class="quiz-type-card__sub">soal dari AI mock</span>
+              </button>
+            </div>
+
+            <!-- Hidden legacy quiz-types kept for any existing references but no longer rendered -->
+            <div class="quiz-types" id="quizTypes" hidden></div>
+
+            <div class="card card--quiz quiz-question-card">
+              <div class="card__header">
+                <span class="badge badge--blue">Soal 1 / 10</span>
+                <span class="card__meta">Kotoba · N5</span>
+              </div>
+              <p class="quiz__prompt quiz-question-meta">Pilih arti dari:</p>
+              <div class="quiz__word quiz-question-word jp">たべます</div>
+
+              <div class="quiz__options" id="quizOptions">
+                <button class="quiz-opt" data-correct="false">
+                  <span class="quiz-opt__key">A</span> minum
+                </button>
+                <button class="quiz-opt" data-correct="true">
+                  <span class="quiz-opt__key">B</span> makan
+                </button>
+                <button class="quiz-opt" data-correct="false">
+                  <span class="quiz-opt__key">C</span> pergi
+                </button>
+                <button class="quiz-opt" data-correct="false">
+                  <span class="quiz-opt__key">D</span> melihat
+                </button>
+              </div>
+
+              <div class="quiz__blank" id="quizBlank" hidden>
+                <!-- Fill-in-the-blank input rendered by script.js -->
+              </div>
+
+              <div class="quiz__explain" id="quizExplain" hidden>
+                <div class="quiz__explain-title" id="quizExplainTitle">
+                  <span aria-hidden="true">💡</span> Benar
+                </div>
+                <p>
+                  たべます artinya <strong>makan</strong>. Ini termasuk
+                  <em>kata kerja</em>.
+                </p>
+                <button class="btn btn--primary" id="quizNext">
+                  Next Question
+                </button>
+              </div>
+            </div>
+
+            <div class="screen__pad"></div>
+          </div>
+        </section>
+
+        <!-- ============ AI TUTOR ============ -->
+        <section class="screen" data-screen="ai">
+          <header class="topbar topbar--screen topbar--ai">
+            <div>
+              <div class="topbar__eyebrow">✨ Study Assistant</div>
+              <h1 class="topbar__title">AI Tutor</h1>
+              <p class="topbar__sub">
+                Asisten belajar Jepang untuk kotoba, bunpou, dan hafalan
+              </p>
+            </div>
+            <button
+              class="icon-btn"
+              data-nav="settings"
+              aria-label="Pengaturan AI"
+            >
+              ⚙️
+            </button>
+          </header>
+
+          <div class="screen__body screen__body--chat">
+            <div class="ai-empty" id="aiEmpty" hidden>
+              <div class="ai-empty__icon">✨</div>
+              <h3>AI belum diatur</h3>
+              <p>
+                Masukkan <strong>Base URL</strong>, <strong>API Key</strong>, dan
+                <strong>Model ID</strong> di Settings untuk mulai bertanya pada AI Tutor.
+              </p>
+              <button class="btn btn--primary" data-nav="settings">
+                Buka Settings
+              </button>
+            </div>
+
+            <div class="chat" id="chat">
+              <!-- Initial messages, mode picker, and study notes rendered via script.js -->
+            </div>
+
+            <form class="composer" id="aiForm" autocomplete="off">
+              <textarea
+                class="composer__input"
+                id="aiInput"
+                rows="1"
+                placeholder="Pilih mode dulu, lalu tulis pertanyaan..."
+                aria-label="Tulis pertanyaan untuk AI"
+              ></textarea>
+              <button class="composer__send" type="submit" aria-label="Kirim">
+                Kirim
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ============ REVIEW ============ -->
+        <section class="screen" data-screen="review">
+          <header class="topbar topbar--screen topbar--review">
+            <button class="icon-btn" data-nav="home" aria-label="Kembali">
+              ←
+            </button>
+            <div class="topbar__center">
+              <div class="topbar__eyebrow">📊 Learning Progress</div>
+              <h1 class="topbar__title">Review</h1>
+              <p class="topbar__sub">Lihat progres belajar dan bagian yang masih lemah</p>
+            </div>
+            <span class="streak-pill streak-pill--small">
+              🔥 <strong>5</strong>
+            </span>
+          </header>
+
+          <div class="screen__body">
+            <div class="stat-grid">
+              <div class="stat-card stat-card--blue">
+                <div class="stat-card__num">18</div>
+                <div class="stat-card__label">Review hari ini</div>
+              </div>
+              <div class="stat-card stat-card--red">
+                <div class="stat-card__num">7</div>
+                <div class="stat-card__label">Weak kotoba</div>
+              </div>
+              <div class="stat-card stat-card--amber">
+                <div class="stat-card__num">4</div>
+                <div class="stat-card__label">Weak bunpou</div>
+              </div>
+              <div class="stat-card stat-card--green">
+                <div class="stat-card__num">5</div>
+                <div class="stat-card__label">Streak (hari)</div>
+              </div>
+            </div>
+
+            <!-- Target hari ini -->
+            <div class="card">
+              <div class="card__title-row">
+                <h3 class="card__title">Target hari ini</h3>
+                <span class="card__meta" id="targetMeta">12 / 20 selesai</span>
+              </div>
+              <div class="progress" style="margin: 4px 0 6px;">
+                <div
+                  class="progress__bar progress__bar--green"
+                  id="targetBar"
+                  style="width: 60%"
+                ></div>
+              </div>
+              <p class="muted small" style="margin: 0;">
+                Tinggal 8 kartu lagi untuk selesai target hari ini.
+              </p>
+            </div>
+
+            <!-- Weekly progress -->
+            <div class="card">
+              <div class="card__title-row">
+                <h3 class="card__title">Progress mingguan</h3>
+                <span class="card__meta">7 hari terakhir</span>
+              </div>
+              <div class="weekly" id="weeklyChart">
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 35%"></div></div>
+                  <div class="weekly__label">Sen</div>
+                  <div class="weekly__value">14</div>
+                </div>
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 60%"></div></div>
+                  <div class="weekly__label">Sel</div>
+                  <div class="weekly__value">22</div>
+                </div>
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 50%"></div></div>
+                  <div class="weekly__label">Rab</div>
+                  <div class="weekly__value">18</div>
+                </div>
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 75%"></div></div>
+                  <div class="weekly__label">Kam</div>
+                  <div class="weekly__value">28</div>
+                </div>
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 45%"></div></div>
+                  <div class="weekly__label">Jum</div>
+                  <div class="weekly__value">16</div>
+                </div>
+                <div class="weekly__col">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar" style="height: 80%"></div></div>
+                  <div class="weekly__label">Sab</div>
+                  <div class="weekly__value">30</div>
+                </div>
+                <div class="weekly__col weekly__col--today">
+                  <div class="weekly__bar-wrap"><div class="weekly__bar weekly__bar--today" style="height: 30%"></div></div>
+                  <div class="weekly__label">Min</div>
+                  <div class="weekly__value">12</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mastery distribution -->
+            <div class="card">
+              <div class="card__title-row">
+                <h3 class="card__title">Distribusi mastery</h3>
+                <span class="card__meta">170 catatan</span>
+              </div>
+              <div class="mastery-bar" aria-hidden="true">
+                <div class="mastery-bar__seg mastery-bar__seg--good" style="width: 55%"></div>
+                <div class="mastery-bar__seg mastery-bar__seg--mid"  style="width: 30%"></div>
+                <div class="mastery-bar__seg mastery-bar__seg--weak" style="width: 15%"></div>
+              </div>
+              <div class="mastery-legend">
+                <span class="mastery-legend__item"><span class="dot dot--good"></span> Sudah hafal · 94</span>
+                <span class="mastery-legend__item"><span class="dot dot--mid"></span> Lumayan · 51</span>
+                <span class="mastery-legend__item"><span class="dot dot--weak"></span> Masih lemah · 25</span>
+              </div>
+            </div>
+
+            <!-- AI Recommendation -->
+            <div class="card card--ai">
+              <div class="card__header">
+                <span class="badge badge--accent">AI Recommendation</span>
+              </div>
+              <p class="card__lead">
+                Kamu sering salah di partikel <strong>に</strong> dan
+                <strong>で</strong>. Hari ini coba latihan
+                <strong>10 soal</strong> tentang tempat dan arah.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--primary" data-nav="hafalan">
+                  Mulai Review
+                </button>
+                <button class="btn btn--ghost" data-nav="quiz" data-toast="Quiz dari kesalahan dimulai">
+                  Buat Quiz dari Kesalahan
+                </button>
+                <button class="btn btn--ghost" data-nav="ai">Tanya AI</button>
+              </div>
+            </div>
+
+            <!-- Recent mistakes -->
+            <section class="block">
+              <h2 class="block__title">Kesalahan terbaru</h2>
+              <div class="mini-list">
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">に / で</div>
+                    <div class="mini-item__sub">partikel tempat &amp; arah</div>
+                  </div>
+                  <span class="chip chip--red">3× salah</span>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">〜ながら</div>
+                    <div class="mini-item__sub">sambil</div>
+                  </div>
+                  <span class="chip chip--red">2× salah</span>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">いきます</div>
+                    <div class="mini-item__sub">ikimasu · pergi</div>
+                  </div>
+                  <span class="chip chip--amber">1× salah</span>
+                </div>
+                <div class="mini-item">
+                  <div>
+                    <div class="jp">きれい</div>
+                    <div class="mini-item__sub">kirei sebagai sifat-na</div>
+                  </div>
+                  <span class="chip chip--amber">1× salah</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="block">
+              <h2 class="block__title">Quiz terakhir</h2>
+              <div class="card card--mini">
+                <div class="review-row">
+                  <div>
+                    <div class="review-row__title">Kotoba Quiz · N5</div>
+                    <div class="review-row__sub">
+                      Skor 7 / 10 · 2 jam lalu
+                    </div>
+                  </div>
+                  <button class="btn btn--ghost" data-nav="quiz">Ulangi</button>
+                </div>
+              </div>
+            </section>
+
+            <div class="screen__pad"></div>
+          </div>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section class="screen" data-screen="settings">
+          <header class="topbar topbar--screen topbar--settings">
+            <button class="icon-btn" data-nav="home" aria-label="Kembali">
+              ←
+            </button>
+            <div class="topbar__center">
+              <div class="topbar__eyebrow">⚙️ Preferensi Belajar</div>
+              <h1 class="topbar__title">Settings</h1>
+              <p class="topbar__sub">Atur tampilan, mode Jepang, AI, dan backup data</p>
+            </div>
+            <span class="topbar__pad"></span>
+          </header>
+
+          <div class="screen__body">
+            <!-- APK Local mode info -->
+            <section class="block">
+              <div class="apk-info-card">
+                <div class="apk-info-card__head">
+                  <span class="badge badge--accent">📱 Mode APK Lokal</span>
+                </div>
+                <p class="apk-info-card__text">
+                  ifNote berjalan <strong>local-first</strong>. Catatan disimpan di perangkat. AI bisa diatur manual lewat
+                  <strong>Base URL</strong>, <strong>API Key</strong>, dan <strong>Model ID</strong>.
+                </p>
+                <ul class="apk-info-card__list">
+                  <li>Tidak butuh backend untuk prototype</li>
+                  <li>Cocok untuk APK demo</li>
+                  <li>Gunakan <strong>Export Data</strong> untuk backup</li>
+                  <li>Jangan bagikan API key di APK publik</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- AI Configuration -->
+            <section class="block">
+              <h2 class="block__title">AI Configuration</h2>
+              <div class="card card--settings">
+                <div class="settings-status" id="aiSettingsStatus">
+                  <span class="settings-status__dot" aria-hidden="true"></span>
+                  <span id="aiSettingsStatusText">AI belum diatur</span>
+                </div>
+
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="aiProvider">Provider Name</label>
+                  <input
+                    id="aiProvider"
+                    class="input"
+                    type="text"
+                    placeholder="Custom AI / OpenAI-compatible / 9Router / Azure / Local LLM"
+                  />
+                </div>
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="aiBaseUrl">Base URL</label>
+                  <input
+                    id="aiBaseUrl"
+                    class="input"
+                    type="url"
+                    placeholder="https://your-ai-endpoint.com/v1"
+                  />
+                </div>
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="aiApiKey">API Key</label>
+                  <div class="input-group">
+                    <input
+                      id="aiApiKey"
+                      class="input"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="Masukkan API key kamu"
+                    />
+                    <button
+                      class="input-group__btn"
+                      type="button"
+                      id="toggleKey"
+                      aria-label="Tampilkan / sembunyikan kunci"
+                    >
+                      👁
+                    </button>
+                  </div>
+                  <small class="muted" id="aiApiKeyMask">—</small>
+                </div>
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="aiModel">Model ID</label>
+                  <div class="input-group">
+                    <input
+                      id="aiModel"
+                      class="input"
+                      type="text"
+                      list="aiModelList"
+                      placeholder="gpt-4o-mini / gpt-4.1 / custom-model"
+                    />
+                    <datalist id="aiModelList">
+                      <option value="gpt-4o-mini"></option>
+                      <option value="gpt-4o"></option>
+                      <option value="gpt-4.1"></option>
+                      <option value="deepseek-chat"></option>
+                      <option value="qwen/qwen3-coder"></option>
+                      <option value="custom-local-model"></option>
+                    </datalist>
+                    <button
+                      class="input-group__btn input-group__btn--text"
+                      type="button"
+                      id="refreshModelsBtn"
+                    >
+                      ↻ Refresh
+                    </button>
+                  </div>
+                  <div class="model-state" id="modelState">
+                    <span class="model-state__dot"></span>
+                    <span id="modelStateText">Belum ada daftar model. Klik Refresh untuk memuat.</span>
+                  </div>
+                </div>
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="aiFormat">Request Format</label>
+                  <select id="aiFormat" class="input">
+                    <option value="openai">OpenAI Compatible</option>
+                    <option value="azure">Azure OpenAI</option>
+                    <option value="custom">Custom JSON</option>
+                  </select>
+                </div>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Gunakan AI asli jika tersedia</div>
+                    <small>Jika dimatikan, AI Tutor pakai Mock AI lokal</small>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="aiUseRealToggle" />
+                    <span class="switch__track"></span>
+                  </label>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn btn--primary" type="button" id="saveAiBtn">Save AI Settings</button>
+                  <button class="btn btn--ghost" type="button" id="testAiBtn">Test Connection</button>
+                  <button class="btn btn--danger" type="button" id="clearAiBtn">Clear AI Settings</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Japanese Display -->
+            <section class="block">
+              <h2 class="block__title">Japanese Display</h2>
+              <div class="card card--settings">
+                <label class="radio">
+                  <input type="radio" name="jpdisplay" checked />
+                  <span class="radio__dot"></span>
+                  <div>
+                    <div>Hiragana / Katakana Friendly</div>
+                    <small>わたしは がっこうに いきます。</small>
+                  </div>
+                </label>
+                <label class="radio">
+                  <input type="radio" name="jpdisplay" />
+                  <span class="radio__dot"></span>
+                  <div>
+                    <div>Normal Japanese</div>
+                    <small>私は学校に行きます。</small>
+                  </div>
+                </label>
+                <label class="radio">
+                  <input type="radio" name="jpdisplay" />
+                  <span class="radio__dot"></span>
+                  <div>
+                    <div>Kanji with Furigana</div>
+                    <small>
+                      <ruby>私<rt>わたし</rt></ruby>は<ruby>学校<rt>がっこう</rt></ruby>に<ruby>行<rt>い</rt></ruby>きます。
+                    </small>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            <!-- Learning Settings -->
+            <section class="block">
+              <h2 class="block__title">Learning Settings</h2>
+              <div class="card card--settings">
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="defaultJlpt">
+                    Default JLPT level
+                  </label>
+                  <select id="defaultJlpt" class="input">
+                    <option>N5</option>
+                    <option>N4</option>
+                    <option>N3</option>
+                    <option>N2</option>
+                    <option>N1</option>
+                  </select>
+                </div>
+                <div class="setting setting--stack">
+                  <label class="setting__label" for="dailyTarget">
+                    Daily review target
+                  </label>
+                  <input
+                    id="dailyTarget"
+                    class="input"
+                    type="number"
+                    min="1"
+                    max="200"
+                    value="20"
+                  />
+                </div>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Beginner Friendly Explanation</div>
+                    <small>AI memakai bahasa Indonesia sederhana</small>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" checked />
+                    <span class="switch__track"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <!-- Appearance -->
+            <section class="block">
+              <h2 class="block__title">Appearance</h2>
+              <div class="card card--settings">
+                <div class="theme-picker">
+                  <button class="theme-opt is-active" data-theme="light">
+                    <span class="theme-opt__swatch theme-opt__swatch--light"></span>
+                    Light
+                  </button>
+                  <button class="theme-opt" data-theme="dark">
+                    <span class="theme-opt__swatch theme-opt__swatch--dark"></span>
+                    Dark
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Backup Lokal -->
+            <section class="block">
+              <h2 class="block__title">Backup Lokal</h2>
+              <div class="card card--settings backup-card">
+                <p class="backup-card__note muted small">
+                  Data tersimpan di perangkat ini. Jika aplikasi dihapus, data lokal bisa ikut hilang.
+                  Gunakan <strong>Export Data</strong> untuk backup.
+                </p>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Export Data</div>
+                    <small>Simpan kotoba, bunpou, hafalan, dan progres ke file JSON</small>
+                  </div>
+                  <button class="btn btn--ghost" data-action="export-json">
+                    Export
+                  </button>
+                </div>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Import Data</div>
+                    <small>Pulihkan dari file backup JSON</small>
+                  </div>
+                  <input type="file" id="importFileInput" accept="application/json,.json" hidden />
+                  <button class="btn btn--ghost" data-action="import-json">
+                    Import
+                  </button>
+                </div>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Reset Data Lokal</div>
+                    <small>Hapus semua catatan dan kembalikan data dummy</small>
+                  </div>
+                  <button
+                    class="btn btn--danger"
+                    data-action="reset-data"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div class="setting">
+                  <div class="setting__label">
+                    <div>Tampilkan Onboarding Lagi</div>
+                    <small>Lihat ulang panduan tiga slide perkenalan</small>
+                  </div>
+                  <button
+                    class="btn btn--ghost"
+                    data-action="replay-onboarding"
+                  >
+                    Tampilkan
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <p class="muted center small">
+              ifNote v1.0 · Mockup Phase 1 · Dummy data only
+            </p>
+
+            <div class="screen__pad"></div>
+          </div>
+        </section>
+
+        <!-- Bottom navigation (mobile/tablet) -->
+        <nav class="bottom-nav" aria-label="Navigasi bawah">
+          <button class="bnav is-active" data-nav="home">
+            <span class="bnav__icon" aria-hidden="true">🏠</span>
+            <span class="bnav__label">Home</span>
+          </button>
+          <button class="bnav" data-nav="catatan">
+            <span class="bnav__icon" aria-hidden="true">📚</span>
+            <span class="bnav__label">Catatan</span>
+          </button>
+          <button class="bnav" data-nav="hafalan">
+            <span class="bnav__icon" aria-hidden="true">🧠</span>
+            <span class="bnav__label">Hafalan</span>
+          </button>
+          <button class="bnav" data-nav="quiz">
+            <span class="bnav__icon" aria-hidden="true">❓</span>
+            <span class="bnav__label">Quiz</span>
+          </button>
+          <button class="bnav" data-nav="ai">
+            <span class="bnav__icon" aria-hidden="true">✨</span>
+            <span class="bnav__label">AI</span>
+          </button>
+        </nav>
+      </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+    <!-- Reusable confirmation dialog -->
+    <div class="confirm-modal" id="confirmModal" hidden>
+      <div class="confirm-modal__backdrop" data-confirm-cancel></div>
+      <div class="confirm-modal__card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="confirm-modal__icon" id="confirmIcon">?</div>
+        <h3 id="confirmTitle">Konfirmasi</h3>
+        <p id="confirmText">Apakah kamu yakin?</p>
+        <div class="confirm-modal__actions">
+          <button class="btn btn--ghost" data-confirm-cancel>Batal</button>
+          <button class="btn btn--primary" id="confirmOk">Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding (first-time only) -->
+    <div class="onboarding" id="onboarding" hidden>
+      <div class="onboarding__backdrop"></div>
+      <div class="onboarding__card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+        <button type="button" class="onboarding__skip" data-onboarding="skip">Lewati</button>
+        <div class="onboarding__slide" id="onboardingSlide">
+          <!-- Slide content rendered by script.js -->
+        </div>
+        <div class="onboarding__dots" id="onboardingDots" aria-hidden="true">
+          <span class="onboarding__dot is-active"></span>
+          <span class="onboarding__dot"></span>
+          <span class="onboarding__dot"></span>
+        </div>
+        <div class="onboarding__actions">
+          <button type="button" class="btn btn--ghost" id="onboardingPrev" hidden>Kembali</button>
+          <button type="button" class="btn btn--primary" id="onboardingNext">Lanjut</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal host -->
+    <div class="modal" id="modal" hidden>
+      <div class="modal__backdrop" data-modal-close></div>
+      <div class="modal__sheet modal__sheet--lg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal__handle" aria-hidden="true"></div>
+        <h3 class="modal__title" id="modalTitle">Tambah Catatan</h3>
+        <p class="modal__sub" id="modalSub">
+          Form ini hanya mockup. Tidak ada data yang disimpan ke server.
+        </p>
+        <div class="modal__body" id="modalBody">
+          <!-- Dynamic form content injected by script.js -->
+        </div>
+        <div class="modal__actions" id="modalActions">
+          <button class="btn btn--ghost" data-modal-close>Batal</button>
+          <button class="btn btn--primary" id="modalPrimary">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanji explanation popup -->
+    <div class="kanji-modal" id="kanjiModal" hidden>
+      <div class="kanji-modal__backdrop" data-kanji-close></div>
+      <div class="kanji-modal__card" role="dialog" aria-modal="true" aria-labelledby="kanjiChar">
+        <button class="kanji-modal__close" type="button" data-kanji-close aria-label="Tutup">×</button>
+        <div class="kanji-modal__char" id="kanjiChar">食</div>
+        <div class="kanji-modal__meaning" id="kanjiMeaning">makan</div>
+
+        <div class="kanji-info-grid">
+          <div class="kanji-info-grid__cell">
+            <span>Onyomi</span>
+            <strong id="kanjiOnyomi">ショク</strong>
+          </div>
+          <div class="kanji-info-grid__cell">
+            <span>Kunyomi</span>
+            <strong id="kanjiKunyomi">た.べる</strong>
+          </div>
+        </div>
+
+        <p class="kanji-modal__explanation" id="kanjiExplanation"></p>
+
+        <div class="kanji-section">
+          <h4>Contoh kata</h4>
+          <div id="kanjiWords"></div>
+        </div>
+
+        <div class="kanji-section">
+          <h4>Contoh kalimat</h4>
+          <div class="jp" id="kanjiExampleJp"></div>
+          <div class="mini-item__sub" id="kanjiExampleId"></div>
+        </div>
+
+        <div class="kanji-modal__footer">
+          <span class="kanji-source-status" id="kanjiSourceStatus"></span>
+          <button class="btn btn--ghost" type="button" data-kanji-close>Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
