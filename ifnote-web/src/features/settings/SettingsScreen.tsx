@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingState } from "@/components/feedback/LoadingState";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useSettings } from "./useSettings";
 import { AccountSection } from "./components/AccountSection";
 import { AppearanceSection } from "./components/AppearanceSection";
@@ -10,20 +11,15 @@ import { DangerZone } from "./components/DangerZone";
 
 export function SettingsScreen() {
   const settingsQ = useSettings();
+  const settings = settingsQ.data;
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <div className="text-xs font-medium uppercase tracking-wide text-accent-600 dark:text-accent-300">
-          ⚙️ Preferensi Belajar
-        </div>
-        <h1 className="text-2xl font-semibold text-ink-800 dark:text-paper-50 sm:text-3xl">
-          Settings
-        </h1>
-        <p className="text-sm text-ink-400">
-          Atur tampilan, mode Jepang, AI, dan backup data.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="⚙️ Preferensi Belajar"
+        title="Settings"
+        subtitle="Atur tampilan, mode Jepang, AI, dan backup data."
+      />
 
       {settingsQ.isLoading ? (
         <LoadingState label="Memuat preferensi…" />
@@ -31,7 +27,7 @@ export function SettingsScreen() {
         <div className="space-y-4">
           <AccountSection />
           <AppearanceSection />
-          <AiConfigSection />
+          {settings?.canManageAi ? <AiConfigSection /> : null}
           <BackupSection />
           <DangerZone />
         </div>

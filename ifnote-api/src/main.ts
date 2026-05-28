@@ -33,7 +33,9 @@ async function bootstrap() {
   await app.listen(env.port, "0.0.0.0");
   logger.log(`ifnote-api listening on :${env.port} (${env.nodeEnv})`);
   if (!env.ai.apiKey) {
-    logger.warn("AI_API_KEY not set — AI endpoints will return mock fallbacks");
+    logger.warn(
+      "AI_API_KEY not set — server-level fallback unavailable. Users tanpa API key di Settings akan menerima 503 (AI_NOT_CONFIGURED).",
+    );
   }
 }
 

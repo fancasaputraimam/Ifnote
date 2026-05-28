@@ -16,6 +16,9 @@ export class CreateKotobaDto {
   jp!: string;
 
   @IsOptional() @IsString() @MaxLength(120)
+  reading?: string;
+
+  @IsOptional() @IsString() @MaxLength(120)
   romaji?: string;
 
   @IsString() @MinLength(1) @MaxLength(280)
@@ -40,6 +43,9 @@ export class CreateKotobaDto {
   furiganaExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  exampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   exampleMeaning?: string;
 
   @IsOptional() @IsIn(MASTERY)
@@ -49,6 +55,9 @@ export class CreateKotobaDto {
 export class UpdateKotobaDto {
   @IsOptional() @IsString() @MaxLength(120)
   jp?: string;
+
+  @IsOptional() @IsString() @MaxLength(120)
+  reading?: string;
 
   @IsOptional() @IsString() @MaxLength(120)
   romaji?: string;
@@ -73,6 +82,9 @@ export class UpdateKotobaDto {
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  exampleReading?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   exampleMeaning?: string;

@@ -48,4 +48,18 @@ export class KotobaController {
   delete(@CurrentUser() user: JwtUser, @Param("id", new ParseUUIDPipe()) id: string) {
     return this.svc.delete(user.sub, id);
   }
+
+  /**
+   * Combined AI explain endpoint (task spec PART 6).
+   *   - Cek item exists + milik user.
+   *   - Jika sudah punya penjelasan, return tanpa call AI (`generated: false`).
+   *   - Jika belum, call AI, simpan, return updated item (`generated: true`).
+   */
+  @Post(":id/ai-explain")
+  aiExplain(
+    @CurrentUser() user: JwtUser,
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ) {
+    return this.svc.aiExplain(user.sub, id);
+  }
 }

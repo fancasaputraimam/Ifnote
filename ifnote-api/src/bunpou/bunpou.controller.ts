@@ -48,4 +48,13 @@ export class BunpouController {
   delete(@CurrentUser() user: JwtUser, @Param("id", new ParseUUIDPipe()) id: string) {
     return this.svc.delete(user.sub, id);
   }
+
+  /** Combined AI explain endpoint (task spec PART 6). */
+  @Post(":id/ai-explain")
+  aiExplain(
+    @CurrentUser() user: JwtUser,
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ) {
+    return this.svc.aiExplain(user.sub, id);
+  }
 }

@@ -57,3 +57,22 @@ export class AnalyzeSentenceDto {
   @IsString() @MinLength(1) @MaxLength(500)
   sentence!: string;
 }
+
+export class GenerateSakubunDto {
+  /**
+   * Daftar id Bunpou yang dimiliki user. Backend wajib verifikasi
+   * kepemilikan sebelum mengirim ke AI.
+   */
+  @IsArray()
+  @ArrayMinSize(1, { message: "Pilih minimal satu bunpou" })
+  @ArrayMaxSize(10, { message: "Maksimal 10 bunpou untuk sekali generate sakubun." })
+  @IsString({ each: true })
+  bunpouIds!: string[];
+
+  @IsOptional()
+  @IsIn(["beginner", "intermediate", "advanced"])
+  level?: "beginner" | "intermediate" | "advanced";
+
+  @IsOptional() @IsString() @MaxLength(200)
+  topic?: string;
+}

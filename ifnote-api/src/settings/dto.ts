@@ -5,6 +5,7 @@ import {
   IsString,
   IsUrl,
   MaxLength,
+  ValidateIf,
 } from "class-validator";
 
 export class UpdateSettingsDto {
@@ -31,4 +32,19 @@ export class UpdateSettingsDto {
 
   @IsOptional() @IsBoolean()
   useRealAi?: boolean;
+
+  /**
+   * Per-user AI API key. Encrypted at rest by the service layer; never
+   * returned in any API response.
+   *
+   * Special semantics:
+   *  - omitted (`undefined`) → keep existing key
+   *  - `null`                → clear stored key
+   *  - non-empty string      → encrypt and replace
+   */
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(512)
+  aiApiKey?: string | null;
 }

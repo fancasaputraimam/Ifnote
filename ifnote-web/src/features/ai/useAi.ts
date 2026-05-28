@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type {
   AiEnvelope,
@@ -15,9 +15,30 @@ import type {
 } from "./types";
 
 /**
- * One mutation per AI mode. Backend returns AiEnvelope shape so callers can
- * surface the source ("ai" | "mock") to the user honestly.
+ * One mutation per AI mode. Backend selalu mengembalikan source="ai".
+ * Kalau AI belum diatur atau gagal, backend lempar 503 (AI_NOT_CONFIGURED /
+ * AI_CALL_FAILED) — tidak ada lagi mock fallback yang dilempar ke user.
  */
+
+export interface AiStatus {
+  configured: boolean;
+  source: "user" | "env" | null;
+}
+
+/**
+ * Pre-detect apakah AI siap dipakai untuk user saat ini. Tidak
+ * memanggil provider — cuma cek konfigurasi. Dipakai oleh AiContextCard
+ * supaya bisa menampilkan "AI siap" / "AI belum diatur" sebelum user
+ * mengirim pesan.
+ */
+export function useAiStatus() {
+  return useQuery<AiStatus>({
+    queryKey: ["aiStatus"],
+    queryFn: () => api.get<AiStatus>("/api/ai/status"),
+    staleTime: 30_000,
+    retry: 0,
+  });
+}
 
 export function useExplainKotoba() {
   return useMutation({

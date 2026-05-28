@@ -27,7 +27,6 @@ export const BOTTOM_NAV = [
   { href: ROUTES.app.catatan, label: "Catatan" },
   { href: ROUTES.app.hafalan, label: "Hafalan" },
   { href: ROUTES.app.quiz, label: "Quiz" },
-  { href: ROUTES.app.ai, label: "AI Tutor" },
 ] as const;
 
 /** localStorage key for the JWT token (MVP only — see TODO in auth-client). */

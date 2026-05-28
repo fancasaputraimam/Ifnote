@@ -1,9 +1,10 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtUser } from "../common/auth/jwt.types";
 import { AiService } from "./ai.service";
+import { AiClientService } from "./ai-client.service";
 import {
   AnalyzeSentenceDto,
   BulkKotobaDto,
@@ -12,6 +13,7 @@ import {
   ExplainBunpouDto,
   ExplainKotobaDto,
   GenerateQuizAiDto,
+  GenerateSakubunDto,
   MakeExampleDto,
 } from "./dto";
 
@@ -19,7 +21,23 @@ import {
 @UseGuards(JwtAuthGuard)
 @Throttle({ default: { limit: 30, ttl: 60_000 } })
 export class AiController {
-  constructor(private readonly svc: AiService) {}
+  constructor(
+    private readonly svc: AiService,
+    private readonly client: AiClientService,
+  ) {}
+
+  /**
+   * Cek konfigurasi AI untuk user saat ini. Tidak memanggil provider AI.
+   * Frontend pakai ini untuk pre-detect status sebelum user kirim pesan.
+   */
+  @Get("status")
+  async status(@CurrentUser() user: JwtUser) {
+    const cfg = await this.client.resolveConfig(user.sub);
+    return {
+      configured: !!cfg,
+      source: cfg?.source ?? null,
+    };
+  }
 
   @Post("explain-kotoba")
   explainKotoba(@CurrentUser() user: JwtUser, @Body() dto: ExplainKotobaDto) {
@@ -60,5 +78,11 @@ export class AiController {
   @Post("analyze-sentence")
   analyzeSentence(@CurrentUser() user: JwtUser, @Body() dto: AnalyzeSentenceDto) {
     return this.svc.analyzeSentence(user.sub, dto);
+  }
+
+  @Post("generate-sakubun")
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  generateSakubun(@CurrentUser() user: JwtUser, @Body() dto: GenerateSakubunDto) {
+    return this.svc.generateSakubun(user.sub, dto);
   }
 }

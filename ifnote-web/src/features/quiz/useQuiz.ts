@@ -32,7 +32,7 @@ export function useQuizQuestions(type: QuizType, count = 10, enabled = true) {
   });
 }
 
-/** AI-generated quiz: backend AI proxy with mock fallback. Different shape. */
+/** AI-generated quiz: backend AI proxy. Throws 503 if AI not configured. */
 export interface AiQuizQuestion {
   prompt: string;
   choices: { id: string; label: string }[];
@@ -40,7 +40,7 @@ export interface AiQuizQuestion {
   explanation?: string;
 }
 export interface AiQuizResult {
-  source: "ai" | "mock";
+  source: "ai";
   data: { topic: string; questions: AiQuizQuestion[] };
 }
 
@@ -48,6 +48,47 @@ export function useGenerateAiQuiz() {
   return useMutation({
     mutationFn: (body: { topic?: string; count?: number }) =>
       api.post<AiQuizResult>("/api/ai/generate-quiz", body),
+  });
+}
+
+/* -------------------- sakubun ------------------------------------ */
+
+export interface SakubunUsedBunpou {
+  id?: string;
+  pattern: string;
+  sentence: string;
+  meaning: string;
+}
+
+export interface SakubunData {
+  title?: string;
+  sakubun: string;
+  reading?: string;
+  meaning: string;
+  usedBunpou?: SakubunUsedBunpou[];
+  notes?: string[];
+}
+
+export interface GenerateSakubunResult {
+  source: "ai";
+  data: SakubunData;
+  /** Pola yang dikirim ke AI — untuk fallback display kalau AI lupa isi. */
+  requested?: Array<{
+    id: string;
+    pattern: string;
+    meaning: string;
+    formula: string;
+    example: string;
+  }>;
+}
+
+export function useGenerateSakubun() {
+  return useMutation({
+    mutationFn: (body: {
+      bunpouIds: string[];
+      level?: "beginner" | "intermediate" | "advanced";
+      topic?: string;
+    }) => api.post<GenerateSakubunResult>("/api/ai/generate-sakubun", body),
   });
 }
 

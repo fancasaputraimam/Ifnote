@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { NotebookCard } from "@/components/ui/NotebookCard";
 import { TextInput } from "@/components/ui/TextInput";
-import { ClickableKanji } from "@/features/kanji/ClickableKanji";
+import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { cn } from "@/lib/utils";
 
 export interface AnsweredFeedback {
@@ -95,8 +95,8 @@ export function QuestionCard({
         </span>
       </div>
 
-      <h2 className="mt-2 font-jp text-2xl text-ink-800 dark:text-paper-50">
-        <ClickableKanji text={question.prompt} inert={!!feedback} />
+      <h2 className="mt-2 text-2xl text-ink-800 dark:text-paper-50">
+        <JapaneseText text={question.prompt} inert={!!feedback} />
       </h2>
       {question.meaning && mode === "choice" ? null : null}
 

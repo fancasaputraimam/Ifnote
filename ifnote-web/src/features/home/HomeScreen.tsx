@@ -5,16 +5,30 @@ import { NotebookCard } from "@/components/ui/NotebookCard";
 import { Badge } from "@/components/ui/Badge";
 import { useDashboard } from "@/features/home/useDashboard";
 import { HomeHeader } from "@/features/home/components/HomeHeader";
-import { WelcomeBackCard } from "@/features/home/components/WelcomeBackCard";
-import { TodayMissionCard } from "@/features/home/components/TodayMissionCard";
+import { WelcomeBackNotice } from "@/features/home/components/WelcomeBackNotice";
 import { StatsGrid } from "@/features/home/components/StatsGrid";
-import { AIStudyPlanCard } from "@/features/home/components/AIStudyPlanCard";
-import { DailyKanjiCard } from "@/features/home/components/DailyKanjiCard";
-import { FocusBunpouCard } from "@/features/home/components/FocusBunpouCard";
+import { FokusHariIniCard } from "@/features/home/components/FokusHariIniCard";
 import { RecentKotobaList } from "@/features/home/components/RecentKotobaList";
 import { RecentBunpouList } from "@/features/home/components/RecentBunpouList";
-import { QuickActions } from "@/features/home/components/QuickActions";
 
+/**
+ * Home dashboard — versi simplified sesuai task spec.
+ *
+ * Sengaja dihilangkan dari Home:
+ *   - Welcome Back card  → diganti notifikasi WelcomeBackNotice
+ *   - Misi Hari Ini card → tidak ada lagi
+ *   - Review/Streak stat → tidak ditampilkan di Home
+ *   - Bunpou Fokus      → tidak ditampilkan di Home
+ *   - Aksi Cepat        → tidak ditampilkan di Home
+ *   - AI Study Plan     → tidak ditampilkan di Home
+ *
+ * Yang tetap ada:
+ *   - Header dengan dynamic Japanese day + greeting
+ *   - Kotoba & Bunpou stat (2 kartu)
+ *   - Kanji Hari Ini
+ *   - Recent Kotoba + Recent Bunpou
+ *   - Welcome notification (sekali per session)
+ */
 export function HomeScreen() {
   const dash = useDashboard();
 
@@ -28,11 +42,10 @@ export function HomeScreen() {
         <>
           {dash.isFallback ? (
             <NotebookCard stripe="lilac" className="p-4">
-              <div className="flex items-center gap-2">
-                <Badge tone="warn">Mode offline</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone="warn">Sebagian data offline</Badge>
                 <p className="text-sm text-ink-700 dark:text-paper-50">
-                  Tidak bisa terhubung ke server. Beberapa data ditampilkan kosong sampai
-                  koneksi pulih.
+                  Sebagian data belum bisa dimuat. Konten lain tetap tersedia.
                 </p>
               </div>
               {dash.errorMessage ? (
@@ -41,42 +54,22 @@ export function HomeScreen() {
             </NotebookCard>
           ) : null}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <WelcomeBackCard
-              reviewCount={dash.totals.review}
-              streakDays={dash.totals.streakDays}
-            />
-            <TodayMissionCard
-              done={Math.min(dash.totalQuizAnswered, 3)}
-              total={dash.totalQuizAnswered === 0 ? 0 : 3}
-            />
-          </div>
+          <StatsGrid kotoba={dash.totals.kotoba} bunpou={dash.totals.bunpou} />
 
-          <StatsGrid
-            kotoba={dash.totals.kotoba}
-            bunpou={dash.totals.bunpou}
-            review={dash.totals.review}
-            streakDays={dash.totals.streakDays}
+          <FokusHariIniCard
+            kanji={dash.dailyKanjiChar}
+            kotoba={dash.focusKotoba}
+            bunpou={dash.focusBunpou}
           />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <AIStudyPlanCard
-              totalQuizAnswered={dash.totalQuizAnswered}
-              suggestedPattern={dash.focusBunpou?.jpOrPattern ?? null}
-            />
-            <DailyKanjiCard kanji={dash.dailyKanjiChar} />
-          </div>
-
-          <FocusBunpouCard bunpou={dash.focusBunpou} />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <RecentKotobaList items={dash.recentKotoba} />
             <RecentBunpouList items={dash.recentBunpou} />
           </div>
-
-          <QuickActions />
         </>
       )}
+
+      <WelcomeBackNotice />
     </div>
   );
 }

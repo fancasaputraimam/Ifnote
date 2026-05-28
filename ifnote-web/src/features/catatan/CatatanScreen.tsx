@@ -7,17 +7,16 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 import { CatatanFilters } from "./components/CatatanFilters";
 import { SummaryRow } from "./components/SummaryRow";
-import { FocusCard } from "./components/FocusCard";
 import { CatatanRow } from "./components/CatatanRow";
 import { KotobaDialog } from "./components/KotobaDialog";
 import { BunpouDialog } from "./components/BunpouDialog";
 
 import {
   useCatatanList,
-  type CatatanFilterStatus,
   type CatatanFilterType,
 } from "./useCatatan";
 import type { Bunpou, CatatanItem, JlptLevel, Kotoba } from "@/lib/types";
@@ -50,21 +49,34 @@ export function CatatanScreen() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState<CatatanFilterType>("all");
   const [level, setLevel] = useState<JlptLevel | null>(null);
-  const [status, setStatus] = useState<CatatanFilterStatus>("all");
 
   // Dialog state
   const [kotobaOpen, setKotobaOpen] = useState(false);
   const [bunpouOpen, setBunpouOpen] = useState(false);
+  const [kotobaTab, setKotobaTab] = useState<"manual" | "ai" | "bulk">("manual");
+  const [bunpouTab, setBunpouTab] = useState<"manual" | "ai">("manual");
   const [editing, setEditing] = useState<{ type: "kotoba" | "bunpou"; id: string } | null>(null);
   const editingFull = useFullItem(editing);
 
-  // Deep-link from QuickActions: /app/catatan?add=kotoba|bunpou
+  // Deep-link dari QuickActions / /app/ai redirect / Home
+  //   ?add=kotoba|bunpou
+  //   ?openAdd=ai-kotoba|ai-bunpou|bulk-kotoba
   useEffect(() => {
     const add = params.get("add");
+    const openAdd = params.get("openAdd");
     if (add === "kotoba") setKotobaOpen(true);
     else if (add === "bunpou") setBunpouOpen(true);
-    if (add) {
-      // Strip the param so reload doesn't re-open the dialog
+    if (openAdd === "ai-kotoba") {
+      setKotobaTab("ai");
+      setKotobaOpen(true);
+    } else if (openAdd === "bulk-kotoba") {
+      setKotobaTab("bulk");
+      setKotobaOpen(true);
+    } else if (openAdd === "ai-bunpou") {
+      setBunpouTab("ai");
+      setBunpouOpen(true);
+    }
+    if (add || openAdd) {
       router.replace("/app/catatan", { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,7 +86,8 @@ export function CatatanScreen() {
     search: search.trim() || undefined,
     type,
     level: level ?? undefined,
-    status: status === "all" ? undefined : status,
+    // Status filter dihapus dari Catatan UI (task PART 2). Tetap omit
+    // dari query supaya backend tidak menerima status apapun.
     limit: 100,
   });
 
@@ -84,10 +97,18 @@ export function CatatanScreen() {
     return {
       kotoba: items.filter((i) => i.noteType === "kotoba").length,
       bunpou: items.filter((i) => i.noteType === "bunpou").length,
-      review: items.filter((i) => i.mastery === "mid" || i.mastery === "weak").length,
-      weak: items.filter((i) => i.mastery === "weak").length,
     };
   }, [items]);
+
+  // For AI duplicate detection inside Add dialogs.
+  const existingKotobaJp = useMemo(
+    () => items.filter((i) => i.noteType === "kotoba").map((i) => i.jpOrPattern),
+    [items],
+  );
+  const existingBunpouPatterns = useMemo(
+    () => items.filter((i) => i.noteType === "bunpou").map((i) => i.jpOrPattern),
+    [items],
+  );
 
   const onEdit = (item: CatatanItem) => {
     setEditing({ type: item.noteType, id: item.id });
@@ -101,29 +122,35 @@ export function CatatanScreen() {
     setEditing(null);
   };
 
+  const hasActiveFilter = !!search || !!level || type !== "all";
   const noResults = !list.isLoading && items.length === 0;
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <div className="text-xs font-medium uppercase tracking-wide text-accent-600 dark:text-accent-300">
-          📚 Study Notes
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-2xl font-semibold text-ink-800 dark:text-paper-50 sm:text-3xl">Catatan</h1>
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => { setEditing(null); setBunpouOpen(true); }}>
+      <PageHeader
+        eyebrow="📚 Study Notes"
+        title="Catatan"
+        subtitle="Gabungan kotoba, bunpou, contoh kalimat, dan review."
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+              onClick={() => { setEditing(null); setBunpouOpen(true); }}
+            >
               + Bunpou
             </Button>
-            <Button size="sm" onClick={() => { setEditing(null); setKotobaOpen(true); }}>
+            <Button
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => { setEditing(null); setKotobaOpen(true); }}
+            >
               + Kotoba
             </Button>
-          </div>
-        </div>
-        <p className="text-sm text-ink-400">
-          Gabungan kotoba, bunpou, contoh kalimat, dan review.
-        </p>
-      </header>
+          </>
+        }
+      />
 
       <CatatanFilters
         search={search}
@@ -132,13 +159,9 @@ export function CatatanScreen() {
         setType={setType}
         level={level}
         setLevel={setLevel}
-        status={status}
-        setStatus={setStatus}
       />
 
       <SummaryRow {...summary} />
-
-      <FocusCard weakCount={summary.weak} reviewCount={summary.review - summary.weak} />
 
       {list.isLoading ? (
         <LoadingState label="Memuat catatan…" />
@@ -154,20 +177,46 @@ export function CatatanScreen() {
       ) : noResults ? (
         <EmptyState
           icon="📒"
-          title={search || level || status !== "all" ? "Tidak ada hasil" : "Catatan masih kosong"}
+          title={hasActiveFilter ? "Tidak ada hasil" : "Catatan masih kosong"}
           description={
-            search || level || status !== "all"
+            hasActiveFilter
               ? "Coba ubah kata kunci atau filter."
               : "Mulai dengan menambah kotoba atau bunpou pertamamu."
           }
           action={
-            !search && !level && status === "all" ? (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => { setEditing(null); setKotobaOpen(true); }}>
+            !hasActiveFilter ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setEditing(null);
+                    setKotobaTab("manual");
+                    setKotobaOpen(true);
+                  }}
+                >
                   Tambah Kotoba
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => { setEditing(null); setBunpouOpen(true); }}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditing(null);
+                    setBunpouTab("manual");
+                    setBunpouOpen(true);
+                  }}
+                >
                   Tambah Bunpou
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setEditing(null);
+                    setKotobaTab("bulk");
+                    setKotobaOpen(true);
+                  }}
+                >
+                  ✨ Import Kotoba dengan AI
                 </Button>
               </div>
             ) : null
@@ -187,11 +236,15 @@ export function CatatanScreen() {
         open={kotobaOpen}
         onClose={onCloseDialog}
         initial={editing?.type === "kotoba" ? (editingFull.data as Kotoba | undefined) ?? null : null}
+        existingJp={existingKotobaJp}
+        initialTab={kotobaTab}
       />
       <BunpouDialog
         open={bunpouOpen}
         onClose={onCloseDialog}
         initial={editing?.type === "bunpou" ? (editingFull.data as Bunpou | undefined) ?? null : null}
+        existingPatterns={existingBunpouPatterns}
+        initialTab={bunpouTab}
       />
     </div>
   );

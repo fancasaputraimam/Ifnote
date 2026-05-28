@@ -41,7 +41,14 @@ export function AuthProvider({ children }: ProviderProps) {
     setLoading(true);
     try {
       const me: MeResponse = await authClient.me();
-      setUser({ id: me.id, email: me.email, name: me.name, avatarUrl: me.avatarUrl ?? null });
+      setUser({
+        id: me.id,
+        email: me.email,
+        name: me.name,
+        avatarUrl: me.avatarUrl ?? null,
+        role: me.role,
+        canManageAi: me.canManageAi,
+      });
     } catch (e) {
       // Invalid / expired token → clear and treat as anonymous
       if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {

@@ -10,7 +10,6 @@ const ICONS: Record<string, string> = {
   Catatan: "📒",
   Hafalan: "🗂",
   Quiz: "🎯",
-  "AI Tutor": "🤖",
   Settings: "⚙️",
 };
 

@@ -15,6 +15,9 @@ export class CreateBunpouDto {
   @IsString() @MinLength(1) @MaxLength(120)
   pattern!: string;
 
+  @IsOptional() @IsString() @MaxLength(120)
+  reading?: string;
+
   @IsString() @MinLength(1) @MaxLength(280)
   meaning!: string;
 
@@ -40,6 +43,9 @@ export class CreateBunpouDto {
   furiganaExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  exampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   exampleMeaning?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
@@ -55,6 +61,9 @@ export class CreateBunpouDto {
 export class UpdateBunpouDto {
   @IsOptional() @IsString() @MaxLength(120)
   pattern?: string;
+
+  @IsOptional() @IsString() @MaxLength(120)
+  reading?: string;
 
   @IsOptional() @IsString() @MaxLength(280)
   meaning?: string;
@@ -79,6 +88,9 @@ export class UpdateBunpouDto {
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  exampleReading?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   exampleMeaning?: string;

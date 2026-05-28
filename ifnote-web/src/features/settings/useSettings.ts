@@ -24,6 +24,15 @@ export interface UpdateSettingsBody {
   aiModelId?: string | null;
   aiRequestFormat?: AiRequestFormat;
   useRealAi?: boolean;
+  /**
+   * Per-user AI API key.
+   *  - omit         → keep existing
+   *  - null         → clear stored key on server
+   *  - non-empty    → server encrypts and replaces
+   *
+   * Never logged. Cleared from form state immediately after submit.
+   */
+  aiApiKey?: string | null;
 }
 
 export function useUpdateSettings() {
@@ -32,6 +41,8 @@ export function useUpdateSettings() {
     mutationFn: (body: UpdateSettingsBody) => api.put<AppSettings>("/api/settings", body),
     onSuccess: (data) => {
       qc.setQueryData([SETTINGS_KEY], data);
+      // AI config might just have changed — force re-detect status.
+      qc.invalidateQueries({ queryKey: ["aiStatus"] });
     },
   });
 }

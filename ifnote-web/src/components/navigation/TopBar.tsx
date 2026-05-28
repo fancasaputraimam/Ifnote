@@ -28,7 +28,10 @@ export function TopBar({ subtitle }: Props) {
           href={ROUTES.app.home}
           className="flex items-center gap-2 font-semibold text-ink-800 dark:text-paper-50"
         >
-          <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-300 font-jp">
+          <span
+            aria-hidden
+            className="grid h-8 w-8 place-items-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-300 font-jp"
+          >
             ノ
           </span>
           <span>{APP_NAME}</span>

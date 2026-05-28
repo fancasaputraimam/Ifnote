@@ -9,6 +9,10 @@
 
 html, body {
   height: 100%;
+  /* Cegah horizontal overflow di mobile (PRD PART 1). */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 html {
@@ -52,24 +56,84 @@ body {
   );
 }
 
-/* Mobile-first: keep content above bottom nav */
+/* Mobile-first: keep content above bottom nav (incl. iOS safe area). */
 .app-content-bottompad {
-  padding-bottom: 5.5rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
   .app-content-bottompad { padding-bottom: 2rem; }
 }
 
+/* Bottom nav respects iOS safe area. */
+.bottom-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide horizontal scrollbars on chip/filter rows. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Page transition: fade + slide-up. Respect reduced-motion. */
+@keyframes ifnote-page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: ifnote-page-in 220ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}
+
+/* Top progress bar (used by RouteProgress). */
+@keyframes ifnote-progress {
+  0%   { transform: translateX(-100%) scaleX(0.4); }
+  60%  { transform: translateX(0%)    scaleX(0.7); }
+  100% { transform: translateX(40%)   scaleX(1); }
+}
+.route-progress-bar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg,
+    theme(colors.accent.500),
+    theme(colors.lilac.500),
+    theme(colors.accent.500));
+  transform-origin: left center;
+  animation: ifnote-progress 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-progress-bar { animation: none; opacity: 0.7; }
+}
+
+/* AI typing indicator dots. */
+@keyframes ifnote-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40%           { opacity: 1;   transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="ifnote-dot"] { animation: none !important; opacity: 0.7; }
+}
+
 /* Furigana (real-data only — never used for placeholder text) */
+ruby {
+  ruby-position: over;
+}
+
 ruby rt {
   font-size: 0.6em;
   color: theme(colors.ink.400);
   font-weight: 400;
   letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0.85;
 }
 
 .dark ruby rt {
   color: theme(colors.ink.50);
-  opacity: 0.7;
+  opacity: 0.65;
 }

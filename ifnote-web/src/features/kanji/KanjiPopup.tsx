@@ -3,6 +3,7 @@
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { LoadingState } from "@/components/feedback/LoadingState";
+import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { useKanjiInfo } from "@/features/home/useKanjiInfo";
 
 interface Props {
@@ -48,12 +49,8 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
                 {data.kunyomi ? (
                   <Badge tone="lilac">訓 {data.kunyomi}</Badge>
                 ) : null}
-                <Badge tone={data.source === "fallback" ? "warn" : "neutral"}>
-                  {data.source === "ai"
-                    ? "AI"
-                    : data.source === "cache"
-                    ? "cache"
-                    : "fallback"}
+                <Badge tone="neutral">
+                  {data.source === "ai" ? "AI" : "cache"}
                 </Badge>
               </div>
             </div>
@@ -71,7 +68,9 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
               <ul className="space-y-1 text-sm">
                 {(data.wordsJson as KanjiWord[]).map((w, i) => (
                   <li key={i} className="flex justify-between gap-3">
-                    <span className="font-jp text-ink-700 dark:text-paper-50">{w.jp ?? "—"}</span>
+                    <span className="text-ink-700 dark:text-paper-50">
+                      <JapaneseText text={w.jp ?? "—"} inert />
+                    </span>
                     <span className="text-ink-400">{w.meaning ?? ""}</span>
                   </li>
                 ))}
@@ -81,7 +80,9 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
 
           {data.exampleJp ? (
             <div className="rounded-xl bg-paper-50/60 px-3 py-2 text-sm dark:bg-ink-900/30">
-              <p className="font-jp text-ink-700 dark:text-paper-50">{data.exampleJp}</p>
+              <p className="text-ink-700 dark:text-paper-50">
+                <JapaneseText text={data.exampleJp} inert />
+              </p>
               {data.exampleId ? (
                 <p className="mt-1 text-xs text-ink-400">{data.exampleId}</p>
               ) : null}

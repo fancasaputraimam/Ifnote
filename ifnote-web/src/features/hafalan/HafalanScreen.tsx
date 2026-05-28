@@ -2,47 +2,46 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 import { ModeCards } from "./components/ModeCards";
-import { SessionCard } from "./components/SessionCard";
 import { SlideNav } from "./components/SlideNav";
 import { SlideTable } from "./components/SlideTable";
 
-import { useHafalanSlide, useHafalanSlides, useShufflePreview } from "./useHafalan";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { useHafalanSlide, useHafalanSlides } from "./useHafalan";
 import { ROUTES } from "@/lib/constants";
 import type { HafalanMode, HafalanSlide } from "@/lib/types";
 
+/** Hanya dua mode yang user-facing di UI. */
+type UiHafalanMode = "kotoba" | "bunpou";
+
+function coerceMode(m: HafalanMode | undefined): UiHafalanMode {
+  return m === "bunpou" ? "bunpou" : "kotoba";
+}
+
 export function HafalanScreen() {
-  const [mode, setMode] = useState<HafalanMode>("mixed");
+  // Old state may still hold "mixed"/"weak" — coerce ke "kotoba".
+  const [mode, setMode] = useState<UiHafalanMode>("kotoba");
   const [slide, setSlide] = useState<number>(1);
   const [hideMeaning, setHideMeaning] = useState(false);
 
-  /**
-   * shuffleOverride holds a UI-only reshuffled view of the current slide.
-   * Cleared on mode/slide change OR when the user explicitly resets.
-   */
-  const [shuffleOverride, setShuffleOverride] = useState<HafalanSlide | null>(null);
-
-  // Reset to slide 1 + clear shuffle whenever mode changes
+  // Reset to slide 1 whenever mode changes
   useEffect(() => {
     setSlide(1);
-    setShuffleOverride(null);
   }, [mode]);
 
-  // Clear shuffle on slide change
-  useEffect(() => {
-    setShuffleOverride(null);
-  }, [slide]);
-
+  // Active slide data
   const slidesQ = useHafalanSlides(mode);
   const slideQ = useHafalanSlide(mode, slide);
-  const shuffleMut = useShufflePreview();
+
+  // Counts untuk badge mode card. Backend cheap (cuma menghitung order rows).
+  const kotobaSlidesQ = useHafalanSlides("kotoba");
+  const bunpouSlidesQ = useHafalanSlides("bunpou");
 
   // Clamp slide if backend says total < current (e.g. items removed elsewhere)
   useEffect(() => {
@@ -54,54 +53,50 @@ export function HafalanScreen() {
   const totalSlides = slidesQ.data?.totalSlides ?? 0;
   const totalItems = slidesQ.data?.totalItems ?? 0;
 
-  const view = useMemo<HafalanSlide | null>(() => {
-    if (shuffleOverride) return shuffleOverride;
-    return slideQ.data ?? null;
-  }, [shuffleOverride, slideQ.data]);
-
-  const onShuffle = async () => {
-    try {
-      const result = await shuffleMut.mutateAsync({ mode, slide });
-      setShuffleOverride(result);
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal mengacak";
-      toast(msg, "error");
-    }
-  };
-
-  const onResetShuffle = () => setShuffleOverride(null);
+  const view = useMemo<HafalanSlide | null>(() => slideQ.data ?? null, [slideQ.data]);
 
   const isInitialLoading = slidesQ.isLoading || slideQ.isLoading;
   const isError = slidesQ.isError || slideQ.isError;
 
+  const hasItems = !!view && view.items.length > 0;
+
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <div className="text-xs font-medium uppercase tracking-wide text-leaf-600 dark:text-leaf-500">
-          🧠 Memory Deck
-        </div>
-        <h1 className="text-2xl font-semibold text-ink-800 dark:text-paper-50 sm:text-3xl">
-          Hafalan
-        </h1>
-        <p className="text-sm text-ink-400">
-          Hafalkan kotoba dan bunpou dengan slide tetap.
-        </p>
-      </header>
-
-      <ModeCards mode={mode} onChange={setMode} />
-
-      <SessionCard
-        totalSlides={totalSlides}
-        totalItems={totalItems}
-        currentSlide={slide}
-        currentCount={view?.items.length ?? 0}
-        hideMeaning={hideMeaning}
-        shuffled={!!shuffleOverride}
-        shuffling={shuffleMut.isPending}
-        onToggleMeaning={() => setHideMeaning((v) => !v)}
-        onShuffle={onShuffle}
-        onResetShuffle={onResetShuffle}
+      <PageHeader
+        eyebrow="🧠 Memory Deck"
+        title="Hafalan"
+        subtitle="Hafalkan kotoba dan bunpou dengan slide tetap."
       />
+
+      <ModeCards
+        mode={mode}
+        onChange={(m) => setMode(coerceMode(m))}
+        kotobaCount={kotobaSlidesQ.data?.totalItems}
+        bunpouCount={bunpouSlidesQ.data?.totalItems}
+      />
+
+      {/* Compact toolbar — replaces old "Hafalan Hari Ini" SessionCard. */}
+      {hasItems ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800">
+          <span className="font-medium text-ink-800 dark:text-paper-50">
+            Slide {slide}
+            <span className="text-ink-400"> / {totalSlides}</span>
+          </span>
+          <span className="text-xs text-ink-400">
+            · {view?.items.length ?? 0} dari {totalItems} item
+          </span>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setHideMeaning((v) => !v)}
+            >
+              {hideMeaning ? "Tampilkan Arti" : "Sembunyikan Arti"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {isInitialLoading ? (
         <LoadingState label="Memuat slide…" />
@@ -115,20 +110,22 @@ export function HafalanScreen() {
             </p>
           </div>
         </NotebookCard>
-      ) : !view || view.items.length === 0 ? (
+      ) : !hasItems ? (
         <EmptyState
           icon="🗂"
-          title={mode === "weak" ? "Tidak ada item lemah" : "Belum ada item di Hafalan"}
-          description={
-            mode === "weak"
-              ? "Selamat — semua item di mode ini sudah di-mark hafal atau mid."
-              : "Tambah kotoba/bunpou di Catatan, otomatis masuk antrian Hafalan."
-          }
+          title="Belum ada item di Hafalan"
+          description="Tambah kotoba/bunpou di Catatan, otomatis masuk antrian Hafalan."
           action={
-            <div className="flex gap-2">
-              <LinkButton size="sm" href={ROUTES.app.catatan}>Buka Catatan</LinkButton>
-              <LinkButton size="sm" variant="secondary" href={ROUTES.app.ai}>
-                Tanya AI Tutor
+            <div className="flex flex-wrap gap-2">
+              <LinkButton size="sm" href={ROUTES.app.catatan}>
+                Buka Catatan
+              </LinkButton>
+              <LinkButton
+                size="sm"
+                variant="secondary"
+                href={`${ROUTES.app.catatan}?openAdd=ai-kotoba`}
+              >
+                ✨ Tambah dengan AI
               </LinkButton>
             </div>
           }
@@ -143,7 +140,7 @@ export function HafalanScreen() {
             onJump={(n) => setSlide(n)}
           />
 
-          <SlideTable items={view.items} hideMeaning={hideMeaning} />
+          <SlideTable items={view!.items} hideMeaning={hideMeaning} />
 
           <SlideNav
             current={slide}

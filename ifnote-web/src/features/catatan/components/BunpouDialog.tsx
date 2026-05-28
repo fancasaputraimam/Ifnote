@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,15 +9,18 @@ import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
 import { toast } from "@/components/feedback/Toast";
 import { ApiError } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import type { Bunpou, Mastery } from "@/lib/types";
 import {
   BunpouWritePayload,
   useCreateBunpou,
   useUpdateBunpou,
 } from "@/features/catatan/useCatatan";
+import { BunpouAiAnalyze } from "./BunpouAiAnalyze";
 
 const schema = z.object({
   pattern: z.string().trim().min(1, "Pola wajib").max(120),
+  reading: z.string().trim().max(120).optional().or(z.literal("")),
   meaning: z.string().trim().min(1, "Arti wajib").max(280),
   formula: z.string().trim().max(280).optional().or(z.literal("")),
   usage: z.string().trim().max(500).optional().or(z.literal("")),
@@ -26,6 +29,7 @@ const schema = z.object({
   beginnerExample: z.string().trim().max(500).optional().or(z.literal("")),
   normalExample: z.string().trim().max(500).optional().or(z.literal("")),
   furiganaExample: z.string().trim().max(500).optional().or(z.literal("")),
+  exampleReading: z.string().trim().max(500).optional().or(z.literal("")),
   exampleMeaning: z.string().trim().max(500).optional().or(z.literal("")),
   note: z.string().trim().max(500).optional().or(z.literal("")),
   commonMistake: z.string().trim().max(500).optional().or(z.literal("")),
@@ -33,16 +37,29 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type Tab = "manual" | "ai";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   initial?: Bunpou | null;
+  /** Existing patterns sudah disimpan, untuk AI dedup. */
+  existingPatterns?: string[];
+  initialTab?: Tab;
 }
 
-export function BunpouDialog({ open, onClose, initial }: Props) {
+export function BunpouDialog({
+  open,
+  onClose,
+  initial,
+  existingPatterns = [],
+  initialTab,
+}: Props) {
+  const isEdit = !!initial;
   const create = useCreateBunpou();
   const update = useUpdateBunpou();
+
+  const [tab, setTab] = useState<Tab>(initialTab ?? "manual");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -50,8 +67,11 @@ export function BunpouDialog({ open, onClose, initial }: Props) {
   });
 
   useEffect(() => {
-    if (open) form.reset(initial ? toForm(initial) : emptyForm());
-  }, [open, initial, form]);
+    if (open) {
+      form.reset(initial ? toForm(initial) : emptyForm());
+      setTab(isEdit ? "manual" : initialTab ?? "manual");
+    }
+  }, [open, initial, isEdit, initialTab, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const payload = toPayload(values);
@@ -72,62 +92,202 @@ export function BunpouDialog({ open, onClose, initial }: Props) {
 
   const submitting = create.isPending || update.isPending;
 
+  const onAiApply = (payload: BunpouWritePayload) => {
+    form.reset({
+      pattern: payload.pattern,
+      reading: payload.reading ?? "",
+      meaning: payload.meaning,
+      formula: payload.formula ?? "",
+      usage: payload.usage ?? "",
+      level: (payload.level ?? "") as FormValues["level"],
+      tags: (payload.tags ?? []).join(", "),
+      beginnerExample: payload.beginnerExample ?? "",
+      normalExample: payload.normalExample ?? "",
+      furiganaExample: payload.furiganaExample ?? "",
+      exampleReading: payload.exampleReading ?? "",
+      exampleMeaning: payload.exampleMeaning ?? "",
+      note: payload.note ?? "",
+      commonMistake: payload.commonMistake ?? "",
+      mastery: payload.mastery ?? "mid",
+    });
+    setTab("manual");
+    toast("Pratinjau AI dimuat ke form. Periksa lalu simpan.", "info");
+  };
+
   return (
-    <Modal open={open} onClose={onClose} title={initial ? "Edit Bunpou" : "Tambah Bunpou"}>
-      <form className="space-y-3" onSubmit={onSubmit} noValidate>
-        <TextInput label="Pola" autoFocus {...form.register("pattern")} error={form.formState.errors.pattern?.message} placeholder="〜ながら" />
-        <TextInput label="Arti" {...form.register("meaning")} error={form.formState.errors.meaning?.message} placeholder="sambil" />
-        <TextInput label="Formula" {...form.register("formula")} placeholder="Vます tanpa ます + ながら" />
-        <TextInput label="Kapan dipakai" {...form.register("usage")} placeholder="Dua aktivitas dilakukan bersamaan." />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={initial ? "Edit Bunpou" : "Tambah Bunpou"}
+    >
+      {!isEdit ? (
+        <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-paper-50 p-0.5 text-xs dark:border-ink-700 dark:bg-ink-900/40">
+          <TabBtn active={tab === "manual"} onClick={() => setTab("manual")}>
+            Manual
+          </TabBtn>
+          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")}>
+            ✨ AI Analyze
+          </TabBtn>
+        </div>
+      ) : null}
+
+      {tab === "manual" || isEdit ? (
+        <form className="space-y-3" onSubmit={onSubmit} noValidate>
+          <TextInput
+            label="Pola"
+            autoFocus
+            {...form.register("pattern")}
+            error={form.formState.errors.pattern?.message}
+            placeholder="〜ながら"
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Pembacaan pola (kana)"
+              {...form.register("reading")}
+              placeholder="opsional"
+            />
+            <TextInput
+              label="Arti"
+              {...form.register("meaning")}
+              error={form.formState.errors.meaning?.message}
+              placeholder="sambil"
+            />
+          </div>
+          <TextInput
+            label="Formula"
+            {...form.register("formula")}
+            placeholder="Vます tanpa ます + ながら"
+          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+              Kapan dipakai
+            </label>
+            <textarea
+              {...form.register("usage")}
+              rows={3}
+              placeholder="Dua aktivitas dilakukan bersamaan."
+              className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+                Level JLPT
+              </span>
+              <select
+                {...form.register("level")}
+                className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+              >
+                <option value="">— Tidak ditentukan —</option>
+                <option value="N5">N5</option>
+                <option value="N4">N4</option>
+                <option value="N3">N3</option>
+                <option value="N2">N2</option>
+                <option value="N1">N1</option>
+              </select>
+            </label>
+            <TextInput
+              label="Tags"
+              {...form.register("tags")}
+              placeholder="grammar, partikel"
+              hint="Pisahkan dengan koma"
+            />
+          </div>
+          <TextInput
+            label="Contoh (beginner)"
+            {...form.register("beginnerExample")}
+          />
+          <TextInput
+            label="Contoh (normal)"
+            {...form.register("normalExample")}
+          />
+          <TextInput
+            label="Contoh (furigana)"
+            {...form.register("furiganaExample")}
+          />
+          <TextInput
+            label="Pembacaan contoh (hiragana)"
+            {...form.register("exampleReading")}
+          />
+          <TextInput label="Arti contoh" {...form.register("exampleMeaning")} />
+          <TextInput label="Catatan" {...form.register("note")} />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+              Kesalahan umum
+            </label>
+            <textarea
+              {...form.register("commonMistake")}
+              rows={3}
+              placeholder="Pisahkan poin dengan baris baru atau angka 1. 2. 3. supaya rapi"
+              className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+            />
+          </div>
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">Level JLPT</span>
+            <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+              Mastery
+            </span>
             <select
-              {...form.register("level")}
-              className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:bg-ink-800 dark:border-ink-700 dark:text-paper-50"
+              {...form.register("mastery")}
+              className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
             >
-              <option value="">— Tidak ditentukan —</option>
-              <option value="N5">N5</option>
-              <option value="N4">N4</option>
-              <option value="N3">N3</option>
-              <option value="N2">N2</option>
-              <option value="N1">N1</option>
+              <option value="good">good</option>
+              <option value="mid">mid</option>
+              <option value="weak">weak</option>
             </select>
           </label>
-          <TextInput label="Tags" {...form.register("tags")} placeholder="grammar, partikel" hint="Pisahkan dengan koma" />
-        </div>
-        <TextInput label="Contoh (beginner)" {...form.register("beginnerExample")} />
-        <TextInput label="Contoh (normal)" {...form.register("normalExample")} />
-        <TextInput label="Contoh (furigana)" {...form.register("furiganaExample")} />
-        <TextInput label="Arti contoh" {...form.register("exampleMeaning")} />
-        <TextInput label="Catatan" {...form.register("note")} />
-        <TextInput label="Kesalahan umum" {...form.register("commonMistake")} />
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">Mastery</span>
-          <select
-            {...form.register("mastery")}
-            className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:bg-ink-800 dark:border-ink-700 dark:text-paper-50"
-          >
-            <option value="good">good</option>
-            <option value="mid">mid</option>
-            <option value="weak">weak</option>
-          </select>
-        </label>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Batal</Button>
-          <Button type="submit" loading={submitting}>
-            {initial ? "Simpan" : "Tambah"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" loading={submitting}>
+              {initial ? "Simpan" : "Tambah"}
+            </Button>
+          </div>
+        </form>
+      ) : null}
+
+      {!isEdit && tab === "ai" ? (
+        <BunpouAiAnalyze
+          onApply={onAiApply}
+          onCancel={onClose}
+          existingPatterns={existingPatterns}
+        />
+      ) : null}
     </Modal>
+  );
+}
+
+function TabBtn({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-full px-3 py-1.5 font-medium transition-colors",
+        active
+          ? "bg-accent-500 text-white"
+          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
 function emptyForm(): FormValues {
   return {
     pattern: "",
+    reading: "",
     meaning: "",
     formula: "",
     usage: "",
@@ -136,6 +296,7 @@ function emptyForm(): FormValues {
     beginnerExample: "",
     normalExample: "",
     furiganaExample: "",
+    exampleReading: "",
     exampleMeaning: "",
     note: "",
     commonMistake: "",
@@ -146,6 +307,7 @@ function emptyForm(): FormValues {
 function toForm(b: Bunpou): FormValues {
   return {
     pattern: b.pattern,
+    reading: b.reading ?? "",
     meaning: b.meaning,
     formula: b.formula ?? "",
     usage: b.usage ?? "",
@@ -154,6 +316,7 @@ function toForm(b: Bunpou): FormValues {
     beginnerExample: b.beginnerExample ?? "",
     normalExample: b.normalExample ?? "",
     furiganaExample: b.furiganaExample ?? "",
+    exampleReading: b.exampleReading ?? "",
     exampleMeaning: b.exampleMeaning ?? "",
     note: b.note ?? "",
     commonMistake: b.commonMistake ?? "",
@@ -168,6 +331,7 @@ function toPayload(v: FormValues): BunpouWritePayload {
     .filter(Boolean);
   return {
     pattern: v.pattern.trim(),
+    reading: v.reading?.trim() || undefined,
     meaning: v.meaning.trim(),
     formula: v.formula?.trim() || undefined,
     usage: v.usage?.trim() || undefined,
@@ -176,6 +340,7 @@ function toPayload(v: FormValues): BunpouWritePayload {
     beginnerExample: v.beginnerExample?.trim() || undefined,
     normalExample: v.normalExample?.trim() || undefined,
     furiganaExample: v.furiganaExample?.trim() || undefined,
+    exampleReading: v.exampleReading?.trim() || undefined,
     exampleMeaning: v.exampleMeaning?.trim() || undefined,
     note: v.note?.trim() || undefined,
     commonMistake: v.commonMistake?.trim() || undefined,

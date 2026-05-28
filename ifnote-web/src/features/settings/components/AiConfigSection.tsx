@@ -20,20 +20,29 @@ export function AiConfigSection() {
   const [modelId, setModelId] = useState("");
   const [requestFormat, setRequestFormat] = useState<AiRequestFormat>("openai");
   const [useReal, setUseReal] = useState(false);
-  const [testStatus, setTestStatus] = useState<"idle" | "ok" | "fallback" | "error">("idle");
+  const [apiKeyDraft, setApiKeyDraft] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "ok" | "error">("idle");
   const [testMsg, setTestMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
 
+  // Hydrate non-secret fields from server. We never get the raw key back —
+  // only `hasAiApiKey` and `aiApiKeyHint` for display. Discriminator narrow:
+  // hanya owner yang punya field-field AI di payload.
   useEffect(() => {
-    if (!settingsQ.data) return;
-    setProvider(settingsQ.data.aiProvider ?? "");
-    setBaseUrl(settingsQ.data.aiBaseUrl ?? "");
-    setModelId(settingsQ.data.aiModelId ?? "");
-    setRequestFormat(settingsQ.data.aiRequestFormat);
-    setUseReal(settingsQ.data.useRealAi);
+    const data = settingsQ.data;
+    if (!data || !data.canManageAi) return;
+    setProvider(data.aiProvider ?? "");
+    setBaseUrl(data.aiBaseUrl ?? "");
+    setModelId(data.aiModelId ?? "");
+    setRequestFormat(data.aiRequestFormat);
+    setUseReal(data.useRealAi);
   }, [settingsQ.data]);
 
   const onSave = async () => {
+    // Send apiKey only when user has typed something new. Keep it as
+    // `undefined` (omit) so server keeps existing key.
+    const apiKey = apiKeyDraft.trim().length > 0 ? apiKeyDraft.trim() : undefined;
     try {
       await update.mutateAsync({
         aiProvider: provider.trim() || null,
@@ -41,7 +50,11 @@ export function AiConfigSection() {
         aiModelId: modelId.trim() || null,
         aiRequestFormat: requestFormat,
         useRealAi: useReal,
+        aiApiKey: apiKey,
       });
+      // Wipe the draft after save so it doesn't linger in DOM/devtools.
+      setApiKeyDraft("");
+      setShowKey(false);
       toast("Konfigurasi AI disimpan", "success");
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
@@ -49,12 +62,26 @@ export function AiConfigSection() {
     }
   };
 
-  const onClear = async () => {
+  const onClearKey = async () => {
+    try {
+      await update.mutateAsync({ aiApiKey: null });
+      setApiKeyDraft("");
+      setShowKey(false);
+      toast("API key dihapus dari server", "success");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Gagal menghapus API key";
+      toast(msg, "error");
+    }
+  };
+
+  const onClearAll = async () => {
     setProvider("");
     setBaseUrl("");
     setModelId("");
     setRequestFormat("openai");
     setUseReal(false);
+    setApiKeyDraft("");
+    setShowKey(false);
     try {
       await update.mutateAsync({
         aiProvider: null,
@@ -62,6 +89,7 @@ export function AiConfigSection() {
         aiModelId: null,
         aiRequestFormat: "openai",
         useRealAi: false,
+        aiApiKey: null,
       });
       toast("Konfigurasi AI dibersihkan", "success");
     } catch (e) {
@@ -75,19 +103,15 @@ export function AiConfigSection() {
     setTestStatus("idle");
     setTestMsg(null);
     try {
-      // Lightweight ping: explain a known kotoba (food). Backend handles auth +
-      // mock fallback. Frontend never hits the AI provider directly.
-      const r = await api.post<{ source: "ai" | "mock"; data: unknown }>(
+      const r = await api.post<{ source: "ai"; data: unknown }>(
         "/api/ai/explain-kotoba",
         { jp: "食べます" },
       );
-      if (r.source === "ai") {
-        setTestStatus("ok");
-        setTestMsg("AI aktif dan merespon.");
-      } else {
-        setTestStatus("fallback");
-        setTestMsg("AI belum di-konfigurasi di backend (mock fallback).");
-      }
+      // Backend selalu balikin source="ai" kalau berhasil; kalau tidak siap
+      // dia lempar 503 (di-handle di catch).
+      void r;
+      setTestStatus("ok");
+      setTestMsg("AI aktif dan merespon.");
     } catch (e) {
       setTestStatus("error");
       setTestMsg(e instanceof ApiError ? e.message : "Gagal melakukan tes");
@@ -96,15 +120,22 @@ export function AiConfigSection() {
     }
   };
 
+  // SettingsScreen sudah meng-swap card ini ke versi "AI managed by admin"
+  // untuk non-owner. Sebagai pengaman extra (cache races, devtools tweak),
+  // narrow lewat discriminator dan jangan akses field owner-only kalau bukan.
+  const ownerData = settingsQ.data?.canManageAi ? settingsQ.data : null;
+  const hasSavedKey = !!ownerData?.hasAiApiKey;
+  const savedKeyHint = ownerData?.aiApiKeyHint ?? null;
+
   return (
-    <NotebookCard className="p-5">
-      <div className="flex items-center justify-between gap-2">
+    <NotebookCard className="p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
             Konfigurasi AI
           </h2>
           <p className="mt-1 text-xs text-ink-400">
-            Preferensi provider AI. API key tetap disimpan di server, tidak di sini.
+            API key dienkripsi server (AES-256-GCM). Tidak pernah dikirim balik dalam keadaan plain.
           </p>
         </div>
       </div>
@@ -122,6 +153,65 @@ export function AiConfigSection() {
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.currentTarget.value)}
         />
+
+        {/* API Key field (PRD PART 4) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-ink-700 dark:text-paper-50">
+              API Key
+            </span>
+            {hasSavedKey && savedKeyHint ? (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-leaf-500/15 px-2.5 py-0.5 text-[11px] font-medium text-leaf-600 dark:text-leaf-500"
+                aria-live="polite"
+              >
+                Tersimpan: <code className="font-mono">{savedKeyHint}</code>
+              </span>
+            ) : null}
+          </div>
+          <div className="relative">
+            <input
+              type={showKey ? "text" : "password"}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder={hasSavedKey ? "Ketik untuk mengganti API key" : "Masukkan API key kamu"}
+              value={apiKeyDraft}
+              onChange={(e) => setApiKeyDraft(e.currentTarget.value)}
+              className={cn(
+                "block w-full rounded-xl border bg-white px-3 py-2 pr-20 text-sm text-ink-800 transition-colors",
+                "placeholder:text-ink-400 border-paper-200",
+                "focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400",
+                "dark:bg-ink-800 dark:text-paper-50 dark:border-ink-700",
+                "font-mono",
+              )}
+              aria-label="API key"
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey((v) => !v)}
+              aria-pressed={showKey}
+              className="absolute right-2 top-1/2 grid h-7 -translate-y-1/2 place-items-center rounded-full px-2.5 text-xs font-medium text-ink-400 transition-colors hover:bg-paper-100 hover:text-ink-700 dark:hover:bg-ink-700 dark:hover:text-paper-50"
+            >
+              {showKey ? "Hide" : "Show"}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
+            <span>API key dienkripsi sebelum disimpan dan tidak ikut dibawa di response API.</span>
+            {hasSavedKey ? (
+              <button
+                type="button"
+                onClick={onClearKey}
+                className="text-rose-600 underline-offset-4 hover:underline dark:text-rose-400"
+              >
+                Hapus API key tersimpan
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         <TextInput
           label="Model ID"
           placeholder="gpt-4o-mini"
@@ -161,7 +251,8 @@ export function AiConfigSection() {
           <span className="text-sm text-ink-700 dark:text-paper-50">
             Gunakan AI asli (kalau dikonfigurasi di backend).
             <span className="ml-1 text-xs text-ink-400">
-              Kalau OFF, response selalu pakai mock fallback yang jujur.
+              Kalau OFF, semua endpoint AI akan menolak dengan pesan
+              “AI belum diatur” — tidak ada lagi mock fallback.
             </span>
           </span>
         </label>
@@ -170,15 +261,13 @@ export function AiConfigSection() {
       <div className="mt-4 flex flex-wrap gap-2">
         <Button onClick={onSave} loading={update.isPending}>Save AI Settings</Button>
         <Button variant="secondary" onClick={onTest} loading={testing}>Test Connection</Button>
-        <Button variant="ghost" onClick={onClear}>Clear AI Settings</Button>
+        <Button variant="ghost" onClick={onClearAll}>Clear AI Settings</Button>
       </div>
 
       {testStatus !== "idle" ? (
         <div className="mt-3 flex items-start gap-2 text-sm">
           {testStatus === "ok" ? (
             <Badge tone="leaf">AI aktif</Badge>
-          ) : testStatus === "fallback" ? (
-            <Badge tone="warn">Mock fallback</Badge>
           ) : (
             <Badge tone="danger">Error</Badge>
           )}
@@ -187,9 +276,11 @@ export function AiConfigSection() {
       ) : null}
 
       <p className="mt-3 text-xs text-ink-400">
-        Catatan keamanan: API key utama tidak disimpan di front-end maupun di
-        Settings DB. Server (Heroku Config Vars) yang menyimpan{" "}
-        <code className="rounded bg-paper-100 px-1 py-0.5 text-[11px] dark:bg-ink-700">AI_API_KEY</code>.
+        Catatan keamanan: API key user dienkripsi server (AES-256-GCM, key derived dari{" "}
+        <code className="rounded bg-paper-100 px-1 py-0.5 text-[11px] dark:bg-ink-700">JWT_SECRET</code>).
+        Server-side fallback{" "}
+        <code className="rounded bg-paper-100 px-1 py-0.5 text-[11px] dark:bg-ink-700">AI_API_KEY</code>{" "}
+        di Heroku Config Vars tetap dipakai kalau user belum mengisi sendiri.
       </p>
     </NotebookCard>
   );

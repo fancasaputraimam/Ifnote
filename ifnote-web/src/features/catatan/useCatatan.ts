@@ -57,6 +57,7 @@ export function useCatatanList(params: CatatanQuery) {
 
 export interface KotobaWritePayload {
   jp: string;
+  reading?: string;
   romaji?: string;
   meaning: string;
   type?: string;
@@ -65,12 +66,14 @@ export interface KotobaWritePayload {
   beginnerExample?: string;
   normalExample?: string;
   furiganaExample?: string;
+  exampleReading?: string;
   exampleMeaning?: string;
   mastery?: Mastery;
 }
 
 export interface BunpouWritePayload {
   pattern: string;
+  reading?: string;
   meaning: string;
   formula?: string;
   usage?: string;
@@ -79,6 +82,7 @@ export interface BunpouWritePayload {
   beginnerExample?: string;
   normalExample?: string;
   furiganaExample?: string;
+  exampleReading?: string;
   exampleMeaning?: string;
   note?: string;
   commonMistake?: string;
@@ -90,8 +94,16 @@ export interface BunpouWritePayload {
 function useInvalidateCatatan() {
   const qc = useQueryClient();
   return () => {
+    // Catatan + Home/Dashboard + Hafalan (new items append to order) +
+    // Quiz (new items can be drawn into questions). Required by
+    // task-spec PART 10 — data sync after AI save.
     qc.invalidateQueries({ queryKey: [CATATAN_KEY] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
+    qc.invalidateQueries({ queryKey: ["home"] });
+    qc.invalidateQueries({ queryKey: ["hafalan"] });
+    qc.invalidateQueries({ queryKey: ["kotoba"] });
+    qc.invalidateQueries({ queryKey: ["bunpou"] });
+    qc.invalidateQueries({ queryKey: ["quiz"] });
   };
 }
 
@@ -149,6 +161,43 @@ export function useDeleteBunpou() {
   });
 }
 
+// ---- AI explain (cached) ------------------------------------------
+
+export interface AiExplainResult<T> {
+  /** True kalau backend benar-benar memanggil AI dan menyimpan field baru.
+   * False artinya item sudah punya penjelasan — tidak ada token yang dipakai. */
+  generated: boolean;
+  item: T;
+}
+
+/**
+ * Hook combined endpoint `/api/kotoba/:id/ai-explain`.
+ * Server akan skip AI call kalau item sudah punya penjelasan.
+ */
+export function useAiExplainKotoba() {
+  const invalidate = useInvalidateCatatan();
+  return useMutation<AiExplainResult<Kotoba>, Error, string>({
+    mutationFn: (id) =>
+      api.post<AiExplainResult<Kotoba>>(`/api/kotoba/${id}/ai-explain`, {}),
+    onSuccess: (r) => {
+      // Invalidate hanya kalau ada perubahan supaya cache tidak ke-flush
+      // sia-sia.
+      if (r.generated) invalidate();
+    },
+  });
+}
+
+export function useAiExplainBunpou() {
+  const invalidate = useInvalidateCatatan();
+  return useMutation<AiExplainResult<Bunpou>, Error, string>({
+    mutationFn: (id) =>
+      api.post<AiExplainResult<Bunpou>>(`/api/bunpou/${id}/ai-explain`, {}),
+    onSuccess: (r) => {
+      if (r.generated) invalidate();
+    },
+  });
+}
+
 // ---- hafalan add ---------------------------------------------------
 
 export function useAddToHafalan() {
@@ -157,8 +206,11 @@ export function useAddToHafalan() {
     mutationFn: (body: { itemType: "kotoba" | "bunpou"; itemId: string }) =>
       api.post<{ ok: boolean }>("/api/hafalan/add", body),
     onSuccess: () => {
+      // Hafalan order changed; affects Hafalan + dashboard counts +
+      // catatan list (review counts).
       qc.invalidateQueries({ queryKey: ["hafalan"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: [CATATAN_KEY] });
     },
   });
 }

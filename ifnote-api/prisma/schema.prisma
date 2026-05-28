@@ -24,6 +24,8 @@ model User {
   passwordHash String
   name         String?
   avatarUrl    String?
+  /// "owner" | "user". Owner punya akses ke AI configuration.
+  role         String   @default("user")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -63,6 +65,7 @@ model Kotoba {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @db.Uuid
   jp              String
+  reading         String?
   romaji          String?
   meaning         String
   type            String?
@@ -71,6 +74,7 @@ model Kotoba {
   beginnerExample String?
   normalExample   String?
   furiganaExample String?
+  exampleReading  String?
   exampleMeaning  String?
   mastery         String   @default("mid") // good | mid | weak
   createdAt       DateTime @default(now())
@@ -89,6 +93,7 @@ model Bunpou {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @db.Uuid
   pattern         String
+  reading         String?
   meaning         String
   formula         String?
   usage           String?
@@ -97,6 +102,7 @@ model Bunpou {
   beginnerExample String?
   normalExample   String?
   furiganaExample String?
+  exampleReading  String?
   exampleMeaning  String?
   note            String?
   commonMistake   String?
@@ -214,7 +220,11 @@ model UserSettings {
   aiModelId       String?
   aiRequestFormat String   @default("openai") // openai | azure | custom
   useRealAi       Boolean  @default(false)
-  // aiApiKeyEnc  Bytes?   // TODO if per-user keys ever stored, use server-side encryption
+  // Encrypted per-user AI API key. AES-256-GCM, key derived from JWT_SECRET.
+  // Format: base64(iv|tag|ciphertext). Never returned raw via API.
+  aiApiKeyEnc     String?
+  // Last 4 chars of the original key for display (e.g. show "sk-••••1234").
+  aiApiKeyHint    String?  @db.VarChar(8)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

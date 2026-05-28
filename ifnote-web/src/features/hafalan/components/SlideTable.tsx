@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api-client";
 import { toast } from "@/components/feedback/Toast";
-import { ClickableKanji } from "@/features/kanji/ClickableKanji";
+import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { useHafalanMastery } from "@/features/hafalan/useHafalan";
-import { ROUTES } from "@/lib/constants";
+import {
+  useAiExplainBunpou,
+  useAiExplainKotoba,
+} from "@/features/catatan/useCatatan";
 import { cn } from "@/lib/utils";
 import type { HafalanSlide, Mastery } from "@/lib/types";
-import Link from "next/link";
 
 type Item = HafalanSlide["items"][number];
 
@@ -38,11 +40,7 @@ export function SlideTable({ items, hideMeaning }: Props) {
 
       <ul className="divide-y divide-paper-200 dark:divide-ink-700">
         {items.map((it) => (
-          <SlideRow
-            key={it.orderRefId}
-            item={it}
-            hideMeaning={hideMeaning}
-          />
+          <SlideRow key={it.orderRefId} item={it} hideMeaning={hideMeaning} />
         ))}
       </ul>
     </div>
@@ -57,6 +55,16 @@ interface RowProps {
 function SlideRow({ item, hideMeaning }: RowProps) {
   const [open, setOpen] = useState(false);
   const masteryMut = useHafalanMastery();
+  const aiKotoba = useAiExplainKotoba();
+  const aiBunpou = useAiExplainBunpou();
+
+  // Hafalan list cuma punya `example` — pakai itu sebagai proxy untuk
+  // "sudah ada penjelasan". Setelah AI explain sukses, backend akan
+  // mengisi beginnerExample/normalExample, dan list akan refetch karena
+  // mutation hook kita meng-invalidate ["hafalan"].
+  const explained = !!item.example;
+  const aiPending =
+    item.itemType === "kotoba" ? aiKotoba.isPending : aiBunpou.isPending;
 
   const onMastery = async (mastery: Mastery) => {
     try {
@@ -66,11 +74,32 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         mastery,
       });
       toast(
-        mastery === "good" ? "Ditandai hafal" : mastery === "weak" ? "Ditandai lemah" : "Mastery diperbarui",
+        mastery === "good"
+          ? "Ditandai hafal"
+          : mastery === "weak"
+          ? "Ditandai lemah"
+          : "Mastery diperbarui",
         "success",
       );
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal memperbarui mastery";
+      toast(msg, "error");
+    }
+  };
+
+  const onExplain = async () => {
+    try {
+      if (item.itemType === "kotoba") {
+        await aiKotoba.mutateAsync(item.itemId);
+      } else {
+        await aiBunpou.mutateAsync(item.itemId);
+      }
+      // Sync di-handle oleh hook (invalidate ["hafalan", "catatan", …]).
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : "AI gagal membuat penjelasan. Coba lagi.";
       toast(msg, "error");
     }
   };
@@ -88,8 +117,8 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         </div>
 
         <div className="min-w-0">
-          <p className="truncate font-jp text-base text-ink-800 dark:text-paper-50">
-            {item.jpOrPattern}
+          <p className="truncate text-base text-ink-800 dark:text-paper-50">
+            <JapaneseText text={item.jpOrPattern} inert />
           </p>
         </div>
 
@@ -115,12 +144,28 @@ function SlideRow({ item, hideMeaning }: RowProps) {
 
       {open ? (
         <div className="border-t border-paper-200 px-4 py-3 dark:border-ink-700">
-          {item.example ? (
-            <p className="rounded-xl bg-paper-50/60 px-3 py-2 font-jp text-sm text-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
-              <ClickableKanji text={item.example} />
+          {explained ? (
+            <p className="rounded-xl bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
+              <JapaneseText text={item.example ?? ""} />
             </p>
+          ) : aiPending ? (
+            <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:border-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
+              <span
+                aria-hidden
+                className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent-400 border-t-transparent align-middle"
+              />
+              AI sedang membuat penjelasan…
+            </div>
           ) : (
-            <p className="text-sm italic text-ink-400">Belum ada contoh kalimat untuk item ini.</p>
+            <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-900/30">
+              <div className="font-medium text-ink-800 dark:text-paper-50">
+                Penjelasan belum ada
+              </div>
+              <p className="mt-1 text-xs text-ink-400">
+                AI bisa membuat penjelasan sekali, lalu disimpan untuk pemakaian
+                berikutnya.
+              </p>
+            </div>
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -138,18 +183,16 @@ function SlideRow({ item, hideMeaning }: RowProps) {
             >
               Tandai Lemah
             </Button>
-            <Link
-              href={`${ROUTES.app.quiz}?type=${item.itemType}`}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-paper-200 px-3 py-1.5 text-sm font-medium text-ink-800 hover:bg-paper-200/70 dark:bg-ink-700 dark:text-paper-50 dark:hover:bg-ink-600"
-            >
-              Buat Quiz
-            </Link>
-            <Link
-              href={`${ROUTES.app.ai}?mode=${item.itemType === "kotoba" ? "explain-kotoba" : "explain-bunpou"}&q=${encodeURIComponent(item.jpOrPattern)}`}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-paper-200 px-3 py-1.5 text-sm font-medium text-ink-800 hover:bg-paper-200/70 dark:bg-ink-700 dark:text-paper-50 dark:hover:bg-ink-600"
-            >
-              AI Jelaskan
-            </Link>
+            {!explained ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={aiPending}
+                onClick={onExplain}
+              >
+                ✨ AI Jelaskan
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : null}

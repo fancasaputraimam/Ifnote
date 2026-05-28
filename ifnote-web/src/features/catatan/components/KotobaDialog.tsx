@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,15 +9,19 @@ import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
 import { toast } from "@/components/feedback/Toast";
 import { ApiError } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import type { Kotoba, Mastery } from "@/lib/types";
 import {
   KotobaWritePayload,
   useCreateKotoba,
   useUpdateKotoba,
 } from "@/features/catatan/useCatatan";
+import { KotobaAiAnalyze } from "./KotobaAiAnalyze";
+import { KotobaBulkAi } from "./KotobaBulkAi";
 
 const schema = z.object({
   jp: z.string().trim().min(1, "Tulisan Jepang wajib").max(120),
+  reading: z.string().trim().max(120).optional().or(z.literal("")),
   romaji: z.string().trim().max(120).optional().or(z.literal("")),
   meaning: z.string().trim().min(1, "Arti wajib").max(280),
   type: z.string().trim().max(80).optional().or(z.literal("")),
@@ -26,21 +30,38 @@ const schema = z.object({
   beginnerExample: z.string().trim().max(500).optional().or(z.literal("")),
   normalExample: z.string().trim().max(500).optional().or(z.literal("")),
   furiganaExample: z.string().trim().max(500).optional().or(z.literal("")),
+  exampleReading: z.string().trim().max(500).optional().or(z.literal("")),
   exampleMeaning: z.string().trim().max(500).optional().or(z.literal("")),
   mastery: z.enum(["good", "mid", "weak"]),
 });
 
 type FormValues = z.infer<typeof schema>;
 
+type Tab = "manual" | "ai" | "bulk";
+
 interface Props {
   open: boolean;
   onClose: () => void;
   initial?: Kotoba | null;
+  /** All kotoba JP strings already saved — for AI duplicate detection. */
+  existingJp?: string[];
+  /** Tab to open by default. Useful for "Tambah dengan AI" CTAs. */
+  initialTab?: Tab;
 }
 
-export function KotobaDialog({ open, onClose, initial }: Props) {
+export function KotobaDialog({
+  open,
+  onClose,
+  initial,
+  existingJp = [],
+  initialTab,
+}: Props) {
+  const isEdit = !!initial;
   const create = useCreateKotoba();
   const update = useUpdateKotoba();
+
+  // Tabs only meaningful when adding new — when editing existing, force manual.
+  const [tab, setTab] = useState<Tab>(initialTab ?? "manual");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -48,8 +69,11 @@ export function KotobaDialog({ open, onClose, initial }: Props) {
   });
 
   useEffect(() => {
-    if (open) form.reset(initial ? toForm(initial) : emptyForm());
-  }, [open, initial, form]);
+    if (open) {
+      form.reset(initial ? toForm(initial) : emptyForm());
+      setTab(isEdit ? "manual" : initialTab ?? "manual");
+    }
+  }, [open, initial, isEdit, initialTab, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const payload = toPayload(values);
@@ -70,83 +94,220 @@ export function KotobaDialog({ open, onClose, initial }: Props) {
 
   const submitting = create.isPending || update.isPending;
 
+  /** AI flow → fill manual form with AI data, switch to manual tab so user
+   *  can review + tweak before final Simpan. */
+  const onAiApply = (payload: KotobaWritePayload) => {
+    form.reset({
+      jp: payload.jp ?? "",
+      reading: payload.reading ?? "",
+      romaji: payload.romaji ?? "",
+      meaning: payload.meaning ?? "",
+      type: payload.type ?? "",
+      level: (payload.level ?? "") as FormValues["level"],
+      tags: (payload.tags ?? []).join(", "),
+      beginnerExample: payload.beginnerExample ?? "",
+      normalExample: payload.normalExample ?? "",
+      furiganaExample: payload.furiganaExample ?? "",
+      exampleReading: payload.exampleReading ?? "",
+      exampleMeaning: payload.exampleMeaning ?? "",
+      mastery: payload.mastery ?? "mid",
+    });
+    setTab("manual");
+    toast("Pratinjau AI dimuat ke form. Periksa lalu simpan.", "info");
+  };
+
+  /** Bulk flow → save all selected items here, then close modal. */
+  const onBulkSaveAll = async (payloads: KotobaWritePayload[]) => {
+    if (payloads.length === 0) return;
+    try {
+      // Sequential to keep hafalan_order deterministic.
+      for (const p of payloads) {
+        await create.mutateAsync(p);
+      }
+      toast(`${payloads.length} kotoba berhasil disimpan`, "success");
+      onClose();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
+      toast(msg, "error");
+    }
+  };
+
   return (
-    <Modal open={open} onClose={onClose} title={initial ? "Edit Kotoba" : "Tambah Kotoba"}>
-      <form className="space-y-3" onSubmit={onSubmit} noValidate>
-        <TextInput label="Tulisan Jepang" autoFocus {...form.register("jp")} error={form.formState.errors.jp?.message} placeholder="例: 食べます" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TextInput label="Romaji" {...form.register("romaji")} error={form.formState.errors.romaji?.message} placeholder="tabemasu" />
-          <TextInput label="Arti" {...form.register("meaning")} error={form.formState.errors.meaning?.message} placeholder="makan" />
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={initial ? "Edit Kotoba" : "Tambah Kotoba"}
+    >
+      {!isEdit ? (
+        <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-paper-50 p-0.5 text-xs dark:border-ink-700 dark:bg-ink-900/40">
+          <TabBtn active={tab === "manual"} onClick={() => setTab("manual")}>
+            Manual
+          </TabBtn>
+          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")}>
+            ✨ AI Analyze
+          </TabBtn>
+          <TabBtn active={tab === "bulk"} onClick={() => setTab("bulk")}>
+            ✨ Bulk AI
+          </TabBtn>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TextInput label="Jenis Kata" {...form.register("type")} placeholder="kata kerja / sifat-i / dst." />
+      ) : null}
+
+      {tab === "manual" || isEdit ? (
+        <form className="space-y-3" onSubmit={onSubmit} noValidate>
+          <TextInput
+            label="Tulisan Jepang"
+            autoFocus
+            {...form.register("jp")}
+            error={form.formState.errors.jp?.message}
+            placeholder="例: 食べます"
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Romaji"
+              {...form.register("romaji")}
+              error={form.formState.errors.romaji?.message}
+              placeholder="tabemasu"
+            />
+            <TextInput
+              label="Pembacaan (kana)"
+              {...form.register("reading")}
+              placeholder="たべます"
+            />
+          </div>
+          <TextInput
+            label="Arti"
+            {...form.register("meaning")}
+            error={form.formState.errors.meaning?.message}
+            placeholder="makan"
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Jenis Kata"
+              {...form.register("type")}
+              placeholder="kata kerja / sifat-i / dst."
+            />
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+                Level JLPT
+              </span>
+              <select
+                {...form.register("level")}
+                className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+              >
+                <option value="">— Tidak ditentukan —</option>
+                <option value="N5">N5</option>
+                <option value="N4">N4</option>
+                <option value="N3">N3</option>
+                <option value="N2">N2</option>
+                <option value="N1">N1</option>
+              </select>
+            </label>
+          </div>
+          <TextInput
+            label="Tags"
+            {...form.register("tags")}
+            hint="Pisahkan dengan koma. Misal: makanan, verb-1"
+            placeholder="makanan, verb-1"
+          />
+          <TextInput
+            label="Contoh kalimat (beginner)"
+            {...form.register("beginnerExample")}
+            placeholder="ごはんを たべます。"
+          />
+          <TextInput
+            label="Contoh kalimat (normal)"
+            {...form.register("normalExample")}
+            placeholder="ごはんを食べます。"
+          />
+          <TextInput
+            label="Contoh kalimat (furigana)"
+            {...form.register("furiganaExample")}
+            placeholder="ごはんを 食(た)べます。"
+          />
+          <TextInput
+            label="Pembacaan contoh (hiragana)"
+            {...form.register("exampleReading")}
+            placeholder="ごはんを たべます。"
+          />
+          <TextInput
+            label="Arti contoh"
+            {...form.register("exampleMeaning")}
+            placeholder="Saya makan nasi."
+          />
           <label className="block">
-            <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">Level JLPT</span>
+            <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
+              Mastery
+            </span>
             <select
-              {...form.register("level")}
-              className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:bg-ink-800 dark:border-ink-700 dark:text-paper-50"
+              {...form.register("mastery")}
+              className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
             >
-              <option value="">— Tidak ditentukan —</option>
-              <option value="N5">N5</option>
-              <option value="N4">N4</option>
-              <option value="N3">N3</option>
-              <option value="N2">N2</option>
-              <option value="N1">N1</option>
+              <option value="good">good</option>
+              <option value="mid">mid</option>
+              <option value="weak">weak</option>
             </select>
           </label>
-        </div>
-        <TextInput
-          label="Tags"
-          {...form.register("tags")}
-          hint="Pisahkan dengan koma. Misal: makanan, verb-1"
-          placeholder="makanan, verb-1"
-        />
-        <TextInput
-          label="Contoh kalimat (beginner)"
-          {...form.register("beginnerExample")}
-          placeholder="ごはんを たべます。"
-        />
-        <TextInput
-          label="Contoh kalimat (normal)"
-          {...form.register("normalExample")}
-          placeholder="ごはんを食べます。"
-        />
-        <TextInput
-          label="Contoh kalimat (furigana)"
-          {...form.register("furiganaExample")}
-          placeholder="ごはんを 食(た)べます。"
-        />
-        <TextInput
-          label="Arti contoh"
-          {...form.register("exampleMeaning")}
-          placeholder="Saya makan nasi."
-        />
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">Mastery</span>
-          <select
-            {...form.register("mastery")}
-            className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:bg-ink-800 dark:border-ink-700 dark:text-paper-50"
-          >
-            <option value="good">good</option>
-            <option value="mid">mid</option>
-            <option value="weak">weak</option>
-          </select>
-        </label>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Batal</Button>
-          <Button type="submit" loading={submitting}>
-            {initial ? "Simpan" : "Tambah"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" loading={submitting}>
+              {initial ? "Simpan" : "Tambah"}
+            </Button>
+          </div>
+        </form>
+      ) : null}
+
+      {!isEdit && tab === "ai" ? (
+        <KotobaAiAnalyze
+          onApply={onAiApply}
+          onCancel={onClose}
+          existingJp={existingJp}
+        />
+      ) : null}
+
+      {!isEdit && tab === "bulk" ? (
+        <KotobaBulkAi
+          onSaveAll={onBulkSaveAll}
+          onCancel={onClose}
+          existingJp={existingJp}
+        />
+      ) : null}
     </Modal>
+  );
+}
+
+function TabBtn({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-full px-3 py-1.5 font-medium transition-colors",
+        active
+          ? "bg-accent-500 text-white"
+          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
 function emptyForm(): FormValues {
   return {
     jp: "",
+    reading: "",
     romaji: "",
     meaning: "",
     type: "",
@@ -155,6 +316,7 @@ function emptyForm(): FormValues {
     beginnerExample: "",
     normalExample: "",
     furiganaExample: "",
+    exampleReading: "",
     exampleMeaning: "",
     mastery: "mid",
   };
@@ -163,6 +325,7 @@ function emptyForm(): FormValues {
 function toForm(k: Kotoba): FormValues {
   return {
     jp: k.jp,
+    reading: k.reading ?? "",
     romaji: k.romaji ?? "",
     meaning: k.meaning,
     type: k.type ?? "",
@@ -171,6 +334,7 @@ function toForm(k: Kotoba): FormValues {
     beginnerExample: k.beginnerExample ?? "",
     normalExample: k.normalExample ?? "",
     furiganaExample: k.furiganaExample ?? "",
+    exampleReading: k.exampleReading ?? "",
     exampleMeaning: k.exampleMeaning ?? "",
     mastery: k.mastery as Mastery,
   };
@@ -183,6 +347,7 @@ function toPayload(v: FormValues): KotobaWritePayload {
     .filter(Boolean);
   return {
     jp: v.jp.trim(),
+    reading: v.reading?.trim() || undefined,
     romaji: v.romaji?.trim() || undefined,
     meaning: v.meaning.trim(),
     type: v.type?.trim() || undefined,
@@ -191,6 +356,7 @@ function toPayload(v: FormValues): KotobaWritePayload {
     beginnerExample: v.beginnerExample?.trim() || undefined,
     normalExample: v.normalExample?.trim() || undefined,
     furiganaExample: v.furiganaExample?.trim() || undefined,
+    exampleReading: v.exampleReading?.trim() || undefined,
     exampleMeaning: v.exampleMeaning?.trim() || undefined,
     mastery: v.mastery,
   };

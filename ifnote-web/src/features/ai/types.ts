@@ -1,6 +1,7 @@
 /**
  * Type-stable response shapes that mirror the backend AI proxy.
- * Both real AI and the server-side mock fallback return these.
+ * Backend selalu balikin source="ai". Kalau AI tidak siap, backend
+ * lempar 503 — caller tangkap di mutation onError.
  */
 
 import type { JlptLevel } from "@/lib/types";
@@ -16,7 +17,7 @@ export type AiMode =
   | "analyze-sentence";
 
 export interface AiEnvelope<T> {
-  source: "ai" | "mock";
+  source: "ai";
   data: T;
 }
 
@@ -76,11 +77,15 @@ export interface CreateHafalanData {
 export interface BulkKotobaItem {
   jp: string;
   status: "new" | "exists" | "manual";
+  sourceInput?: string;
+  inputLanguage?: "japanese" | "indonesian" | "mixed" | "unknown";
   meaning?: string;
+  reading?: string;
   romaji?: string;
   type?: string;
   level?: string;
   beginnerExample?: string;
+  exampleReading?: string;
 }
 export interface BulkKotobaData {
   items: BulkKotobaItem[];

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { NotebookCard } from "@/components/ui/NotebookCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/feedback/EmptyState";
+import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { ROUTES } from "@/lib/constants";
 import type { CatatanItem, Mastery } from "@/lib/types";
 
@@ -36,15 +37,15 @@ export function RecentBunpouList({ items }: Props) {
         <EmptyState
           icon="📐"
           title="Belum ada bunpou"
-          description="Tambah pola pertamamu dari Catatan atau lewat AI Tutor."
+          description="Tambah pola pertamamu dari Catatan atau Tambah dengan AI."
         />
       ) : (
         <ul className="mt-3 divide-y divide-paper-200 dark:divide-ink-700">
           {items.map((it) => (
             <li key={it.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <p className="truncate font-jp text-base text-ink-800 dark:text-paper-50">
-                  {it.jpOrPattern}
+                <p className="truncate text-base text-ink-800 dark:text-paper-50">
+                  <JapaneseText text={it.jpOrPattern} inert />
                 </p>
                 <p className="truncate text-xs text-ink-400">{it.meaning}</p>
               </div>
