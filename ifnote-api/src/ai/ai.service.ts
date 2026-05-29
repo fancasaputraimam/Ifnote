@@ -13,6 +13,7 @@ import {
   GenerateQuizAiDto,
   GenerateSakubunDto,
   MakeExampleDto,
+  TranslateExampleDto,
 } from "./dto";
 
 const SYS_BASE =
@@ -76,6 +77,13 @@ export class AiService {
       "Jika input Jepang, kembalikan kata aslinya. " +
       "Jika input adalah deskripsi/keyword (mis. 'kata Jepang untuk berat'), pilih kotoba paling cocok. " +
       "Selalu kembalikan jp dalam huruf Jepang, meaning dalam Bahasa Indonesia, reading dalam hiragana, dan exampleReading dalam hiragana penuh. " +
+      "PENTING soal exampleMeaning: " +
+      "meaning = arti kotoba (kata/frasa singkat). " +
+      "exampleMeaning = terjemahan natural Bahasa Indonesia DARI KALIMAT CONTOH (normalExample). " +
+      "exampleMeaning HARUS berupa kalimat penuh, bukan sekadar mengulang meaning. " +
+      "Contoh BENAR: meaning='hitam', normalExample='黒い猫がいます。', exampleMeaning='Ada kucing hitam.'. " +
+      "Contoh SALAH: exampleMeaning='hitam' (cuma mengulang meaning, bukan kalimat). " +
+      "Contoh SALAH: exampleMeaning='' (kosong padahal normalExample ada). " +
       'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","normalExample":"string","exampleReading":"string","exampleMeaning":"string","note":"string"}';
     const usr =
       `Input user: "${dto.jp}". ` +
@@ -86,6 +94,42 @@ export class AiService {
     const r = await this.client.chatJson(userId, "explain-kotoba", sys, usr);
     if (!r.ok) aiCallFailed(r.message);
     return { source: "ai" as const, data: r.data };
+  }
+
+  /**
+   * Repair: minta AI mengisi exampleMeaning untuk kalimat contoh
+   * yang sudah ada. Dipakai saat hasil explainKotoba balik dengan
+   * normalExample tapi tanpa exampleMeaning supaya preview tidak
+   * setengah jadi.
+   */
+  async translateExample(userId: string, dto: TranslateExampleDto) {
+    const sys =
+      SYS_BASE +
+      " Tugas: terjemahkan KALIMAT CONTOH bahasa Jepang ke Bahasa Indonesia natural. " +
+      "Hasil hanya berupa kalimat terjemahan kalimat contoh (bukan arti kotoba terisolasi). " +
+      "JANGAN ulangi arti kotoba sebagai exampleMeaning. " +
+      "JANGAN tambahkan markdown atau tag HTML. " +
+      'Schema: {"exampleMeaning":"string"}';
+    const usr =
+      `Kotoba: "${dto.kotoba}". ` +
+      `Arti kotoba: "${dto.meaning}". ` +
+      `Kalimat contoh (Jepang): "${dto.normalExample}". ` +
+      (dto.exampleReading
+        ? `Pembacaan kalimat (hiragana): "${dto.exampleReading}". `
+        : "") +
+      "Kembalikan terjemahan kalimat lengkap dalam Bahasa Indonesia natural.";
+    const r = await this.client.chatJson<{ exampleMeaning?: string }>(
+      userId,
+      "translate-example",
+      sys,
+      usr,
+    );
+    if (!r.ok) aiCallFailed(r.message);
+    const text = (r.data?.exampleMeaning ?? "").trim();
+    return {
+      source: "ai" as const,
+      data: { exampleMeaning: text },
+    };
   }
 
   async explainBunpou(userId: string, dto: ExplainBunpouDto) {

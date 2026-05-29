@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { TextInput } from "@/components/ui/TextInput";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { AiLoading } from "@/components/ui/ai-loading";
-import { useExplainKotoba } from "@/features/ai/useAi";
+import { useExplainKotoba, useTranslateExample } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
 import {
@@ -54,14 +54,18 @@ export function KotobaAiAnalyze({
   onOpenSaved: _onOpenSaved,
 }: Props) {
   const explain = useExplainKotoba();
+  const repair = useTranslateExample();
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<NormalizedKotoba | null>(null);
+  /** Set once the auto-repair has run (success or fail) so we don't loop. */
+  const repairAttempted = useRef(false);
 
   const onAnalyze = async () => {
     const value = input.trim();
     if (!value) return;
     setError(null);
+    repairAttempted.current = false;
     try {
       const r = await explain.mutateAsync({ jp: value });
       const normalized = normalizeAiKotobaResult(
@@ -79,6 +83,40 @@ export function KotobaAiAnalyze({
       notify.apiError(e);
     }
   };
+
+  // Auto-repair: kalau AI balik dengan kalimat contoh tapi tanpa
+  // terjemahan natural, panggil endpoint repair satu kali untuk mengisi
+  // exampleMeaning. User tetap bisa edit manual kalau hasil repair
+  // belum sesuai.
+  useEffect(() => {
+    if (!draft) return;
+    if (repairAttempted.current) return;
+    if (repair.isPending) return;
+    const incomplete = hasIncompleteExampleMeaning({
+      meaning: draft.meaning,
+      normalExample: draft.normalExample,
+      exampleMeaning: draft.exampleMeaning,
+    });
+    if (!incomplete) return;
+    if (!draft.jp.trim() || !draft.normalExample.trim()) return;
+    repairAttempted.current = true;
+    repair
+      .mutateAsync({
+        kotoba: draft.jp,
+        meaning: draft.meaning,
+        normalExample: draft.normalExample,
+        exampleReading: draft.exampleReading || undefined,
+      })
+      .then((res) => {
+        const t = (res.data?.exampleMeaning ?? "").trim();
+        if (!t) return;
+        setDraft((prev) => (prev ? { ...prev, exampleMeaning: t } : prev));
+      })
+      .catch(() => {
+        // Diam saja — UI tetap menampilkan warning + Save tetap disabled.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
 
   const dupStatus = draft ? duplicateStatus(draft.jp, existingJp) : "new";
   const exampleIncomplete = draft
@@ -98,6 +136,15 @@ export function KotobaAiAnalyze({
     return (
       <AiLoading
         title="AI sedang menganalisa kotoba…"
+        description="Tunggu sebentar ya."
+      />
+    );
+  }
+
+  if (repair.isPending) {
+    return (
+      <AiLoading
+        title="AI sedang melengkapi arti contoh…"
         description="Tunggu sebentar ya."
       />
     );

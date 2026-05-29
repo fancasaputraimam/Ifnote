@@ -76,3 +76,28 @@ export class GenerateSakubunDto {
   @IsOptional() @IsString() @MaxLength(200)
   topic?: string;
 }
+
+/**
+ * Repair endpoint: minta AI hanya mengisi exampleMeaning
+ * (terjemahan natural Bahasa Indonesia dari normalExample). Dipakai
+ * saat hasil explainKotoba balik dengan kalimat contoh tapi tanpa
+ * arti contoh, supaya UI bisa preview lengkap tanpa minta user
+ * mengisi manual.
+ */
+export class TranslateExampleDto {
+  /** Kotoba target (tulisan Jepang). */
+  @IsString() @MinLength(1) @MaxLength(80)
+  kotoba!: string;
+
+  /** Arti kotoba dalam Bahasa Indonesia (kata, bukan kalimat). */
+  @IsString() @MinLength(1) @MaxLength(200)
+  meaning!: string;
+
+  /** Kalimat contoh dalam Bahasa Jepang. */
+  @IsString() @MinLength(1) @MaxLength(500)
+  normalExample!: string;
+
+  /** Pembacaan hiragana penuh dari kalimat contoh (opsional). */
+  @IsOptional() @IsString() @MaxLength(500)
+  exampleReading?: string;
+}

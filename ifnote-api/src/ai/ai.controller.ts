@@ -15,6 +15,7 @@ import {
   GenerateQuizAiDto,
   GenerateSakubunDto,
   MakeExampleDto,
+  TranslateExampleDto,
 } from "./dto";
 
 @Controller("api/ai")
@@ -42,6 +43,14 @@ export class AiController {
   @Post("explain-kotoba")
   explainKotoba(@CurrentUser() user: JwtUser, @Body() dto: ExplainKotobaDto) {
     return this.svc.explainKotoba(user.sub, dto);
+  }
+
+  @Post("translate-example")
+  translateExample(
+    @CurrentUser() user: JwtUser,
+    @Body() dto: TranslateExampleDto,
+  ) {
+    return this.svc.translateExample(user.sub, dto);
   }
 
   @Post("explain-bunpou")
