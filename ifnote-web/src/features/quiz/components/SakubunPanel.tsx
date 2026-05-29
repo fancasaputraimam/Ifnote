@@ -9,8 +9,8 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { NotebookCard } from "@/components/ui/NotebookCard";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
-import { toast } from "@/components/feedback/Toast";
-import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
@@ -50,9 +50,9 @@ export function SakubunPanel() {
         return next;
       }
       if (next.size >= MAX_SELECT) {
-        toast(
+        notify.warning(
+          "Batas pilihan",
           `Maksimal ${MAX_SELECT} bunpou untuk sekali generate sakubun.`,
-          "error",
         );
         return prev;
       }
@@ -69,26 +69,48 @@ export function SakubunPanel() {
   const onGenerate = async () => {
     const ids = Array.from(selected);
     if (ids.length === 0) {
-      toast("Pilih minimal satu bunpou", "error");
+      notify.warning(
+        "Belum ada bunpou dipilih",
+        "Centang minimal satu bunpou dulu.",
+      );
       return;
     }
     if (ids.length > MAX_SELECT) {
-      toast(
+      notify.warning(
+        "Batas pilihan",
         `Maksimal ${MAX_SELECT} bunpou untuk sekali generate sakubun.`,
-        "error",
       );
       return;
     }
     try {
-      const r = await gen.mutateAsync({ bunpouIds: ids, level: "beginner" });
+      const r = await notify.promise(
+        gen.mutateAsync({ bunpouIds: ids, level: "beginner" }),
+        {
+          loading: {
+            title: "AI sedang membuat sakubun",
+            message: "Tunggu sebentar ya.",
+            icon: "✍️",
+          },
+          success: {
+            title: "Sakubun siap",
+            message: "Periksa hasilnya di bawah.",
+            icon: "🌸",
+          },
+          error: (err) => {
+            const m = mapApiErrorToUserMessage(err, {
+              title: "AI gagal membuat sakubun",
+              message: "Coba lagi sebentar.",
+            });
+            return { title: m.title, message: m.message, icon: "⚠️" };
+          },
+        },
+      );
       setResult(r.data ?? null);
       setRequested(
         (r.requested ?? []).map((x) => ({ id: x.id, pattern: x.pattern })),
       );
-    } catch (e) {
-      const msg =
-        e instanceof ApiError ? e.message : "AI gagal membuat sakubun. Coba lagi.";
-      toast(msg, "error");
+    } catch {
+      // notify.promise sudah menampilkan toast error — swallow.
     }
   };
 
@@ -106,9 +128,9 @@ export function SakubunPanel() {
     }
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      toast("Sakubun disalin", "success");
+      notify.success("Sakubun disalin", "Sudah ada di clipboard kamu.");
     } catch {
-      toast("Gagal menyalin", "error");
+      notify.error("Gagal menyalin", "Browser menolak akses clipboard.");
     }
   };
 

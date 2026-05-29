@@ -6,12 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { ROUTES } from "@/lib/constants";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 
 const schema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -35,11 +35,14 @@ export function LoginForm() {
     try {
       await authClient.login(values);
       await refresh();
-      toast("Selamat datang kembali", "success");
+      notify.success("Selamat datang kembali", "Senang melihatmu lagi.");
       router.replace(ROUTES.app.home);
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Tidak bisa masuk";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal masuk",
+        message: "Cek email dan password kamu.",
+      });
+      notify[m.variant](m.title, m.message);
     } finally {
       setSubmitting(false);
     }

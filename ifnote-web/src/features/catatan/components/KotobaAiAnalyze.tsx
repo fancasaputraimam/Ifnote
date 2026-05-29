@@ -8,6 +8,7 @@ import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { useExplainKotoba } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
 import {
   normalizeAiKotobaResult,
   type NormalizedKotoba,
@@ -22,6 +23,13 @@ interface Props {
   onCancel: () => void;
   /** Existing kotoba JP strings (already in catatan), for duplicate detection. */
   existingJp: string[];
+  /**
+   * Optional callback when user wants to open an existing saved entry.
+   * Currently passed through from CatatanScreen but the duplicate-resolve UI
+   * ("Buka entri yang ada") is wired in a follow-up — accepted here so the
+   * prop chain type-checks cleanly.
+   */
+  onOpenSaved?: (id: string) => void;
 }
 
 /**
@@ -38,7 +46,12 @@ interface Props {
  *
  * Never auto-saves. The parent form is what actually POSTs to /api/kotoba.
  */
-export function KotobaAiAnalyze({ onApply, onCancel, existingJp }: Props) {
+export function KotobaAiAnalyze({
+  onApply,
+  onCancel,
+  existingJp,
+  onOpenSaved: _onOpenSaved,
+}: Props) {
   const explain = useExplainKotoba();
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +73,9 @@ export function KotobaAiAnalyze({ onApply, onCancel, existingJp }: Props) {
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal memanggil AI";
       setError(msg);
+      // Toast paralel — supaya user tetap melihat feedback meskipun panel
+      // AI ini scroll keluar layar (panjang form).
+      notify.apiError(e);
     }
   };
 

@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { NotebookCard } from "@/components/ui/NotebookCard";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import {
   useExportBackup,
   useImportBackup,
@@ -30,10 +30,13 @@ export function BackupSection() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast("Backup di-export", "success");
+      notify.success("Backup di-export", "File JSON sudah didownload.");
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal mengexport";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal mengexport",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
@@ -43,13 +46,17 @@ export function BackupSection() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onerror = () => toast("Gagal membaca file", "error");
+    reader.onerror = () =>
+      notify.error("Gagal membaca file", "Coba pilih file lain.");
     reader.onload = () => {
       try {
         const text = String(reader.result ?? "");
         const parsed = JSON.parse(text);
         if (!parsed || typeof parsed !== "object") {
-          toast("File tidak valid", "error");
+          notify.error(
+            "File tidak valid",
+            "Pastikan ini file backup ifNote.",
+          );
           return;
         }
         // Backend expects { data: <export.data> }; accept either full export or
@@ -57,7 +64,10 @@ export function BackupSection() {
         const inner = (parsed as { data?: unknown }).data ?? parsed;
         setPendingImport({ payload: inner, replace: false });
       } catch {
-        toast("JSON tidak valid", "error");
+        notify.error(
+          "JSON tidak valid",
+          "File backup ini tidak bisa dibaca.",
+        );
       }
     };
     reader.readAsText(file);
@@ -71,10 +81,16 @@ export function BackupSection() {
         .filter(([, n]) => n > 0)
         .map(([k, n]) => `${k}: ${n}`)
         .join(" · ");
-      toast(`Import sukses${counts ? ` — ${counts}` : ""}`, "success");
+      notify.success(
+        "Import sukses",
+        counts || "Data backup sudah dimasukkan.",
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal mengimport";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal mengimport",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     } finally {
       setPendingImport(null);
     }

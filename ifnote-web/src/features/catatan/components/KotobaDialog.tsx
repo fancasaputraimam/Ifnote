@@ -7,8 +7,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
-import { toast } from "@/components/feedback/Toast";
-import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { cn } from "@/lib/utils";
 import type { Kotoba, Mastery } from "@/lib/types";
 import {
@@ -47,6 +47,13 @@ interface Props {
   existingJp?: string[];
   /** Tab to open by default. Useful for "Tambah dengan AI" CTAs. */
   initialTab?: Tab;
+  /**
+   * Buka kotoba yang sudah tersimpan dalam mode edit (dipakai ketika
+   * lookup AI menemukan item yang sudah ada di Catatan).
+   * Dialog ini akan di-close dan parent yang membuka ulang dengan
+   * `initial` ter-set.
+   */
+  onOpenSaved?: (id: string) => void;
 }
 
 export function KotobaDialog({
@@ -55,6 +62,7 @@ export function KotobaDialog({
   initial,
   existingJp = [],
   initialTab,
+  onOpenSaved,
 }: Props) {
   const isEdit = !!initial;
   const create = useCreateKotoba();
@@ -80,15 +88,22 @@ export function KotobaDialog({
     try {
       if (initial) {
         await update.mutateAsync({ id: initial.id, payload });
-        toast("Kotoba diperbarui", "success");
+        notify.success("Kotoba diperbarui", "Perubahan sudah disimpan.", { icon: "📚" });
       } else {
         await create.mutateAsync(payload);
-        toast("Kotoba ditambahkan", "success");
+        notify.success(
+          "Kotoba disimpan",
+          "Catatan baru sudah masuk ke daftar kamu.",
+          { icon: "📚" },
+        );
       }
       onClose();
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan kotoba",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   });
 
@@ -113,22 +128,47 @@ export function KotobaDialog({
       mastery: payload.mastery ?? "mid",
     });
     setTab("manual");
-    toast("Pratinjau AI dimuat ke form. Periksa lalu simpan.", "info");
+    notify.info(
+      "Pratinjau AI siap",
+      "Periksa hasilnya sebelum kamu simpan.",
+      { icon: "✨" },
+    );
   };
 
   /** Bulk flow → save all selected items here, then close modal. */
   const onBulkSaveAll = async (payloads: KotobaWritePayload[]) => {
     if (payloads.length === 0) return;
     try {
-      // Sequential to keep hafalan_order deterministic.
-      for (const p of payloads) {
-        await create.mutateAsync(p);
-      }
-      toast(`${payloads.length} kotoba berhasil disimpan`, "success");
+      await notify.promise(
+        async () => {
+          // Sequential to keep hafalan_order deterministic.
+          for (const p of payloads) {
+            await create.mutateAsync(p);
+          }
+        },
+        {
+          loading: {
+            title: "Menyimpan kotoba",
+            message: `Sedang menambahkan ${payloads.length} kotoba…`,
+            icon: "📚",
+          },
+          success: {
+            title: "Kotoba berhasil disimpan",
+            message: `${payloads.length} kotoba baru masuk ke Catatan.`,
+            icon: "🌸",
+          },
+          error: (err) => {
+            const m = mapApiErrorToUserMessage(err, {
+              title: "Gagal menyimpan kotoba",
+              message: "Coba lagi sebentar.",
+            });
+            return { title: m.title, message: m.message, icon: "⚠️" };
+          },
+        },
+      );
       onClose();
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
-      toast(msg, "error");
+    } catch {
+      // notify.promise sudah menampilkan toast error — swallow.
     }
   };
 
@@ -264,6 +304,7 @@ export function KotobaDialog({
           onApply={onAiApply}
           onCancel={onClose}
           existingJp={existingJp}
+          onOpenSaved={onOpenSaved}
         />
       ) : null}
 

@@ -52,14 +52,18 @@ export function WelcomeBackNotice() {
       role="status"
       aria-live="polite"
       className={cn(
-        // Mobile: floating di atas bottom nav. Desktop: pojok kanan bawah.
+        // PRD PART 6: notifikasi tampil di atas, bukan di bawah.
+        // Mobile: top-center, safe-area aware. Desktop: top-right.
         "fixed left-3 right-3 z-30 md:left-auto md:right-6 md:max-w-sm",
-        "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6",
+        // Mobile: agak turun supaya tidak menutup global toast viewport
+        // (toast viewport pakai env(safe-area-inset-top)+16px). Desktop
+        // tetap agak menjorok dari topbar.
+        "top-[calc(env(safe-area-inset-top,0px)+88px)] md:top-6",
         "rounded-notebook border border-paper-200 bg-white p-4 shadow-notebook-md",
         "dark:border-ink-700 dark:bg-ink-800",
         "transition-all duration-200 ease-out",
         closing
-          ? "translate-y-2 opacity-0"
+          ? "-translate-y-2 opacity-0"
           : "translate-y-0 opacity-100",
       )}
     >

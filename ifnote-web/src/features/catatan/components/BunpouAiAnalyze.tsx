@@ -8,6 +8,7 @@ import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { useExplainBunpou } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
 import {
   normalizeAiBunpouResult,
   type NormalizedBunpou,
@@ -20,9 +21,21 @@ interface Props {
   onCancel: () => void;
   /** Existing bunpou patterns, untuk duplicate detection. */
   existingPatterns: string[];
+  /**
+   * Optional callback when user wants to open an existing saved entry.
+   * Currently passed through from CatatanScreen but the duplicate-resolve UI
+   * ("Buka entri yang ada") is wired in a follow-up — accepted here so the
+   * prop chain type-checks cleanly.
+   */
+  onOpenSaved?: (id: string) => void;
 }
 
-export function BunpouAiAnalyze({ onApply, onCancel, existingPatterns }: Props) {
+export function BunpouAiAnalyze({
+  onApply,
+  onCancel,
+  existingPatterns,
+  onOpenSaved: _onOpenSaved,
+}: Props) {
   const explain = useExplainBunpou();
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +55,7 @@ export function BunpouAiAnalyze({ onApply, onCancel, existingPatterns }: Props) 
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal memanggil AI";
       setError(msg);
+      notify.apiError(e);
     }
   };
 

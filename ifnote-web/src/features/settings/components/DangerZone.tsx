@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { NotebookCard } from "@/components/ui/NotebookCard";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { useResetBackup } from "@/features/settings/useSettings";
 
 export function DangerZone() {
@@ -15,10 +15,16 @@ export function DangerZone() {
   const onReset = async () => {
     try {
       await reset.mutateAsync();
-      toast("Semua data kamu sudah dihapus", "success");
+      notify.success(
+        "Data direset",
+        "Semua catatan, hafalan, dan progress kamu sudah dihapus.",
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menghapus data";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal mereset data",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     } finally {
       setConfirmOpen(false);
     }

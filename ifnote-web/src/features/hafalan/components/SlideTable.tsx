@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { useHafalanMastery } from "@/features/hafalan/useHafalan";
 import {
@@ -73,34 +73,54 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         itemId: item.itemId,
         mastery,
       });
-      toast(
+      const message =
         mastery === "good"
-          ? "Ditandai hafal"
+          ? "Item ini ditandai sudah hafal."
           : mastery === "weak"
-          ? "Ditandai lemah"
-          : "Mastery diperbarui",
-        "success",
-      );
+            ? "Item ini ditandai masih lemah."
+            : "Mastery ditandai sedang.";
+      notify.success("Status hafalan diperbarui", message, { icon: "🧠" });
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal memperbarui mastery";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal memperbarui status",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
   const onExplain = async () => {
     try {
-      if (item.itemType === "kotoba") {
-        await aiKotoba.mutateAsync(item.itemId);
-      } else {
-        await aiBunpou.mutateAsync(item.itemId);
-      }
-      // Sync di-handle oleh hook (invalidate ["hafalan", "catatan", …]).
-    } catch (e) {
-      const msg =
-        e instanceof ApiError
-          ? e.message
-          : "AI gagal membuat penjelasan. Coba lagi.";
-      toast(msg, "error");
+      await notify.promise(
+        async () => {
+          if (item.itemType === "kotoba") {
+            await aiKotoba.mutateAsync(item.itemId);
+          } else {
+            await aiBunpou.mutateAsync(item.itemId);
+          }
+        },
+        {
+          loading: {
+            title: "AI sedang menganalisa",
+            message: "Tunggu sebentar ya.",
+            icon: "✨",
+          },
+          success: {
+            title: "Analisa selesai",
+            message: "Penjelasan sudah disimpan ke catatan.",
+            icon: "🌸",
+          },
+          error: (err) => {
+            const m = mapApiErrorToUserMessage(err, {
+              title: "AI gagal menganalisa",
+              message: "Coba lagi sebentar.",
+            });
+            return { title: m.title, message: m.message, icon: "⚠️" };
+          },
+        },
+      );
+    } catch {
+      // notify.promise sudah menampilkan toast error — swallow.
     }
   };
 

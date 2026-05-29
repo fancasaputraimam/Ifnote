@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { NotebookCard } from "@/components/ui/NotebookCard";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { useTheme } from "@/features/settings/ThemeProvider";
 import { useSettings, useUpdateSettings } from "@/features/settings/useSettings";
 import type { JpMode, ThemeMode } from "@/lib/types";
@@ -29,10 +29,17 @@ export function AppearanceSection() {
     try {
       await update.mutateAsync({ theme, jpMode });
       setTheme(theme); // apply locally too
-      toast("Preferensi tampilan disimpan", "success");
+      notify.success(
+        "Tampilan disimpan",
+        "Preferensi kamu sudah diperbarui.",
+        { icon: "⚙️" },
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan tampilan",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 

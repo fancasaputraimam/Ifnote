@@ -6,12 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { ApiError } from "@/lib/api-client";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { ROUTES } from "@/lib/constants";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 
 const schema = z
   .object({
@@ -46,11 +46,14 @@ export function RegisterForm() {
         password: values.password,
       });
       await refresh();
-      toast("Akun berhasil dibuat", "success");
+      notify.success("Akun berhasil dibuat", "Selamat datang di ifNote.");
       router.replace(ROUTES.app.home);
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Tidak bisa membuat akun";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal membuat akun",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     } finally {
       setSubmitting(false);
     }

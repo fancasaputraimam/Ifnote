@@ -5,8 +5,8 @@ import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import type { Bunpou, CatatanItem, Kotoba, Mastery } from "@/lib/types";
 import {
   useAiExplainBunpou,
@@ -48,17 +48,37 @@ export function CatatanRow({ item, onEdit }: Props) {
 
   const onExplain = async () => {
     try {
-      if (isKotoba) {
-        await aiKotoba.mutateAsync(item.id);
-      } else {
-        await aiBunpou.mutateAsync(item.id);
-      }
+      await notify.promise(
+        async () => {
+          if (isKotoba) {
+            await aiKotoba.mutateAsync(item.id);
+          } else {
+            await aiBunpou.mutateAsync(item.id);
+          }
+        },
+        {
+          loading: {
+            title: "AI sedang menganalisa",
+            message: "Tunggu sebentar ya.",
+            icon: "✨",
+          },
+          success: {
+            title: "Analisa selesai",
+            message: "Penjelasan sudah disimpan ke catatan.",
+            icon: "🌸",
+          },
+          error: (err) => {
+            const m = mapApiErrorToUserMessage(err, {
+              title: "AI gagal menganalisa",
+              message: "Coba lagi sebentar.",
+            });
+            return { title: m.title, message: m.message, icon: "⚠️" };
+          },
+        },
+      );
       // Invalidasi sudah di-handle oleh hook bila `generated: true`.
-      // Kalau backend balikin `generated: false` artinya ternyata sudah ada
-      // penjelasan — biarkan saja, tombol akan hilang setelah list refetch.
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "AI gagal membuat penjelasan. Coba lagi.";
-      toast(msg, "error");
+    } catch {
+      // notify.promise sudah menampilkan toast error — swallow.
     }
   };
 
@@ -69,10 +89,13 @@ export function CatatanRow({ item, onEdit }: Props) {
       } else {
         await deleteBunpou.mutateAsync(item.id);
       }
-      toast("Catatan dihapus", "success");
+      notify.success("Catatan dihapus", "Item ini sudah dihapus dari Catatan dan Hafalan.");
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menghapus";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menghapus",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     } finally {
       setConfirmDelete(false);
     }

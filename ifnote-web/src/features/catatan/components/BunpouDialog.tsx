@@ -7,8 +7,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
-import { toast } from "@/components/feedback/Toast";
-import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { cn } from "@/lib/utils";
 import type { Bunpou, Mastery } from "@/lib/types";
 import {
@@ -46,6 +46,11 @@ interface Props {
   /** Existing patterns sudah disimpan, untuk AI dedup. */
   existingPatterns?: string[];
   initialTab?: Tab;
+  /**
+   * Buka bunpou yang sudah tersimpan dalam mode edit (dipakai ketika
+   * lookup AI menemukan item yang sudah ada di Catatan).
+   */
+  onOpenSaved?: (id: string) => void;
 }
 
 export function BunpouDialog({
@@ -54,6 +59,7 @@ export function BunpouDialog({
   initial,
   existingPatterns = [],
   initialTab,
+  onOpenSaved,
 }: Props) {
   const isEdit = !!initial;
   const create = useCreateBunpou();
@@ -78,15 +84,22 @@ export function BunpouDialog({
     try {
       if (initial) {
         await update.mutateAsync({ id: initial.id, payload });
-        toast("Bunpou diperbarui", "success");
+        notify.success("Bunpou diperbarui", "Perubahan sudah disimpan.", { icon: "📚" });
       } else {
         await create.mutateAsync(payload);
-        toast("Bunpou ditambahkan", "success");
+        notify.success(
+          "Bunpou disimpan",
+          "Pola bunpou berhasil ditambahkan.",
+          { icon: "📚" },
+        );
       }
       onClose();
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan bunpou",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   });
 
@@ -111,7 +124,11 @@ export function BunpouDialog({
       mastery: payload.mastery ?? "mid",
     });
     setTab("manual");
-    toast("Pratinjau AI dimuat ke form. Periksa lalu simpan.", "info");
+    notify.info(
+      "Pratinjau AI siap",
+      "Periksa hasilnya sebelum kamu simpan.",
+      { icon: "✨" },
+    );
   };
 
   return (
@@ -252,6 +269,7 @@ export function BunpouDialog({
           onApply={onAiApply}
           onCancel={onClose}
           existingPatterns={existingPatterns}
+          onOpenSaved={onOpenSaved}
         />
       ) : null}
     </Modal>

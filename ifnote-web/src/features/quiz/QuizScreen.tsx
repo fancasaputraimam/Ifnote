@@ -22,8 +22,8 @@ import {
 
 import { useQuizProgress, useQuizQuestions, useSubmitAnswer } from "./useQuiz";
 import type { QuizQuestion, QuizType } from "@/lib/types";
-import { ApiError } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { ROUTES } from "@/lib/constants";
 
 const QUIZ_LENGTH = 10;
@@ -119,8 +119,11 @@ export function QuizScreen() {
           correct,
         });
       } catch (e) {
-        const msg = e instanceof ApiError ? e.message : "Gagal menyimpan jawaban";
-        toast(msg, "error");
+        const m = mapApiErrorToUserMessage(e, {
+          title: "Gagal menyimpan jawaban",
+          message: "Progress mungkin belum terupdate. Coba lagi.",
+        });
+        notify[m.variant](m.title, m.message);
       }
     }
   };

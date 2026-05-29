@@ -1,7 +1,7 @@
 "use client";
 
 import { ButtonHTMLAttributes, ReactNode } from "react";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
 
 /**
  * Tombol social auth (Google / GitHub / X). OAuth backend belum siap di
@@ -37,7 +37,10 @@ export function SocialAuthButtons({ intent = "login" }: SocialAuthButtonsProps) 
 
   const handleClick = (provider: Provider) => {
     // OAuth belum diaktifkan; tampilkan toast netral.
-    toast(`Login sosial (${labelOf(provider)}) belum diaktifkan`, "info");
+    notify.info(
+      `Login ${labelOf(provider)} belum aktif`,
+      "Fitur login sosial sedang disiapkan.",
+    );
   };
 
   return (

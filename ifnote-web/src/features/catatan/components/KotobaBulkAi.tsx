@@ -7,6 +7,7 @@ import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { useBulkKotobaAi } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
+import { notify } from "@/lib/toast";
 import { cleanJapaneseResponse } from "@/lib/japanese-text";
 import { cn } from "@/lib/utils";
 import type { BulkKotobaItem } from "@/features/ai/types";
@@ -43,6 +44,10 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
       setError(
         `Maksimal ${MAX_ITEMS} kotoba per analisa. Kurangi jumlah input dulu.`,
       );
+      notify.warning(
+        "Batas analisa",
+        `Maksimal ${MAX_ITEMS} kotoba per sekali analisa. Kurangi jumlah input dulu.`,
+      );
       return;
     }
     setError(null);
@@ -60,9 +65,15 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
         selected: existingNorm.has(normalize(it.jp)) ? false : it.status !== "manual",
       }));
       setItems(list);
+      notify.success(
+        "Analisa selesai",
+        `${list.length} kotoba siap untuk kamu periksa.`,
+        { icon: "✨" },
+      );
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal memanggil AI";
       setError(msg);
+      notify.apiError(e);
     }
   };
 

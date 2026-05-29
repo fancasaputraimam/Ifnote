@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { NotebookCard } from "@/components/ui/NotebookCard";
 import { TextInput } from "@/components/ui/TextInput";
 import { ApiError, api } from "@/lib/api-client";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
+import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { useSettings, useUpdateSettings } from "@/features/settings/useSettings";
 import type { AiRequestFormat } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -55,10 +56,17 @@ export function AiConfigSection() {
       // Wipe the draft after save so it doesn't linger in DOM/devtools.
       setApiKeyDraft("");
       setShowKey(false);
-      toast("Konfigurasi AI disimpan", "success");
+      notify.success(
+        "Konfigurasi AI disimpan",
+        "Pengaturan AI sudah diperbarui.",
+        { icon: "⚙️" },
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menyimpan";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan konfigurasi AI",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
@@ -67,10 +75,17 @@ export function AiConfigSection() {
       await update.mutateAsync({ aiApiKey: null });
       setApiKeyDraft("");
       setShowKey(false);
-      toast("API key dihapus dari server", "success");
+      notify.success(
+        "API key dihapus",
+        "API key kamu sudah dihapus dari server.",
+        { icon: "⚙️" },
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal menghapus API key";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menghapus API key",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
@@ -91,10 +106,17 @@ export function AiConfigSection() {
         useRealAi: false,
         aiApiKey: null,
       });
-      toast("Konfigurasi AI dibersihkan", "success");
+      notify.success(
+        "Konfigurasi AI dibersihkan",
+        "Semua pengaturan AI sudah direset.",
+        { icon: "⚙️" },
+      );
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal membersihkan";
-      toast(msg, "error");
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal membersihkan",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 

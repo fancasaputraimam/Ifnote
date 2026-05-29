@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
-import { toast } from "@/components/feedback/Toast";
+import { notify } from "@/lib/toast";
 
 const schema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -30,7 +30,10 @@ export function ForgotPasswordForm() {
     // Simulasi network round-trip kecil agar loading state terlihat,
     // lalu beri pesan netral.
     setTimeout(() => {
-      toast("Fitur reset password belum aktif", "info");
+      notify.info(
+        "Reset password belum aktif",
+        "Fitur ini belum tersedia. Hubungi admin kalau kamu butuh bantuan.",
+      );
       setSubmitting(false);
     }, 500);
   };
