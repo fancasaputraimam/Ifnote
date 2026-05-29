@@ -298,6 +298,12 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
             {exampleMeaning}
           </p>
         </Section>
+      ) : (beginnerExample || normalExample || furiganaExample) ? (
+        <Section label="Arti contoh">
+          <p className="text-xs italic text-ink-400">
+            Arti contoh belum tersedia.
+          </p>
+        </Section>
       ) : null}
     </div>
   );
@@ -318,6 +324,10 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
     formula,
     usage,
     commonMistake,
+    normalExample,
+    beginnerExample,
+    exampleReading,
+    exampleMeaning,
   });
 
   return (
@@ -362,34 +372,53 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
 
       {view.usageParagraphs.length ? (
         <Section label="Kapan dipakai">
-          <div className="space-y-2 leading-relaxed text-ink-700 dark:text-paper-50">
+          <ul className="space-y-1.5">
             {view.usageParagraphs.map((p, i) => (
-              <p key={i}>{p}</p>
+              <li
+                key={i}
+                className="rounded-lg bg-paper-50/60 px-3 py-2 text-sm leading-relaxed text-ink-700 dark:bg-ink-900/30 dark:text-paper-50"
+              >
+                {p}
+              </li>
             ))}
-          </div>
+          </ul>
         </Section>
       ) : null}
 
-      {beginnerExample ? (
+      {view.exampleSentences.length ? (
         <Section label="Contoh kalimat">
-          <ExampleLine jp={beginnerExample} reading={exampleReading} />
+          <ol className="space-y-2">
+            {view.exampleSentences.map((ex, i) => (
+              <li
+                key={i}
+                className="rounded-xl border border-paper-200 bg-white px-3 py-2 dark:border-ink-700 dark:bg-ink-800"
+              >
+                <div className="flex items-start gap-2 text-base">
+                  <span className="mt-0.5 shrink-0 text-xs font-semibold tabular-nums text-ink-400">
+                    {i + 1}.
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <ExampleLine jp={ex.jp} reading={ex.reading} />
+                    {ex.meaning ? (
+                      <p className="mt-1 text-sm leading-relaxed text-ink-700 dark:text-paper-50">
+                        {ex.meaning}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs italic text-ink-400">
+                        Arti contoh belum tersedia.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
         </Section>
       ) : null}
-      {normalExample && normalExample !== beginnerExample ? (
-        <Section label="Contoh (normal)">
-          <ExampleLine jp={normalExample} reading={exampleReading} />
-        </Section>
-      ) : null}
+
       {furiganaExample ? (
         <Section label="Contoh (furigana)">
           <ExampleLine jp={furiganaExample} mode="furigana" />
-        </Section>
-      ) : null}
-      {exampleMeaning ? (
-        <Section label="Arti contoh">
-          <p className="leading-relaxed text-ink-700 dark:text-paper-50">
-            {exampleMeaning}
-          </p>
         </Section>
       ) : null}
 

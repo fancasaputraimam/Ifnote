@@ -82,7 +82,16 @@ export function normalizeAiKotobaResult(
       r.exampleFurigana,
       r.readingExample,
     ),
-    exampleMeaning: pickStr(r.exampleMeaning, r.exampleTranslation, r.translationExample),
+    exampleMeaning: pickStr(
+      r.exampleMeaning,
+      r.exampleTranslation,
+      r.translationExample,
+      r.artiContoh,
+      r.aiExampleMeaning,
+      r.normalExampleMeaning,
+      r.beginnerExampleMeaning,
+      r.meaningExample,
+    ),
     note: pickStr(r.note, r.catatan, r.tip),
     inputLanguage,
     sourceInput: pickStr(r.sourceInput, r.input) || undefined,
@@ -167,11 +176,32 @@ export function normalizeAiBunpouResult(
     commonMistake = pickStr(r.commonMistake, r.mistakes);
   }
 
+  // Pull all examples (rich or legacy aliases) into one canonical array.
+  // We use this to (a) provide ex0 as the legacy single-example fallback
+  // and (b) serialize multiple examples as a numbered string into the
+  // flat DB fields so detail views can split them back out cleanly.
+  const examplesRich = (
+    Array.isArray(r.examples)
+      ? (r.examples as unknown[])
+      : Array.isArray(r.exampleSentences)
+        ? (r.exampleSentences as unknown[])
+        : []
+  )
+    .map((x) => {
+      if (!x || typeof x !== "object") return null;
+      const o = x as { jp?: unknown; reading?: unknown; meaning?: unknown };
+      const jp = typeof o.jp === "string" ? o.jp.trim() : "";
+      if (!jp) return null;
+      return {
+        jp,
+        reading: typeof o.reading === "string" ? o.reading.trim() : "",
+        meaning: typeof o.meaning === "string" ? o.meaning.trim() : "",
+      };
+    })
+    .filter((x): x is { jp: string; reading: string; meaning: string } => !!x);
+
   // Pull first example for the legacy single-example fields.
-  const examplesArr = Array.isArray(r.examples) ? (r.examples as unknown[]) : [];
-  const ex0 = examplesArr[0] as
-    | { jp?: unknown; reading?: unknown; meaning?: unknown }
-    | undefined;
+  const ex0 = examplesRich[0];
   const exJp =
     pickStr(ex0?.jp) ||
     pickStr(r.normalExample, r.beginnerExample, r.example, r.exampleJp);
@@ -183,7 +213,39 @@ export function normalizeAiBunpouResult(
       r.exampleFurigana,
       r.readingExample,
     );
-  const exMeaning = pickStr(ex0?.meaning) || pickStr(r.exampleMeaning);
+  const exMeaning =
+    pickStr(ex0?.meaning) ||
+    pickStr(
+      r.exampleMeaning,
+      r.exampleTranslation,
+      r.translationExample,
+      r.artiContoh,
+      r.aiExampleMeaning,
+      r.normalExampleMeaning,
+      r.beginnerExampleMeaning,
+      r.meaningExample,
+    );
+
+  // If AI returned multiple examples, serialize them as numbered text
+  // into the flat DB fields. The Catatan detail view splits these back
+  // out via splitNumberedExamples (lib/bunpou-format.ts) so the user
+  // sees one row per example with paired reading/meaning.
+  let multiJp = "";
+  let multiReading = "";
+  let multiMeaning = "";
+  if (examplesRich.length > 1) {
+    multiJp = examplesRich.map((e, i) => `${i + 1}. ${e.jp}`).join("\n");
+    if (examplesRich.some((e) => e.reading)) {
+      multiReading = examplesRich
+        .map((e, i) => `${i + 1}. ${e.reading || ""}`)
+        .join("\n");
+    }
+    if (examplesRich.some((e) => e.meaning)) {
+      multiMeaning = examplesRich
+        .map((e, i) => `${i + 1}. ${e.meaning || ""}`)
+        .join("\n");
+    }
+  }
 
   const lang = String(r.inputLanguage ?? "").toLowerCase();
   const inputLanguage =
@@ -198,11 +260,11 @@ export function normalizeAiBunpouResult(
     formula,
     usage,
     level: safeLevel(r.level) ?? "",
-    beginnerExample: pickStr(r.beginnerExample, exJp),
-    normalExample: pickStr(r.normalExample, exJp),
+    beginnerExample: pickStr(r.beginnerExample, multiJp || exJp),
+    normalExample: pickStr(r.normalExample, multiJp || exJp),
     furiganaExample: pickStr(r.furiganaExample, r.exampleFurigana),
-    exampleReading: exReading,
-    exampleMeaning: exMeaning,
+    exampleReading: multiReading || exReading,
+    exampleMeaning: multiMeaning || exMeaning,
     note: pickStr(r.note, r.catatan, r.tip),
     commonMistake,
     inputLanguage,

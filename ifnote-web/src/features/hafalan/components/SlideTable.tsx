@@ -158,9 +158,6 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         </div>
 
         <div className="flex items-center gap-1.5 pr-1">
-          <Badge tone={item.itemType === "kotoba" ? "accent" : "lilac"} size="sm">
-            {item.itemType}
-          </Badge>
           {item.level ? <Badge tone="neutral" size="sm">{item.level}</Badge> : null}
           <Badge tone={masteryTone[item.mastery]} size="sm">{item.mastery}</Badge>
           <span aria-hidden className={cn("ml-1 text-ink-400 transition-transform", open && "rotate-180")}>▾</span>

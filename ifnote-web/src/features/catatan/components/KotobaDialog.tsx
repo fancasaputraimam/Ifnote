@@ -69,7 +69,11 @@ export function KotobaDialog({
   const update = useUpdateKotoba();
 
   // Tabs only meaningful when adding new — when editing existing, force manual.
-  const [tab, setTab] = useState<Tab>(initialTab ?? "manual");
+  // The "Manual" tab pill is intentionally hidden in Add mode (per spec): user
+  // adds via AI Analyze or Bulk AI; the manual form is still rendered
+  // automatically as the review step after AI fills it in (`onAiApply`),
+  // and it stays the only branch for editing existing entries.
+  const [tab, setTab] = useState<Tab>(initialTab ?? "ai");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -79,7 +83,7 @@ export function KotobaDialog({
   useEffect(() => {
     if (open) {
       form.reset(initial ? toForm(initial) : emptyForm());
-      setTab(isEdit ? "manual" : initialTab ?? "manual");
+      setTab(isEdit ? "manual" : initialTab ?? "ai");
     }
   }, [open, initial, isEdit, initialTab, form]);
 
@@ -180,9 +184,6 @@ export function KotobaDialog({
     >
       {!isEdit ? (
         <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-paper-50 p-0.5 text-xs dark:border-ink-700 dark:bg-ink-900/40">
-          <TabBtn active={tab === "manual"} onClick={() => setTab("manual")}>
-            Manual
-          </TabBtn>
           <TabBtn active={tab === "ai"} onClick={() => setTab("ai")}>
             ✨ AI Analyze
           </TabBtn>

@@ -79,6 +79,7 @@ export class AiService {
       `Input user: "${dto.jp}". ` +
       "Identifikasi kotoba Jepang yang paling sesuai dan kembalikan struktur lengkap. " +
       "sourceInput = input asli, inputLanguage = bahasa input. " +
+      "WAJIB sertakan exampleMeaning sebagai terjemahan natural Bahasa Indonesia dari normalExample. " +
       "JANGAN gunakan tag <ruby>; cukup teks polos. JANGAN balikan markdown.";
     const r = await this.client.chatJson(userId, "explain-kotoba", sys, usr);
     if (!r.ok) aiCallFailed(r.message);
@@ -86,15 +87,27 @@ export class AiService {
   }
 
   async explainBunpou(userId: string, dto: ExplainBunpouDto) {
+    // Structured schema (formulaPatterns / transformExamples / usage[] /
+    // examples[] / commonMistakes[]) so frontend can render rapi tanpa
+    // parser regex. Frontend normalizer (`normalizeAiBunpouResult`) tetap
+    // backward-compatible kalau provider lama balikin shape flat.
     const sys =
       SYS_BASE +
       " Input user boleh Bahasa Indonesia, Jepang (pola/sentence), atau campuran. " +
-      "Identifikasi pola bunpou Jepang yang dimaksud lalu jelaskan dalam Bahasa Indonesia. " +
-      'Schema: {"pattern":"string","meaning":"string","formula":"string","usage":"string","example":"string","exampleMeaning":"string","commonMistake":"string"}';
+      "Identifikasi pola bunpou Jepang yang dimaksud lalu jelaskan dalam Bahasa Indonesia dengan struktur jelas. " +
+      "Jika input adalah kalimat (bukan pola), tetap kembalikan pattern utamanya, dan set detectedFromSentence:true. " +
+      "Selalu kembalikan pattern dalam Jepang dan meaning dalam Indonesia. " +
+      "Pisahkan: formulaPatterns sebagai array baris pendek (formula saja, JANGAN sertakan 'Contoh:' di dalamnya). " +
+      "transformExamples sebagai array {from,to,readingFrom,readingTo} (contoh perubahan kata kerja/sifat saja, opsional). " +
+      "usage sebagai array kalimat pendek bahasa Indonesia (bullet, tanpa nomor). " +
+      "examples sebagai array {jp,reading,meaning} berisi 1-3 kalimat contoh lengkap; reading harus hiragana penuh, meaning harus terjemahan Indonesia natural. " +
+      "commonMistakes sebagai array string pendek (jangan paragraph panjang). " +
+      "note pendek opsional. JANGAN tag <ruby> atau <rt>. JANGAN markdown. JANGAN gabungkan formula dan contoh perubahan dalam satu field. " +
+      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","meaning":"string","level":"N5|N4|N3|N2|N1|","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string","readingFrom":"string","readingTo":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
     const usr =
       `Input user: "${dto.pattern}". ` +
-      "Kalau input Indonesia, cari pola bunpou paling cocok. Kalau input pola Jepang, jelaskan pola itu. Kalau input kalimat Jepang, deteksi pola utamanya. " +
-      "Berikan arti, formula, kapan dipakai, contoh kalimat alami, terjemahan, dan kesalahan umum.";
+      "sourceInput = teks asli yang user ketik. inputLanguage = bahasa input. " +
+      "Beri minimal satu contoh kalimat lengkap dengan reading hiragana penuh dan terjemahan Indonesia.";
     const r = await this.client.chatJson(userId, "explain-bunpou", sys, usr);
     if (!r.ok) aiCallFailed(r.message);
     return { source: "ai" as const, data: r.data };
