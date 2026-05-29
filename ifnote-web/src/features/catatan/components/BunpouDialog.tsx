@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +9,6 @@ import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
-import { cn } from "@/lib/utils";
 import type { Bunpou, Mastery } from "@/lib/types";
 import {
   BunpouWritePayload,
@@ -37,6 +36,14 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+/**
+ * In create mode the dialog renders the AI Analyze input directly — no
+ * tab pill, no manual form. Edit mode renders the manual form.
+ *
+ * `initialTab` is kept for backwards-compat with deep-link callers but
+ * has no visual effect anymore.
+ */
 type Tab = "manual" | "ai";
 
 interface Props {
@@ -48,7 +55,8 @@ interface Props {
   initialTab?: Tab;
   /**
    * Buka bunpou yang sudah tersimpan dalam mode edit (dipakai ketika
-   * lookup AI menemukan item yang sudah ada di Catatan).
+   * lookup AI menemukan item yang sudah ada di Catatan). Backwards-compat
+   * — saat ini tidak dipakai di create mode.
    */
   onOpenSaved?: (id: string) => void;
 }
@@ -58,19 +66,12 @@ export function BunpouDialog({
   onClose,
   initial,
   existingPatterns = [],
-  initialTab,
+  initialTab: _initialTab,
   onOpenSaved,
 }: Props) {
   const isEdit = !!initial;
   const create = useCreateBunpou();
   const update = useUpdateBunpou();
-
-  // Tabs only meaningful when adding new — when editing existing, force manual.
-  // The "Manual" tab pill is intentionally hidden in Add mode (per spec): user
-  // adds via AI Analyze; the manual form is still rendered automatically as
-  // the review step after AI fills it in (`onAiApply`), and it stays the only
-  // branch for editing existing entries.
-  const [tab, setTab] = useState<Tab>(initialTab ?? "ai");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -80,9 +81,8 @@ export function BunpouDialog({
   useEffect(() => {
     if (open) {
       form.reset(initial ? toForm(initial) : emptyForm());
-      setTab(isEdit ? "manual" : initialTab ?? "ai");
     }
-  }, [open, initial, isEdit, initialTab, form]);
+  }, [open, initial, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const payload = toPayload(values);
@@ -141,16 +141,11 @@ export function BunpouDialog({
       onClose={onClose}
       title={initial ? "Edit Bunpou" : "Tambah Bunpou"}
     >
-      {!isEdit ? (
-        <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-paper-50 p-0.5 text-xs dark:border-ink-700 dark:bg-ink-900/40">
-          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")}>
-            ✨ AI Analyze
-          </TabBtn>
-        </div>
-      ) : null}
+      {/* Tab pill removed in create mode — dialog renders the AI
+          Analyze input directly per spec. Edit mode renders the
+          manual form. */}
 
-      {/* Manual form: rendered ONLY for edit mode. Add mode never
-          shows manual fields per spec — AI panel handles review/edit. */}
+      {/* Manual form: rendered ONLY for edit mode. */}
       {isEdit ? (
         <form className="space-y-3" onSubmit={onSubmit} noValidate>
           <TextInput
@@ -267,7 +262,7 @@ export function BunpouDialog({
         </form>
       ) : null}
 
-      {!isEdit && tab === "ai" ? (
+      {!isEdit ? (
         <BunpouAiAnalyze
           onApply={onAiApply}
           onCancel={onClose}
@@ -276,32 +271,6 @@ export function BunpouDialog({
         />
       ) : null}
     </Modal>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-full px-3 py-1.5 font-medium transition-colors",
-        active
-          ? "bg-accent-500 text-white"
-          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

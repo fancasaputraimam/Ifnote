@@ -80,16 +80,14 @@ export function BunpouAiAnalyze({
             Masukkan bunpou, arti, atau contoh kalimat
           </label>
           <textarea
-            rows={3}
+            rows={4}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={"Contoh: 〜ながら, sambil melakukan, 音楽を聞きながら勉強します"}
-            className="block w-full resize-none rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+            placeholder={"〜ながら\nsambil melakukan\n音楽を聞きながら勉強します"}
+            className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <p className="mt-1 text-xs text-ink-400">
-            Bisa bahasa Jepang atau Indonesia. AI akan mengembalikan pola,
-            arti, formula, contoh kalimat, dan kesalahan umum dalam struktur
-            rapi.
+            Bisa bahasa Jepang atau Indonesia.
           </p>
         </div>
         {error ? (

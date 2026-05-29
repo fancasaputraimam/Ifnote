@@ -173,18 +173,18 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-            Masukkan banyak kotoba
+            Masukkan kotoba atau artinya
           </label>
           <textarea
             rows={8}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={"berat\n重い\nmakanan manis\n生い物\nkadang-kadang\n時々"}
+            placeholder={"食べます\nmakan\nberat\n甜い物"}
             className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 font-mono text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <div className="mt-1 flex items-center justify-between text-xs">
             <p className="text-ink-400">
-              Boleh Bahasa Jepang atau Indonesia. Satu baris satu kotoba. Maksimal {MAX_ITEMS} kotoba per analisa.
+              Bisa isi 1 sampai {MAX_ITEMS} kotoba. Bisa bahasa Jepang atau Indonesia.
             </p>
             <span
               className={cn(
@@ -210,9 +210,7 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
             disabled={parsed.length === 0 || overLimit}
             onClick={onAnalyze}
           >
-            {parsed.length > 0
-              ? `Analisa ${parsed.length} Kotoba`
-              : "Analisa dengan AI"}
+            Analisa pakai AI
           </Button>
         </div>
       </div>

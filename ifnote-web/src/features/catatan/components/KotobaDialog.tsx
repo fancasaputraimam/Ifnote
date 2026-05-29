@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,14 +9,12 @@ import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
-import { cn } from "@/lib/utils";
 import type { Kotoba, Mastery } from "@/lib/types";
 import {
   KotobaWritePayload,
   useCreateKotoba,
   useUpdateKotoba,
 } from "@/features/catatan/useCatatan";
-import { KotobaAiAnalyze } from "./KotobaAiAnalyze";
 import { KotobaBulkAi } from "./KotobaBulkAi";
 
 const schema = z.object({
@@ -37,6 +35,16 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+/**
+ * In create mode the dialog renders the bulk-AI textarea directly — no
+ * mode selector pills. The bulk endpoint accepts 1..50 items so a single
+ * kotoba is just a one-line entry. Edit mode renders the manual form.
+ *
+ * The legacy `initialTab` prop is still accepted for backwards-compat
+ * with deep links (`?openAdd=ai-kotoba` / `?openAdd=bulk-kotoba`) but
+ * has no visual effect anymore: both options now land on the same
+ * bulk textarea.
+ */
 type Tab = "manual" | "ai" | "bulk";
 
 interface Props {
@@ -45,13 +53,13 @@ interface Props {
   initial?: Kotoba | null;
   /** All kotoba JP strings already saved — for AI duplicate detection. */
   existingJp?: string[];
-  /** Tab to open by default. Useful for "Tambah dengan AI" CTAs. */
+  /** Tab to open by default. Useful for "Tambah dengan AI" CTAs (legacy). */
   initialTab?: Tab;
   /**
    * Buka kotoba yang sudah tersimpan dalam mode edit (dipakai ketika
    * lookup AI menemukan item yang sudah ada di Catatan).
-   * Dialog ini akan di-close dan parent yang membuka ulang dengan
-   * `initial` ter-set.
+   * Disimpan di interface untuk backwards-compat — tidak dipakai di
+   * create mode lagi.
    */
   onOpenSaved?: (id: string) => void;
 }
@@ -61,19 +69,12 @@ export function KotobaDialog({
   onClose,
   initial,
   existingJp = [],
-  initialTab,
-  onOpenSaved,
+  initialTab: _initialTab,
+  onOpenSaved: _onOpenSaved,
 }: Props) {
   const isEdit = !!initial;
   const create = useCreateKotoba();
   const update = useUpdateKotoba();
-
-  // Tabs only meaningful when adding new — when editing existing, force manual.
-  // The "Manual" tab pill is intentionally hidden in Add mode (per spec): user
-  // adds via AI Analyze or Bulk AI; the manual form is still rendered
-  // automatically as the review step after AI fills it in (`onAiApply`),
-  // and it stays the only branch for editing existing entries.
-  const [tab, setTab] = useState<Tab>(initialTab ?? "ai");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -83,9 +84,8 @@ export function KotobaDialog({
   useEffect(() => {
     if (open) {
       form.reset(initial ? toForm(initial) : emptyForm());
-      setTab(isEdit ? "manual" : initialTab ?? "ai");
     }
-  }, [open, initial, isEdit, initialTab, form]);
+  }, [open, initial, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     const payload = toPayload(values);
@@ -113,32 +113,7 @@ export function KotobaDialog({
 
   const submitting = create.isPending || update.isPending;
 
-  /**
-   * AI flow — in create mode, save directly to Catatan after AI preview.
-   * Manual form is intentionally NOT rendered for new items (per spec):
-   * the AI panel itself already lets the user review/edit fields before
-   * clicking "Simpan ke Catatan". In edit mode this callback is unused
-   * because the AI tabs are hidden.
-   */
-  const onAiApply = async (payload: KotobaWritePayload) => {
-    try {
-      await create.mutateAsync(payload);
-      notify.success(
-        "Kotoba disimpan",
-        "Catatan baru sudah masuk ke daftar kamu.",
-        { icon: "\uD83C\uDF38" },
-      );
-      onClose();
-    } catch (e) {
-      const m = mapApiErrorToUserMessage(e, {
-        title: "Gagal menyimpan kotoba",
-        message: "Coba lagi sebentar.",
-      });
-      notify[m.variant](m.title, m.message);
-    }
-  };
-
-  /** Bulk flow → save all selected items here, then close modal. */
+  /** Bulk flow — save all selected items here, then close modal. */
   const onBulkSaveAll = async (payloads: KotobaWritePayload[]) => {
     if (payloads.length === 0) return;
     try {
@@ -181,19 +156,12 @@ export function KotobaDialog({
       onClose={onClose}
       title={initial ? "Edit Kotoba" : "Tambah Kotoba"}
     >
-      {!isEdit ? (
-        <div className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-paper-50 p-0.5 text-xs dark:border-ink-700 dark:bg-ink-900/40">
-          <TabBtn active={tab === "ai"} onClick={() => setTab("ai")}>
-            ✨ AI Analyze
-          </TabBtn>
-          <TabBtn active={tab === "bulk"} onClick={() => setTab("bulk")}>
-            ✨ Bulk AI
-          </TabBtn>
-        </div>
-      ) : null}
+      {/* Tab pills removed in create mode: dialog renders the bulk-AI
+          textarea directly per spec. Edit mode renders the manual form. */}
 
       {/* Manual form: rendered ONLY for edit mode. Add mode never
-          shows manual fields per spec — AI panel handles review/edit. */}
+          shows manual fields per spec — the bulk-AI textarea is the
+          single create surface. */}
       {isEdit ? (
         <form className="space-y-3" onSubmit={onSubmit} noValidate>
           <TextInput
@@ -301,16 +269,7 @@ export function KotobaDialog({
         </form>
       ) : null}
 
-      {!isEdit && tab === "ai" ? (
-        <KotobaAiAnalyze
-          onApply={onAiApply}
-          onCancel={onClose}
-          existingJp={existingJp}
-          onOpenSaved={onOpenSaved}
-        />
-      ) : null}
-
-      {!isEdit && tab === "bulk" ? (
+      {!isEdit ? (
         <KotobaBulkAi
           onSaveAll={onBulkSaveAll}
           onCancel={onClose}
@@ -318,32 +277,6 @@ export function KotobaDialog({
         />
       ) : null}
     </Modal>
-  );
-}
-
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-full px-3 py-1.5 font-medium transition-colors",
-        active
-          ? "bg-accent-500 text-white"
-          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
