@@ -376,3 +376,135 @@ export function cleanJapaneseResponse<T>(value: T, opts?: CleanOpts): T {
   }
   return value;
 }
+
+/* ------------------------------------------------------------------ */
+/* Safe ruby builder for example sentences                            */
+/* ------------------------------------------------------------------ */
+
+const SENTENCE_PUNCT_RE = /[\u3002\uFF01\uFF1F\u3001\uFF0E]/; // 。！？、．
+
+/**
+ * Heuristic: apakah teks ini terlihat seperti kalimat penuh, bukan satu
+ * kata atau frasa pendek.
+ *
+ * True kalau:
+ *   - mengandung tanda baca akhir kalimat Jepang (。 ！ ？) atau koma 、
+ *   - panjang teks > 12 karakter setelah strip whitespace
+ *
+ * False untuk satu kata / frasa singkat:
+ *   - "黒い", "慣れる", "形", "食べ物", "甜い物", "〜ながら", "〜ていく"
+ *
+ * Catatan: contoh kalimat di app biasanya memiliki tanda baca akhir,
+ * jadi heuristik ini cukup. Untuk kasus aneh (sentence tanpa tanda baca
+ * dan < 13 char), caller harus secara eksplisit pass `sentenceMode: true`
+ * — yang memang sudah dilakukan untuk semua example-rendering callsite.
+ */
+export function isFullSentence(text: string | null | undefined): boolean {
+  if (!text) return false;
+  const trimmed = String(text).trim();
+  if (!trimmed) return false;
+  if (SENTENCE_PUNCT_RE.test(trimmed)) return true;
+  if (trimmed.length > 12) return true;
+  return false;
+}
+
+/**
+ * Output dari `buildSafeRubySegments`. `reliable=false` artinya UI harus
+ * menampilkan teks plain (tanpa ruby) dan opsional menunjukkan
+ * `helperReading` di bawah teks (mis. "よみ: …").
+ */
+export interface SafeRubyResult {
+  segments: RubySegment[];
+  reliable: boolean;
+  helperReading?: string;
+}
+
+export interface BuildSafeRubyOptions {
+  /**
+   * True kalau teks ini adalah contoh kalimat — dalam mode ini, kita
+   * **tidak pernah** memaksa alignment full-sentence reading. Kalau
+   * tidak ada cara aman bikin ruby word-level (mis. tag <ruby> eksplisit
+   * atau parens), kembalikan plain segments + helperReading.
+   */
+  sentenceMode?: boolean;
+}
+
+/**
+ * Bangun ruby segments yang "aman" untuk dirender. Pakai ini untuk
+ * konten yang mungkin berupa kalimat penuh (mis. contoh kalimat di
+ * Catatan/Hafalan) supaya kita tidak menyiarkan furigana yang berantakan
+ * di atas seluruh kalimat.
+ *
+ * Ringkas algoritma:
+ *
+ *   1. Ada tag `<ruby><rt>...` di teks  →  segments aman, reliable=true.
+ *   2. Ada parenthetical reading        →  segments aman, reliable=true.
+ *   3. sentenceMode=false (kata/frasa) +
+ *      reading tersedia                 →  align reading → segments,
+ *                                          reliable=true.
+ *   4. sentenceMode=true + reading      →  plain segments,
+ *                                          reliable=false,
+ *                                          helperReading=reading.
+ *   5. Tidak ada reading                →  plain segments,
+ *                                          reliable=true (karena tidak
+ *                                          ada upaya alignment yang
+ *                                          bisa salah).
+ */
+export function buildSafeRubySegments(
+  text: string | null | undefined,
+  reading: string | null | undefined,
+  options: BuildSafeRubyOptions = {},
+): SafeRubyResult {
+  const raw = String(text ?? "");
+  if (!raw) {
+    return { segments: [], reliable: true };
+  }
+
+  // Kasus 1: ruby HTML eksplisit. Aman — rt diberikan word-level oleh
+  // pemberi data (biasanya AI dengan struktur eksplisit).
+  RUBY_RE.lastIndex = 0;
+  if (RUBY_RE.test(raw)) {
+    return {
+      segments: extractRubyFromHtml(raw),
+      reliable: true,
+    };
+  }
+
+  // Kasus 2: parenthetical reading ("黒(くろ)い", "甜い物（あまいもの）").
+  // Strip non-ruby HTML first supaya pola di dalam tag tidak ikut.
+  const cleaned = stripHtmlTags(raw);
+  PAREN_RE.lastIndex = 0;
+  if (PAREN_RE.test(cleaned)) {
+    return {
+      segments: parseParentheticalReadings(cleaned),
+      reliable: true,
+    };
+  }
+
+  const trimmedReading = (reading ?? "").trim();
+  const sentence = options.sentenceMode === true || isFullSentence(cleaned);
+
+  // Kasus 3: kata atau frasa pendek + reading → alignment dipercaya.
+  if (!sentence && trimmedReading) {
+    return {
+      segments: alignReadingToText(cleaned, trimmedReading),
+      reliable: true,
+    };
+  }
+
+  // Kasus 4: kalimat penuh + reading → plain text + helperReading.
+  if (sentence && trimmedReading) {
+    return {
+      segments: [{ base: cleaned }],
+      reliable: false,
+      helperReading: trimmedReading,
+    };
+  }
+
+  // Kasus 5: tidak ada reading sama sekali → plain text aman.
+  return {
+    segments: [{ base: cleaned }],
+    reliable: true,
+  };
+}
+

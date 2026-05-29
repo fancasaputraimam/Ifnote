@@ -477,10 +477,17 @@ function ExampleLine({
 }) {
   return (
     <div className="text-base">
-      {/* Tidak `inert`: kanji di contoh kalimat harus tetap bisa diklik
-          untuk buka KanjiPopup. KanjiPopup pakai portal jadi aman walau
-          komponen ini ada di dalam accordion `<button>`. */}
-      <JapaneseText text={jp} mode={mode} reading={reading || undefined} />
+      {/* sentenceMode mencegah ruby dipaksakan di atas kalimat penuh —
+          pakai helper `よみ: …` di mode Pemula kalau alignment tidak
+          reliable. Tidak `inert`: kanji di contoh kalimat tetap bisa
+          diklik untuk buka KanjiPopup. KanjiPopup pakai portal jadi
+          aman walau komponen ini ada di dalam accordion `<button>`. */}
+      <JapaneseText
+        text={jp}
+        mode={mode}
+        reading={reading || undefined}
+        sentenceMode
+      />
     </div>
   );
 }

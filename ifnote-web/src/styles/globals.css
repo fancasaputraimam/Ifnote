@@ -224,12 +224,42 @@ ruby rt {
   font-size: 0.62em;
   color: theme(colors.ink.400);
   font-weight: 400;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   line-height: 1;
   opacity: 0.75;
+  text-align: center;
+  text-indent: 0;
+}
+
+ruby rb {
+  text-indent: 0;
 }
 
 .dark ruby rt {
   color: theme(colors.ink.50);
   opacity: 0.65;
+}
+
+/*
+ * Default rendering untuk teks Jepang. Gunakan class `font-jp` (sudah
+ * diset di JapaneseText) supaya kalimat panjang membungkus secara
+ * natural di mobile dan tidak meledak ke kanan saat ruby muncul.
+ */
+.font-jp {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+}
+
+.font-jp ruby {
+  ruby-position: over;
+}
+
+.font-jp ruby rt {
+  font-size: 0.58em;
+  letter-spacing: 0;
+  line-height: 1;
+  opacity: 0.72;
+  text-align: center;
+  text-indent: 0;
 }

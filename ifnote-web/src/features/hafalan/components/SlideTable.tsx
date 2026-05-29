@@ -171,6 +171,7 @@ function SlideRow({ item, hideMeaning }: RowProps) {
               <JapaneseText
                 text={item.example ?? ""}
                 reading={item.exampleReading || undefined}
+                sentenceMode
               />
             </p>
           ) : aiPending ? (
