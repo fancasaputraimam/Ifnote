@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
@@ -23,6 +24,16 @@ export class KotobaController {
   @Get()
   list(@CurrentUser() user: JwtUser) {
     return this.svc.list(user.sub);
+  }
+
+  /**
+   * Database-first lookup. Dipakai frontend Tambah Kotoba sebelum panggil
+   * AI. PENTING: route ini wajib di-declare *sebelum* `:id` supaya "lookup"
+   * tidak ikut di-parse sebagai UUID.
+   */
+  @Get("lookup")
+  lookup(@CurrentUser() user: JwtUser, @Query("q") q: string) {
+    return this.svc.lookup(user.sub, q ?? "");
   }
 
   @Get(":id")

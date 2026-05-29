@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import LoaderGrid from "@/components/ui/loader-grid";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
@@ -101,18 +102,18 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         },
         {
           loading: {
-            title: "AI sedang menganalisa",
+            title: "AI sedang membuat penjelasan…",
             message: "Tunggu sebentar ya.",
             icon: "✨",
           },
           success: {
-            title: "Analisa selesai",
-            message: "Penjelasan sudah disimpan ke catatan.",
+            title: "Penjelasan disimpan",
+            message: "Kamu bisa membukanya lagi tanpa analisa ulang.",
             icon: "🌸",
           },
           error: (err) => {
             const m = mapApiErrorToUserMessage(err, {
-              title: "AI gagal menganalisa",
+              title: "Penjelasan gagal dibuat",
               message: "Coba lagi sebentar.",
             });
             return { title: m.title, message: m.message, icon: "⚠️" };
@@ -177,11 +178,13 @@ function SlideRow({ item, hideMeaning }: RowProps) {
             </p>
           ) : aiPending ? (
             <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:border-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
-              <span
-                aria-hidden
-                className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-accent-400 border-t-transparent align-middle"
-              />
-              AI sedang membuat penjelasan…
+              <div className="flex items-center gap-3">
+                <LoaderGrid
+                  label="AI sedang membuat penjelasan"
+                  className="shrink-0 text-[0.4rem]"
+                />
+                <span>AI sedang membuat penjelasan…</span>
+              </div>
             </div>
           ) : (
             <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-900/30">

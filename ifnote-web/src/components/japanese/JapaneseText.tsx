@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, ReactNode, useState } from "react";
-import { useSettings } from "@/features/settings/useSettings";
+import { useJapaneseMode } from "@/hooks/useJapaneseMode";
 import { KanjiPopup } from "@/features/kanji/KanjiPopup";
 import {
   alignReadingToText,
@@ -26,9 +26,12 @@ interface Props {
   /** Pre-parsed segments. Override `text` kalau diberikan. */
   ruby?: RubySegment[];
   /**
-   * Override JP display mode. Kalau tidak diset, ambil dari user settings.
-   *  - "beginner" / "furigana" → tampilkan reading di atas kanji
-   *  - "normal" → plain Japanese
+   * Override JP display mode. Kalau tidak diset, ambil dari user settings
+   * via `useJapaneseMode()`.
+   *
+   *   - "kana"     : hiragana/katakana saja (kanji diganti reading)
+   *   - "furigana" : kanji + furigana di atasnya
+   *   - "kanji"    : kanji bersih, tanpa furigana
    */
   mode?: JpMode;
   /** Suppress klik kanji untuk buka KanjiPopup. */
@@ -41,20 +44,25 @@ interface Props {
 }
 
 /**
- * Komponen tunggal global untuk render teks Jepang dengan dukungan
- * furigana. Pakai komponen ini di mana saja teks Jepang muncul:
- * Catatan, Hafalan, Quiz, Home, Kanji popup.
+ * Komponen tunggal global untuk render teks Jepang. Pakai komponen ini
+ * di mana saja teks Jepang muncul: Catatan, Hafalan, Quiz, Home, Kanji
+ * popup, AI preview, Bulk preview.
  *
- * Behavior:
- *  - Mode "beginner" / "furigana": render reading di atas kanji
- *    pakai native `<ruby><rt>`. Reading bisa dari:
- *      a. prop `ruby={[...]}` (pre-parsed)
- *      b. tag `<ruby>` di `text`
- *      c. parenthetical reading di `text` ("甘い物（あまいもの）")
- *      d. prop `reading` (single reading untuk seluruh `text`)
- *  - Mode "normal": render plain Japanese, strip parens dan tag.
- *  - Klik kanji buka KanjiPopup (kecuali `inert`).
- *  - Tidak ada `dangerouslySetInnerHTML` di mana pun.
+ * Mode behaviour:
+ *   - "kana"     (Pemula) : kanji diganti reading kana. Kalau tidak ada
+ *                           reading, fallback ke teks asli (mis. kalau
+ *                           kata cuma kana, atau backend tidak supply
+ *                           reading) — tidak pernah error.
+ *   - "furigana" (Normal) : kanji ditampilkan dengan furigana di atasnya
+ *                           pakai native `<ruby><rt>`. Reading sumber:
+ *                             a. prop `ruby={[...]}` (pre-parsed)
+ *                             b. tag `<ruby>...<rt>...</rt></ruby>` di `text`
+ *                             c. parens "甘い物（あまいもの）"
+ *                             d. prop `reading` (single reading)
+ *   - "kanji"    (Pro)    : plain Japanese, tanpa furigana / parens.
+ *
+ * Klik kanji buka KanjiPopup (kecuali `inert` true). Tidak ada
+ * `dangerouslySetInnerHTML` di komponen ini.
  */
 export function JapaneseText({
   text,
@@ -66,88 +74,114 @@ export function JapaneseText({
   rtClassName,
   fallbackToParsedParentheses = true,
 }: Props) {
-  const settingsQ = useSettings();
-  const effectiveMode: JpMode = mode ?? settingsQ.data?.jpMode ?? "beginner";
+  const { jpMode: globalMode } = useJapaneseMode();
+  const effectiveMode: JpMode = mode ?? globalMode;
   const [openKanji, setOpenKanji] = useState<string | null>(null);
 
-  const showFurigana = effectiveMode !== "normal";
+  const isKana = effectiveMode === "kana";
+  const isFurigana = effectiveMode === "furigana";
+  // const isKanji = effectiveMode === "kanji";
 
   // Resolve segments based on inputs.
+  // Rule of thumb:
+  //   - kalau ada ruby pre-parsed → pakai
+  //   - kalau ada `text` + `reading` (full sentence) → align ke run kanji
+  //   - kalau text punya parens / ruby tags → parse
+  //   - kalau tidak → single plain segment
   let segments: RubySegment[] = [];
   if (ruby && ruby.length > 0) {
     segments = ruby;
-  } else if (text && reading && showFurigana) {
-    // Reading lengkap (mis. seluruh hiragana sebuah kalimat) — align ke
-    // run kanji saja supaya `<rt>` tidak muncul di atas kana/tanda baca.
+  } else if (text && reading) {
+    // Align selalu, even di mode Pro/kanji — supaya kana mode bisa pakai
+    // segment.reading untuk replace kanji. Mode Pro nanti collapse ke base.
     segments = alignReadingToText(stripHtmlTags(text), reading);
   } else if (text) {
-    if (showFurigana && fallbackToParsedParentheses) {
+    // Coba parse parens / ruby tags. Kalau tidak ketemu, single segment.
+    if (fallbackToParsedParentheses) {
       segments = parseJapaneseText(text);
     } else {
-      // Normal mode: just clean everything to plain text.
-      const plain = stripParentheticalReadings(stripHtmlTags(text));
-      segments = [{ base: plain }];
+      segments = [
+        { base: stripParentheticalReadings(stripHtmlTags(text)) },
+      ];
     }
   }
 
   if (segments.length === 0) return null;
 
-  // Render kanji-by-kanji clickable for the base, ruby <rt> for the reading.
-  const renderBase = (s: string, keyPrefix: string): ReactNode[] => {
+  // ---- Mode "kana" (Pemula) -----------------------------------------
+  // Kanji diganti reading. Kalau segment tidak punya reading dan base-nya
+  // mengandung kanji, kita biarkan kanji-nya (better than empty) dan
+  // tetap tidak render furigana. Ini terjadi kalau backend tidak supply
+  // reading untuk item tersebut.
+  if (isKana) {
     const out: ReactNode[] = [];
-    let last = 0;
-    let m: RegExpExecArray | null;
-    KANJI_RE.lastIndex = 0;
-    // eslint-disable-next-line no-cond-assign
-    while ((m = KANJI_RE.exec(s)) !== null) {
-      if (m.index > last) out.push(s.slice(last, m.index));
-      const ch = m[0];
-      const idx = m.index;
-      out.push(
-        inert ? (
-          <span key={`${keyPrefix}-k-${idx}`}>{ch}</span>
-        ) : (
-          <span
-            key={`${keyPrefix}-k-${idx}`}
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenKanji(ch);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                e.stopPropagation();
-                setOpenKanji(ch);
-              }
-            }}
-            className="inline cursor-pointer rounded px-0.5 underline-offset-2 decoration-dotted decoration-accent-300 hover:bg-accent-50 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-accent-700/20"
-            aria-label={`Lihat info kanji ${ch}`}
-          >
-            {ch}
-          </span>
-        ),
-      );
-      last = idx + ch.length;
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      if (seg.reading) {
+        out.push(
+          <span key={`k-${i}`} className="font-jp">
+            {seg.reading}
+          </span>,
+        );
+      } else {
+        // Plain kana / latin / punctuation — render apa adanya.
+        out.push(
+          <Fragment key={`k-${i}`}>{seg.base}</Fragment>,
+        );
+      }
     }
-    if (last < s.length) out.push(s.slice(last));
-    return out;
-  };
+    return <span className={cn("font-jp", className)}>{out}</span>;
+  }
 
+  // ---- Mode "kanji" (Pro) -------------------------------------------
+  // Plain Japanese, tanpa furigana. Strip apapun yang berbentuk reading.
+  if (!isFurigana) {
+    const flattened = segments.map((s) => s.base).join("");
+    return (
+      <span className={cn("font-jp", className)}>
+        {renderClickableKanji(
+          flattened,
+          inert,
+          (ch) => setOpenKanji(ch),
+          "p",
+        )}
+        {!inert ? (
+          <KanjiPopup
+            open={!!openKanji}
+            kanji={openKanji}
+            onClose={() => setOpenKanji(null)}
+          />
+        ) : null}
+      </span>
+    );
+  }
+
+  // ---- Mode "furigana" (Normal) -------------------------------------
   return (
     <span className={cn("font-jp", className)}>
       {segments.map((seg, i) => {
-        if (seg.reading && showFurigana) {
+        if (seg.reading) {
           return (
             <ruby key={`r-${i}`}>
-              {renderBase(seg.base, `r-${i}`)}
+              {renderClickableKanji(
+                seg.base,
+                inert,
+                (ch) => setOpenKanji(ch),
+                `r-${i}`,
+              )}
               <rt className={cn("text-ink-400", rtClassName)}>{seg.reading}</rt>
             </ruby>
           );
         }
         return (
-          <Fragment key={`p-${i}`}>{renderBase(seg.base, `p-${i}`)}</Fragment>
+          <Fragment key={`p-${i}`}>
+            {renderClickableKanji(
+              seg.base,
+              inert,
+              (ch) => setOpenKanji(ch),
+              `p-${i}`,
+            )}
+          </Fragment>
         );
       })}
       {!inert ? (
@@ -159,4 +193,55 @@ export function JapaneseText({
       ) : null}
     </span>
   );
+}
+
+/**
+ * Render base text dengan setiap karakter kanji jadi tombol clickable
+ * (kecuali `inert`). Karakter non-kanji dirender plain.
+ */
+function renderClickableKanji(
+  s: string,
+  inert: boolean | undefined,
+  onClickKanji: (ch: string) => void,
+  keyPrefix: string,
+): ReactNode[] {
+  const out: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  KANJI_RE.lastIndex = 0;
+  // eslint-disable-next-line no-cond-assign
+  while ((m = KANJI_RE.exec(s)) !== null) {
+    if (m.index > last) out.push(s.slice(last, m.index));
+    const ch = m[0];
+    const idx = m.index;
+    out.push(
+      inert ? (
+        <span key={`${keyPrefix}-k-${idx}`}>{ch}</span>
+      ) : (
+        <span
+          key={`${keyPrefix}-k-${idx}`}
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClickKanji(ch);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onClickKanji(ch);
+            }
+          }}
+          className="inline cursor-pointer rounded px-0.5 underline-offset-2 decoration-dotted decoration-accent-300 hover:bg-accent-50 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-accent-700/20"
+          aria-label={`Lihat info kanji ${ch}`}
+        >
+          {ch}
+        </span>
+      ),
+    );
+    last = idx + ch.length;
+  }
+  if (last < s.length) out.push(s.slice(last));
+  return out;
 }

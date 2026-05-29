@@ -138,13 +138,15 @@ export class SettingsService {
       create: {
         userId,
         theme: dto.theme ?? "system",
-        jpMode: dto.jpMode ?? "beginner",
+        jpMode: normalizeJpMode(dto.jpMode),
         onboardingSeen: dto.onboardingSeen ?? false,
         ...aiCreate,
       },
       update: {
         ...(dto.theme !== undefined ? { theme: dto.theme } : {}),
-        ...(dto.jpMode !== undefined ? { jpMode: dto.jpMode } : {}),
+        ...(dto.jpMode !== undefined
+          ? { jpMode: normalizeJpMode(dto.jpMode) }
+          : {}),
         ...(dto.onboardingSeen !== undefined ? { onboardingSeen: dto.onboardingSeen } : {}),
         ...aiUpdate,
       },
@@ -196,7 +198,7 @@ function toOwnerPublic(row: SettingsRow, aiAvailable: boolean): OwnerSettingsRes
     id: row.id,
     userId: row.userId,
     theme: row.theme,
-    jpMode: row.jpMode,
+    jpMode: normalizeJpMode(row.jpMode),
     onboardingSeen: row.onboardingSeen,
     aiProvider: row.aiProvider,
     aiBaseUrl: row.aiBaseUrl,
@@ -217,11 +219,31 @@ function toNormalPublic(row: SettingsRow, aiAvailable: boolean): NormalSettingsR
     id: row.id,
     userId: row.userId,
     theme: row.theme,
-    jpMode: row.jpMode,
+    jpMode: normalizeJpMode(row.jpMode),
     onboardingSeen: row.onboardingSeen,
     canManageAi: false,
     aiAvailable,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+/**
+ * Translate legacy `jpMode` values yang masih nyangkut di DB / backup
+ * JSON ke nilai canonical baru.
+ *
+ *   "beginner" → "furigana"  (dulu beginner = furigana + helper)
+ *   "normal"   → "kanji"     (dulu normal = kanji bersih)
+ *   "furigana" → "furigana"  (sama)
+ *   "kana"     → "kana"
+ *   "kanji"    → "kanji"
+ *   undefined  → "kana"      (default Pemula)
+ */
+function normalizeJpMode(value: unknown): "kana" | "furigana" | "kanji" {
+  if (value === "kana" || value === "furigana" || value === "kanji") {
+    return value;
+  }
+  if (value === "beginner") return "furigana";
+  if (value === "normal") return "kanji";
+  return "kana";
 }

@@ -7,7 +7,17 @@
 export type Mastery = "good" | "mid" | "weak";
 export type JlptLevel = "N5" | "N4" | "N3" | "N2" | "N1";
 export type ThemeMode = "system" | "light" | "dark";
-export type JpMode = "beginner" | "normal" | "furigana";
+/**
+ * Mode tampilan teks Jepang.
+ *
+ *   - "kana"     : Pemula — hiragana/katakana saja, kanji diganti reading
+ *   - "furigana" : Normal — kanji dengan furigana di atasnya
+ *   - "kanji"    : Pro — kanji bersih, tanpa furigana
+ *
+ * Legacy values ("beginner", "normal") dinormalisasi di backend
+ * `settings.service` saat read/write supaya data lama tidak rusak.
+ */
+export type JpMode = "kana" | "furigana" | "kanji";
 export type AiRequestFormat = "openai" | "azure" | "custom";
 export type HafalanMode = "kotoba" | "bunpou" | "mixed" | "weak";
 export type QuizType = "kotoba" | "bunpou" | "mixed" | "ai" | "sakubun";

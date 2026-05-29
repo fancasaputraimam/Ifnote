@@ -4,6 +4,7 @@ import { useState } from "react";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import LoaderGrid from "@/components/ui/loader-grid";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
@@ -58,18 +59,18 @@ export function CatatanRow({ item, onEdit }: Props) {
         },
         {
           loading: {
-            title: "AI sedang menganalisa",
+            title: "AI sedang membuat penjelasan…",
             message: "Tunggu sebentar ya.",
             icon: "✨",
           },
           success: {
-            title: "Analisa selesai",
-            message: "Penjelasan sudah disimpan ke catatan.",
+            title: "Penjelasan disimpan",
+            message: "Kamu bisa membukanya lagi tanpa analisa ulang.",
             icon: "🌸",
           },
           error: (err) => {
             const m = mapApiErrorToUserMessage(err, {
-              title: "AI gagal menganalisa",
+              title: "Penjelasan gagal dibuat",
               message: "Coba lagi sebentar.",
             });
             return { title: m.title, message: m.message, icon: "⚠️" };
@@ -89,7 +90,13 @@ export function CatatanRow({ item, onEdit }: Props) {
       } else {
         await deleteBunpou.mutateAsync(item.id);
       }
-      notify.success("Catatan dihapus", "Item ini sudah dihapus dari Catatan dan Hafalan.");
+      notify.success(
+        isKotoba ? "Kotoba dihapus" : "Bunpou dihapus",
+        isKotoba
+          ? "Catatan sudah dihapus dari daftar kamu."
+          : "Catatan bunpou sudah dihapus.",
+        { icon: "🗑️" },
+      );
     } catch (e) {
       const m = mapApiErrorToUserMessage(e, {
         title: "Gagal menghapus",
@@ -128,11 +135,14 @@ export function CatatanRow({ item, onEdit }: Props) {
               />
             </span>
             <span className="truncate text-xs text-ink-400">
-              {item.meaning} · {isKotoba ? "Kotoba" : "Bunpou"}
+              {item.meaning}
             </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <Badge tone={isKotoba ? "accent" : "lilac"}>
+            {isKotoba ? "Kotoba" : "Bunpou"}
+          </Badge>
           {item.level ? (
             <Badge tone={isKotoba ? "accent" : "lilac"}>{item.level}</Badge>
           ) : null}
@@ -221,12 +231,12 @@ function ExplainPrompt({
 function ExplainLoading() {
   return (
     <div className="rounded-xl border border-paper-200 bg-paper-50/60 p-3 text-sm dark:border-ink-700 dark:bg-ink-900/30">
-      <div className="flex items-center gap-2 text-ink-700 dark:text-paper-50">
-        <span
-          aria-hidden
-          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-400 border-t-transparent"
+      <div className="flex items-center gap-3 text-ink-700 dark:text-paper-50">
+        <LoaderGrid
+          label="AI sedang membuat penjelasan"
+          className="shrink-0 text-[0.4rem]"
         />
-        AI sedang membuat penjelasan…
+        <span>AI sedang membuat penjelasan…</span>
       </div>
       <p className="mt-1 text-xs text-ink-400">
         Hasilnya akan disimpan otomatis supaya tidak memakai token ulang.

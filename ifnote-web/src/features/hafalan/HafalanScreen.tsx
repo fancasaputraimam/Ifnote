@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { NotebookCard } from "@/components/ui/NotebookCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 import { ModeCards } from "./components/ModeCards";
@@ -16,6 +15,7 @@ import { SlideTable } from "./components/SlideTable";
 import { useHafalanSlide, useHafalanSlides } from "./useHafalan";
 import { ROUTES } from "@/lib/constants";
 import type { HafalanMode, HafalanSlide } from "@/lib/types";
+import { PanelCard } from "@/components/ui/PanelCard";
 
 /** Hanya dua mode yang user-facing di UI. */
 type UiHafalanMode = "kotoba" | "bunpou";
@@ -77,31 +77,33 @@ export function HafalanScreen() {
 
       {/* Compact toolbar — replaces old "Hafalan Hari Ini" SessionCard. */}
       {hasItems ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800">
-          <span className="font-medium text-ink-800 dark:text-paper-50">
-            Slide {slide}
-            <span className="text-ink-400"> / {totalSlides}</span>
-          </span>
-          <span className="text-xs text-ink-400">
-            · {view?.items.length ?? 0} dari {totalItems} item
-          </span>
+        <PanelCard padding="compact" tone="accent">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-medium text-ink-800 dark:text-paper-50">
+              Slide {slide}
+              <span className="text-ink-400"> / {totalSlides}</span>
+            </span>
+            <span className="text-xs text-ink-400">
+              · {view?.items.length ?? 0} dari {totalItems} item
+            </span>
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setHideMeaning((v) => !v)}
-            >
-              {hideMeaning ? "Tampilkan Arti" : "Sembunyikan Arti"}
-            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setHideMeaning((v) => !v)}
+              >
+                {hideMeaning ? "Tampilkan Arti" : "Sembunyikan Arti"}
+              </Button>
+            </div>
           </div>
-        </div>
+        </PanelCard>
       ) : null}
 
       {isInitialLoading ? (
         <LoadingState label="Memuat slide…" />
       ) : isError ? (
-        <NotebookCard className="p-5">
+        <PanelCard tone="rose" stripe padding="compact">
           <div className="flex items-center gap-2">
             <Badge tone="warn">Mode offline</Badge>
             <p className="text-sm text-ink-700 dark:text-paper-50">
@@ -109,7 +111,7 @@ export function HafalanScreen() {
               backend menyala.
             </p>
           </div>
-        </NotebookCard>
+        </PanelCard>
       ) : !hasItems ? (
         <EmptyState
           icon="🗂"

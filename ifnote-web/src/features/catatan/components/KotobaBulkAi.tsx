@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
+import { AiLoading } from "@/components/ui/ai-loading";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { useBulkKotobaAi } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
@@ -134,8 +135,9 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
 
   if (bulk.isPending) {
     return (
-      <LoadingState
-        label={`AI sedang menganalisa ${parsed.length} kotoba…`}
+      <AiLoading
+        title={`AI sedang menganalisa daftar…`}
+        description={`Mengecek ${parsed.length} kotoba yang kamu masukkan.`}
       />
     );
   }

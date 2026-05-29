@@ -2,6 +2,7 @@
 
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { ROUTES, TOKEN_STORAGE_KEY } from "@/lib/constants";
 import { ApiError } from "@/lib/api-client";
@@ -29,6 +30,7 @@ interface ProviderProps {
 
 export function AuthProvider({ children }: ProviderProps) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,10 +63,17 @@ export function AuthProvider({ children }: ProviderProps) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Cancel & invalidate semua query SEBELUM token di-clear, supaya
+    // tidak ada refetch yang nyantol pakai token kosong dan trigger
+    // 401 race ke event listener `ifnote:unauthorized`. Tanpa ini,
+    // logout sering nyangkut di error boundary dengan pesan
+    // "missing required error components".
+    await qc.cancelQueries();
+    qc.clear();
     await authClient.logout();
     setUser(null);
     router.replace(ROUTES.login);
-  }, [router]);
+  }, [router, qc]);
 
   // Initial bootstrap from stored token
   useEffect(() => {
@@ -75,6 +84,8 @@ export function AuthProvider({ children }: ProviderProps) {
   useEffect(() => {
     const onUnauth = () => {
       authClient.clearToken();
+      qc.cancelQueries();
+      qc.clear();
       setUser(null);
       // Soft redirect — only if we're inside the app shell
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/app")) {
@@ -83,7 +94,7 @@ export function AuthProvider({ children }: ProviderProps) {
     };
     window.addEventListener("ifnote:unauthorized", onUnauth);
     return () => window.removeEventListener("ifnote:unauthorized", onUnauth);
-  }, [router]);
+  }, [router, qc]);
 
   // Cross-tab sync: if another tab logs out, reflect here
   useEffect(() => {

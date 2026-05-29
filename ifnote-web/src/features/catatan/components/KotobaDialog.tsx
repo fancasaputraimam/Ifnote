@@ -88,7 +88,7 @@ export function KotobaDialog({
     try {
       if (initial) {
         await update.mutateAsync({ id: initial.id, payload });
-        notify.success("Kotoba diperbarui", "Perubahan sudah disimpan.", { icon: "📚" });
+        notify.success("Kotoba diperbarui", "Perubahan sudah disimpan.", { icon: "🌸" });
       } else {
         await create.mutateAsync(payload);
         notify.success(

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { TextInput } from "@/components/ui/TextInput";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
-import { LoadingState } from "@/components/feedback/LoadingState";
+import { AiLoading } from "@/components/ui/ai-loading";
 import { useExplainBunpou } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
@@ -64,7 +64,12 @@ export function BunpouAiAnalyze({
     : "new";
 
   if (explain.isPending) {
-    return <LoadingState label="AI sedang menganalisa bunpou…" />;
+    return (
+      <AiLoading
+        title="AI sedang menganalisa bunpou…"
+        description="Tunggu sebentar ya."
+      />
+    );
   }
 
   if (!draft) {

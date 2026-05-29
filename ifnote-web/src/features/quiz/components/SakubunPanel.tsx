@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { LoadingState } from "@/components/feedback/LoadingState";
+import { AiLoading } from "@/components/ui/ai-loading";
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PanelCard } from "@/components/ui/PanelCard";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
@@ -51,8 +52,9 @@ export function SakubunPanel() {
       }
       if (next.size >= MAX_SELECT) {
         notify.warning(
-          "Batas pilihan",
+          "Pilihan terlalu banyak",
           `Maksimal ${MAX_SELECT} bunpou untuk sekali generate sakubun.`,
+          { icon: "🍂" },
         );
         return prev;
       }
@@ -77,8 +79,9 @@ export function SakubunPanel() {
     }
     if (ids.length > MAX_SELECT) {
       notify.warning(
-        "Batas pilihan",
+        "Pilihan terlalu banyak",
         `Maksimal ${MAX_SELECT} bunpou untuk sekali generate sakubun.`,
+        { icon: "🍂" },
       );
       return;
     }
@@ -87,18 +90,18 @@ export function SakubunPanel() {
         gen.mutateAsync({ bunpouIds: ids, level: "beginner" }),
         {
           loading: {
-            title: "AI sedang membuat sakubun",
-            message: "Tunggu sebentar ya.",
-            icon: "✍️",
+            title: "AI sedang membuat sakubun…",
+            message: "Menggunakan bunpou yang kamu pilih.",
+            icon: "✨",
           },
           success: {
-            title: "Sakubun siap",
-            message: "Periksa hasilnya di bawah.",
+            title: "Sakubun selesai",
+            message: "Periksa hasilnya dan pelajari bunpou yang dipakai.",
             icon: "🌸",
           },
           error: (err) => {
             const m = mapApiErrorToUserMessage(err, {
-              title: "AI gagal membuat sakubun",
+              title: "Sakubun gagal dibuat",
               message: "Coba lagi sebentar.",
             });
             return { title: m.title, message: m.message, icon: "⚠️" };
@@ -128,7 +131,7 @@ export function SakubunPanel() {
     }
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      notify.success("Sakubun disalin", "Sudah ada di clipboard kamu.");
+      notify.success("Disalin", "Teks berhasil disalin.", { icon: "📋" });
     } catch {
       notify.error("Gagal menyalin", "Browser menolak akses clipboard.");
     }
@@ -137,7 +140,7 @@ export function SakubunPanel() {
   // ---------- empty state: tidak punya bunpou di Catatan ----------
   if (!listQ.isLoading && items.length === 0) {
     return (
-      <NotebookCard className="p-5">
+      <PanelCard padding="default">
         <EmptyState
           icon="✍️"
           title="Belum ada bunpou"
@@ -148,24 +151,18 @@ export function SakubunPanel() {
             </LinkButton>
           }
         />
-      </NotebookCard>
+      </PanelCard>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* ---------------- Selection panel ---------------- */}
-      <NotebookCard className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-              Pilih Bunpou untuk Sakubun
-            </h2>
-            <p className="mt-0.5 text-xs text-ink-400">
-              Pilih maksimal {MAX_SELECT} bunpou dari Catatan. AI akan membuat
-              sakubun memakai bunpou yang kamu pilih.
-            </p>
-          </div>
+      <PanelCard
+        eyebrow="✍️ Sakubun"
+        title="Pilih Bunpou untuk Sakubun"
+        description={`Pilih maksimal ${MAX_SELECT} bunpou dari Catatan. AI akan membuat sakubun memakai bunpou yang kamu pilih.`}
+        headerAction={
           <span
             className={cn(
               "text-xs font-medium tabular-nums",
@@ -176,14 +173,14 @@ export function SakubunPanel() {
           >
             {selected.size} / {MAX_SELECT} bunpou dipilih
           </span>
-        </div>
-
+        }
+      >
         {listQ.isLoading ? (
-          <div className="mt-3">
+          <div>
             <LoadingState label="Memuat daftar bunpou…" />
           </div>
         ) : (
-          <ul className="mt-3 max-h-[40vh] space-y-1.5 overflow-y-auto pr-1">
+          <ul className="max-h-[40vh] space-y-1.5 overflow-y-auto pr-1">
             {items.map((it) => {
               const isSelected = selected.has(it.id);
               return (
@@ -253,25 +250,26 @@ export function SakubunPanel() {
               : "Centang bunpou di atas untuk mulai."}
           </span>
         </div>
-      </NotebookCard>
+      </PanelCard>
 
       {/* ---------------- Loading ---------------- */}
       {gen.isPending ? (
-        <NotebookCard className="p-4 sm:p-5">
-          <LoadingState label="AI sedang membuat sakubun…" />
-        </NotebookCard>
+        <AiLoading
+          title="AI sedang membuat sakubun…"
+          description="Menggunakan bunpou yang kamu pilih."
+        />
       ) : null}
 
       {/* ---------------- Result ---------------- */}
       {result ? (
-        <NotebookCard stripe="accent" className="p-4 sm:p-5">
+        <PanelCard tone="accent" stripe>
           <SakubunResult
             data={result}
             requested={requested ?? []}
             onCopy={onCopy}
             onRegenerate={onGenerate}
           />
-        </NotebookCard>
+        </PanelCard>
       ) : null}
 
       {/* ---------------- Backup link ke Catatan ---------------- */}

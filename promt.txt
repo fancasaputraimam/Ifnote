@@ -4,646 +4,367 @@ Read PRD_ifNote_Web.md first.
 STRICT EXECUTION RULES — WAJIB
 ==================================================
 
-Only update:
-- Kotoba search/analyze flow
-- Bunpou search/analyze flow
-- Bulk Kotoba analyze flow
-- Kanji lookup flow
-- Backend lookup/cache logic if needed
-- Frontend preview/copy display
+Create an auto installer script for deploying ifNote Web on a VPS.
 
-Do NOT redesign the whole app.
-Do NOT change navigation.
-Do NOT bring back AI Tutor.
-Do NOT add Flashcard wording.
-Use Hafalan only.
+Do NOT change the app source code.
+Do NOT redesign UI.
+Do NOT modify frontend/backend features.
 Do NOT expose API keys.
-Do NOT call AI before checking existing data.
-Do NOT auto-save broken AI results.
-Do NOT break global JapaneseText / furigana.
-Do NOT break existing Catatan, Hafalan, Quiz, Home, Settings.
+Do NOT hardcode secrets.
+Do NOT remove existing env logic.
+Only create deployment/installer files.
 
-Main rule:
-If user searches/analyzes Kotoba/Bunpou or clicks Kanji:
+Target VPS:
+- Ubuntu/Debian Linux
+- Node.js app
+- Frontend: Next.js
+- Backend: NestJS/Express
+- Database: PostgreSQL
+- Process manager: PM2
+- Reverse proxy: Nginx
+- Optional SSL: Certbot
 
-1. Check saved data first.
-2. If found, show saved result immediately.
-3. If not found, then use AI.
-4. If AI returns valid Kanji result, cache/save it.
-5. If AI returns valid Kotoba/Bunpou result, show preview first.
-6. Kotoba/Bunpou only save after user clicks Simpan.
+==================================================
+MAIN GOAL
+==================================================
+
+Create an interactive VPS auto-install script that can install:
+
+1. Backend only
+2. Frontend only
+3. Backend + Frontend
+
+Database choices:
+
+1. Install PostgreSQL directly on VPS
+2. Use external PostgreSQL provider
+
+If user chooses external PostgreSQL:
+- ask for PostgreSQL credentials
+- generate DATABASE_URL automatically
+- support SSL mode
+
+If user chooses local PostgreSQL:
+- install PostgreSQL
+- create database
+- create database user
+- create password
+- generate DATABASE_URL automatically
+
+==================================================
+FILES TO CREATE
+==================================================
+
+Create:
+
+scripts/deploy-ifnote.sh
+
+Optional:
+scripts/README_DEPLOY.md
+
+Make deploy-ifnote.sh executable-friendly.
+
+==================================================
+SCRIPT REQUIREMENTS
+==================================================
+
+The script must:
+
+1. Require root/sudo.
+2. Detect Ubuntu/Debian.
+3. Install base packages:
+   - curl
+   - git
+   - unzip
+   - build-essential
+   - nginx
+   - certbot
+   - python3-certbot-nginx
+   - ca-certificates
+   - gnupg
+   - lsb-release
+
+4. Install Node.js 20 if missing.
+5. Install PM2 globally if missing.
+6. Ask install mode:
+   - Backend only
+   - Frontend only
+   - Backend + Frontend
+
+7. Ask project source:
+   - clone from Git repo
+   - project already exists on VPS
+
+8. Ask project folder:
+   default:
+   /var/www/ifnote
+
+9. Ask backend folder path relative to project:
+   default:
+   backend
+
+10. Ask frontend folder path relative to project:
+   default:
+   frontend
+
+11. Ask ports:
+   backend default: 3001
+   frontend default: 3002
+
+==================================================
+DATABASE OPTIONS
+==================================================
+
+If installing backend, ask database mode:
+
+1. Install PostgreSQL on VPS
+2. Use external PostgreSQL provider
+
+LOCAL POSTGRES MODE:
+- install postgresql and postgresql-contrib
+- start and enable PostgreSQL
+- ask:
+  - database name, default ifnote
+  - database user, default ifnote_user
+  - database password
+- create database and user
+- grant privileges
+- generate:
+
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/DB_NAME?schema=public"
+
+EXTERNAL POSTGRES MODE:
+Ask:
+- host
+- port, default 5432
+- database name
+- username
+- password
+- ssl true/false, default true
+
+Generate:
+
+If SSL true:
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB_NAME?schema=public&sslmode=require"
+
+If SSL false:
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DB_NAME?schema=public"
+
+==================================================
+BACKEND INSTALL
+==================================================
+
+For backend installation:
+
+1. Create backend .env.
+
+Required env:
+
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=...
+JWT_SECRET=generated_secure_secret
+AI_API_KEY=ask_user
+AI_BASE_URL=ask_user default https://api.openai.com/v1
+AI_MODEL_ID=ask_user default gpt-4o-mini
+FRONTEND_URL=ask_user
 
 Important:
-This is database-first internally, but do NOT expose technical words to user.
+- Generate JWT_SECRET automatically using openssl rand -hex 32.
+- Ask AI_API_KEY securely without echo.
+- chmod 600 backend .env.
+- Do not print secrets after input.
 
-Do NOT show user-facing text like:
-- "Data ini sudah ada, jadi AI tidak dipakai."
-- "database"
-- "cache"
-- "token"
-- "source"
-- "Dari database"
-- "Dari AI"
-- "AI tidak dipakai"
+2. Run:
+npm install
 
-Use natural UI wording instead.
+3. If Prisma exists:
+- npx prisma generate
+- npx prisma migrate deploy
 
-==================================================
-USER-FACING COPY RULES
-==================================================
+4. Build backend:
+npm run build
 
-Button / CTA:
-- "Analisa pakai AI"
+5. Start backend with PM2:
+- prefer dist/main.js
+- fallback dist/index.js
+- fallback npm run start:prod
 
-Loading:
-- "AI sedang menganalisa..."
+PM2 name:
+ifnote-backend
 
-If existing item is found:
-Badge:
-- "Ditemukan di Catatan"
-
-Helper text:
-- "Catatan ini sudah pernah kamu simpan."
-
-If AI generated result:
-Badge:
-- "Hasil Analisa AI"
-
-Helper text:
-- "Periksa hasilnya sebelum disimpan."
-
-If unclear/manual result:
-Badge:
-- "Perlu dicek"
-
-Helper text:
-- "Lengkapi dulu data yang masih kosong."
-
-For Kanji:
-If found/cached, do not mention cache.
-Just show the kanji detail normally.
-
-If generated by AI, do not mention backend/database/token.
-Use:
-- "Detail Kanji"
+6. pm2 save
 
 ==================================================
-PART 1 — DATABASE-FIRST RULE, BUT USER-FRIENDLY UI
+FRONTEND INSTALL
 ==================================================
 
-Implement saved-data-first behavior for:
+For frontend installation:
 
-1. Add Kotoba AI Analyze
-2. Add Bunpou AI Analyze
-3. Bulk Kotoba AI Analyze
-4. Kotoba/Bunpou search if applicable
-5. Kanji click / Kanji popup
+1. Create frontend .env.local.
 
-Internal flow:
+Required env:
 
-User input/search/click
-→ normalize query
-→ check saved data / cache
-→ if exists: return saved result
-→ if not exists: call AI
-→ validate AI result
-→ for Kanji: cache result automatically
-→ for Kotoba/Bunpou: show preview, save only after user confirms
+NEXT_PUBLIC_API_BASE_URL="backend API URL"
 
-Visible UI flow:
+Ask user:
+Backend API URL, example:
+https://api.domain.com
+or
+http://localhost:3001
 
-If found:
-- show "Ditemukan di Catatan"
-- show "Catatan ini sudah pernah kamu simpan."
-- do not mention AI was skipped
+2. chmod 600 .env.local
 
-If new AI result:
-- show "Hasil Analisa AI"
-- show "Periksa hasilnya sebelum disimpan."
+3. Run:
+npm install
+npm run build
+
+4. Start frontend with PM2:
+
+pm2 start npm --name ifnote-frontend -- run start -- -p FRONTEND_PORT
+
+5. pm2 save
 
 ==================================================
-PART 2 — NORMALIZE QUERY
+NGINX SETUP
 ==================================================
 
-Create or update helper:
+After install, ask:
 
-lib/normalize-query.ts
+Mau setup Nginx reverse proxy? y/n
 
-Functions:
+If yes:
+- ask frontend domain
+- ask backend API domain
 
-normalizeJapaneseQuery(input: string): string
-normalizeKotobaQuery(input: string): string
-normalizeBunpouQuery(input: string): string
-normalizeKanjiQuery(input: string): string
+Create Nginx config:
 
-Rules:
-- trim spaces
-- normalize full-width/half-width where safe
-- lowercase romaji/latin input
-- remove extra punctuation
-- preserve Japanese characters
-- preserve 〜 for bunpou
-- for kanji click, use only one kanji character
+server frontend domain:
+proxy_pass http://127.0.0.1:FRONTEND_PORT
 
-Examples:
-" 食べます " → "食べます"
-"たべます。" → "たべます"
-" makan " → "makan"
-"〜 ながら" → "〜ながら"
-"時" → "時"
+server backend domain:
+proxy_pass http://127.0.0.1:BACKEND_PORT
 
-==================================================
-PART 3 — KOTOBA LOOKUP BEFORE AI
-==================================================
+Add headers:
+- Upgrade
+- Connection upgrade
+- Host
+- X-Real-IP
+- X-Forwarded-For
+- X-Forwarded-Proto
 
-When user uses Tambah Kotoba → AI Analyze:
+Enable site.
+Run:
+nginx -t
+systemctl reload nginx
 
-First call saved-data lookup.
+Then ask:
+Mau install SSL Let's Encrypt sekarang? y/n
 
-Preferred backend endpoint:
-
-GET /api/kotoba/lookup?q=...
-
-Backend behavior:
-- use authenticated userId
-- search user's saved Kotoba first
-- match by:
-  - exact jp
-  - normalized jp
-  - reading if field exists
-  - meaning
-  - normalized meaning
-  - romaji if available
-  - optional contains/fuzzy search
-
-If found, return:
-
-{
-  "found": true,
-  "item": { ...kotoba }
-}
-
-If not found:
-
-{
-  "found": false
-}
-
-Frontend behavior:
-- If found:
-  - show preview from saved Catatan
-  - badge: "Ditemukan di Catatan"
-  - helper: "Catatan ini sudah pernah kamu simpan."
-  - do NOT call AI
-  - buttons:
-    - Buka Catatan
-    - Gunakan Data Ini
-    - Batal
-
-- If not found:
-  - call AI analyze endpoint
-  - show AI preview
-  - badge: "Hasil Analisa AI"
-  - helper: "Periksa hasilnya sebelum disimpan."
-  - buttons:
-    - Simpan
-    - Edit
-    - Batal
-
-Acceptance:
-- Input "食べます" if exists → saved result appears.
-- Input "makan" if meaning exists → saved result appears.
-- Input new word → AI analysis appears.
-- UI must not say "AI tidak dipakai" or "database".
+If yes:
+certbot --nginx -d FRONTEND_DOMAIN -d API_DOMAIN
 
 ==================================================
-PART 4 — BUNPOU LOOKUP BEFORE AI
+SAFETY REQUIREMENTS
 ==================================================
 
-When user uses Tambah Bunpou → AI Analyze:
+The script must:
 
-First call saved-data lookup.
-
-Preferred backend endpoint:
-
-GET /api/bunpou/lookup?q=...
-
-Backend behavior:
-- use authenticated userId
-- search user's saved Bunpou first
-- match by:
-  - exact pattern
-  - normalized pattern
-  - meaning
-  - formula
-  - usage
-  - tags
-  - examples if needed
-
-If found:
-
-{
-  "found": true,
-  "item": { ...bunpou }
-}
-
-If not found:
-
-{
-  "found": false
-}
-
-Frontend behavior:
-- If found:
-  - show existing preview
-  - badge: "Ditemukan di Catatan"
-  - helper: "Catatan ini sudah pernah kamu simpan."
-  - do NOT call AI
-
-- If not found:
-  - call AI analyze/explain bunpou
-  - show preview
-  - badge: "Hasil Analisa AI"
-  - helper: "Periksa hasilnya sebelum disimpan."
-
-Acceptance:
-- Input "〜ながら" if exists → saved result appears.
-- Input "sambil melakukan" if matching meaning exists → saved result appears.
-- Input new bunpou → AI analysis appears.
-- UI must not say "database", "cache", "token", or "AI tidak dipakai".
+- use set -e
+- show readable logs
+- validate required input
+- not echo passwords/API keys
+- not print DATABASE_URL with password in final output
+- handle existing PM2 process by deleting/restarting safely
+- not delete project folder unless user chose clone and confirms
+- avoid overwriting env without warning if file exists
+- create backups of existing .env / .env.local before overwriting
 
 ==================================================
-PART 5 — BULK KOTOBA DATABASE-FIRST
+OUTPUT AFTER INSTALL
 ==================================================
 
-Bulk Kotoba AI Analyze must check saved data before AI for each item.
+At the end, show:
 
-Flow:
-1. User enters up to 50 items.
-2. Normalize each input.
-3. Backend receives items.
-4. Backend checks saved Kotoba first for each item.
-5. Items found in saved Catatan:
-   - status = "exists"
-   - return existing item
-   - do NOT send those items to AI internally
-6. Items not found:
-   - send only missing items to AI
-7. AI analyzes missing items.
-8. Validate AI results.
-9. Return combined preview.
+- PM2 status
+- backend port
+- frontend port
+- Nginx domains if configured
+- useful commands:
 
-Important:
-- Do not call AI for items that already exist.
-- Only call AI for missing items.
-- Check duplicates inside the same bulk request too.
-- Max 50 still enforced.
+pm2 status
+pm2 logs ifnote-backend
+pm2 logs ifnote-frontend
+pm2 restart ifnote-backend
+pm2 restart ifnote-frontend
+nginx -t
+systemctl reload nginx
 
-Response item shape:
-
-{
-  "sourceInput": "berat",
-  "status": "new" | "exists" | "manual" | "duplicate",
-  "jp": "重い",
-  "reading": "おもい",
-  "meaning": "berat",
-  "type": "kata sifat い",
-  "level": "N5",
-  "existingId": null
-}
-
-For existing:
-
-{
-  "sourceInput": "食べます",
-  "status": "exists",
-  "existingId": "xxx",
-  "jp": "食べます",
-  "reading": "たべます",
-  "meaning": "makan"
-}
-
-Frontend preview copy:
-
-If status exists:
-- Badge: "Ditemukan di Catatan"
-- Text: "Catatan ini sudah pernah kamu simpan."
-
-If status new:
-- Badge: "Hasil Analisa AI"
-- Text: "Periksa hasilnya sebelum disimpan."
-
-If status manual:
-- Badge: "Perlu dicek"
-- Text: "Lengkapi dulu data yang masih kosong."
-
-Do NOT show:
-- source
-- database
-- cache
-- token
-- AI skipped
-- AI tidak dipakai
-
-Acceptance:
-- Bulk input with existing words does not call AI internally for those words.
-- Preview shows "Ditemukan di Catatan".
-- AI only analyzes missing items.
-- Max 50 still enforced.
+Do NOT show passwords or API keys.
 
 ==================================================
-PART 6 — KANJI DATABASE-FIRST / CACHE-FIRST
+README DEPLOY
 ==================================================
 
-When user clicks a kanji:
+Create scripts/README_DEPLOY.md with:
 
-Frontend:
-- open KanjiPopup immediately
-- show loading
-- call backend:
+1. How to run script:
 
-GET /api/kanji/:kanji
+chmod +x scripts/deploy-ifnote.sh
+sudo ./scripts/deploy-ifnote.sh
 
-Backend behavior:
-1. Normalize kanji.
-2. Check kanji_cache for current user.
-3. If found:
-   - return cached detail
-   - do NOT call AI internally
-4. If not found:
-   - call AI or fallback dictionary
-   - validate result
-   - save to kanji_cache
-   - return result
+2. Install mode explanation:
+- backend only
+- frontend only
+- backend + frontend
 
-Response:
+3. Database mode explanation:
+- PostgreSQL local
+- external PostgreSQL provider
 
-{
-  "kanji": "食",
-  "meaning": "makan",
-  "onyomi": "しょく",
-  "kunyomi": "たべる",
-  "explanation": "Kanji yang berhubungan dengan makan.",
-  "words": [
-    { "jp": "食べます", "reading": "たべます", "meaning": "makan" }
-  ],
-  "exampleJp": "ごはんを食べます。",
-  "exampleReading": "ごはんをたべます。",
-  "exampleMeaning": "Saya makan nasi."
-}
+4. Required DNS:
+- frontend domain points to VPS IP
+- api domain points to VPS IP
 
-Frontend:
-- show normal Kanji detail only
-- do NOT show technical source/cache/database text
-- buttons/labels:
-  - Arti
-  - Onyomi
-  - Kunyomi
-  - Penjelasan
-  - Contoh kata
-  - Contoh kalimat
-
-Acceptance:
-- Click same kanji twice.
-- First time may call AI/fallback and save.
-- Second time uses saved cache internally.
-- User only sees normal kanji detail.
-
-==================================================
-PART 7 — AI GENERATED RESULT SAVE/CACHE RULE
-==================================================
-
-If AI is used because saved data is missing:
-
-Kotoba:
-- AI result must be saved only when user clicks Simpan.
-- After save, next lookup should find saved Catatan.
-
-Bunpou:
-- AI result must be saved only when user clicks Simpan.
-- After save, next lookup should find saved Catatan.
-
-Kanji:
-- AI/fallback result can be cached automatically after successful lookup.
-- This is allowed because kanji detail is not a user-created note.
-
-Rules:
-- Do not save invalid AI result.
-- Do not save if jp/pattern missing.
-- Do not save duplicate.
-- Do not overwrite existing user data without confirmation.
-
-==================================================
-PART 8 — FRONTEND PREVIEW LABELS
-==================================================
-
-In Add Kotoba/Bunpou AI preview:
-
-Existing saved item:
-Badge:
-"Ditemukan di Catatan"
-
-Helper:
-"Catatan ini sudah pernah kamu simpan."
-
-Buttons:
-- Buka Catatan
-- Gunakan Data Ini
-- Batal
-
-AI result:
-Badge:
-"Hasil Analisa AI"
-
-Helper:
-"Periksa hasilnya sebelum disimpan."
-
-Buttons:
-- Simpan
-- Edit
-- Batal
-
-Manual / unclear:
-Badge:
-"Perlu dicek"
-
-Helper:
-"Lengkapi dulu data yang masih kosong."
-
-Do not display:
-- Data ini sudah ada, jadi AI tidak dipakai.
-- AI tidak dipakai.
-- database.
-- cache.
-- token.
-- source.
-- Dari database.
-- Dari AI.
-
-==================================================
-PART 9 — INTERNAL LOGGING / TOKEN SAVING
-==================================================
-
-Internal logging is allowed, but not visible to user.
-
-When saved data found:
-- do not count as AI usage
-- do not call AI
-
-When AI called:
-- log mode, status, input preview if AiLog exists
-- do not log secrets
-- do not log API key
-
-AI call counter should count only real AI calls.
-
-==================================================
-PART 10 — QUERY INVALIDATION
-==================================================
-
-After saving AI result:
-
-Invalidate:
-- ["home"]
-- ["dashboard"]
-- ["catatan"]
-- ["kotoba"]
-- ["bunpou"]
-- ["hafalan"]
-- ["quiz"]
-
-After kanji cache save:
-- invalidate:
-  - ["kanji", kanji]
-
-==================================================
-PART 11 — ERROR HANDLING
-==================================================
-
-If saved-data lookup fails because server/auth is broken:
-- do not silently call AI
-- show:
-  "Data belum bisa dicek. Coba lagi."
-
-If saved-data lookup succeeds and not found:
-- then AI can run
-
-If AI fails:
-- show:
-  "AI gagal menganalisa. Coba lagi."
-- do not save invalid result
-
-If kanji AI fails:
-- use fallback dictionary if available
-- if no fallback:
-  "Detail kanji belum tersedia."
-
-Do not show raw backend error to user.
-
-==================================================
-PART 12 — COPY REPLACEMENT AUDIT
-==================================================
-
-Search frontend for these user-facing strings and remove/replace:
-
-"Data ini sudah ada, jadi AI tidak dipakai."
-"AI tidak dipakai"
-"database"
-"cache"
-"token"
-"source"
-"Dari database"
-"Dari AI"
-
-Important:
-Internal variable names can remain.
-Only visible UI text must be changed.
-
-Replace with:
-- "Ditemukan di Catatan"
-- "Catatan ini sudah pernah kamu simpan."
-- "Hasil Analisa AI"
-- "Periksa hasilnya sebelum disimpan."
-- "Perlu dicek"
-- "Lengkapi dulu data yang masih kosong."
-- "Analisa pakai AI"
-- "AI sedang menganalisa..."
+5. Useful PM2 commands
+6. Useful Nginx commands
+7. Troubleshooting:
+- Prisma migrate fail
+- database connection fail
+- frontend cannot call backend
+- port already used
+- SSL fail
 
 ==================================================
 ACCEPTANCE TEST
 ==================================================
 
-KOTOBA:
-1. Existing kotoba "食べます" is already saved.
-2. Add Kotoba AI Analyze input "食べます".
-3. Existing result appears.
-4. UI shows:
-   - "Ditemukan di Catatan"
-   - "Catatan ini sudah pernah kamu simpan."
-5. No AI call is made internally.
-6. UI does NOT show:
-   - "Data ini sudah ada, jadi AI tidak dipakai."
-   - "database"
-   - "cache"
-   - "token"
+After implementation:
 
-7. Input "makan" if meaning exists.
-8. Existing result appears.
-9. No AI call.
-
-10. Input new word.
-11. Saved-data lookup returns not found.
-12. AI is called.
-13. Preview shows:
-   - "Hasil Analisa AI"
-   - "Periksa hasilnya sebelum disimpan."
-14. Save creates kotoba.
-15. Next same search uses saved data.
-
-BUNPOU:
-16. Existing bunpou "〜ながら" is saved.
-17. Add Bunpou AI Analyze input "〜ながら".
-18. Existing result appears.
-19. No AI call.
-
-20. Input new bunpou.
-21. AI is called only after not found.
-
-BULK:
-22. Bulk contains existing and new items.
-23. Existing items show "Ditemukan di Catatan".
-24. New items show "Hasil Analisa AI".
-25. AI is called only for missing items.
-26. Max 50 still enforced.
-
-KANJI:
-27. Click kanji 食.
-28. If saved cache exists, detail appears immediately.
-29. If cache missing, AI/fallback returns and saves.
-30. Click 食 again.
-31. Uses saved cache internally.
-32. UI does not mention cache/database.
-
-SAFETY:
-33. No API key exposed.
-34. No raw ruby/html.
-35. Furigana still works.
-36. No console error.
-37. No horizontal overflow.
+1. Script exists at scripts/deploy-ifnote.sh.
+2. Script can install backend only.
+3. Script can install frontend only.
+4. Script can install backend + frontend.
+5. User can choose local PostgreSQL.
+6. User can choose external PostgreSQL and input credentials.
+7. Backend .env is generated safely.
+8. Frontend .env.local is generated safely.
+9. Prisma generate/migrate runs if Prisma exists.
+10. Backend starts with PM2.
+11. Frontend starts with PM2.
+12. Nginx config can be created.
+13. SSL can be installed optionally.
+14. No secrets printed in terminal summary.
+15. README deploy exists.
 
 ==================================================
 OUTPUT
 ==================================================
 
 Show:
-- files changed
-- lookup endpoints added/updated
-- saved-data-first flow summary
-- AI fallback logic
-- Kanji cache behavior
-- user-facing copy changes
-- token-saving behavior
-- any remaining TODOs
-
-Do not call AI before saved-data lookup.
-Do not show technical text to user.
+- files created
+- script features
+- how to run
+- what install modes are supported
+- what database modes are supported
+- any assumptions made

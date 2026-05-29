@@ -1,6 +1,8 @@
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AiClientService } from "./ai-client.service";
+import { normalizeKotobaQuery } from "../common/utils/normalize-query";
 import {
   AnalyzeSentenceDto,
   BulkKotobaDto,
@@ -32,6 +34,8 @@ interface BulkPreviewItem {
   level?: string;
   beginnerExample?: string;
   exampleReading?: string;
+  /** Set hanya kalau status === "exists" — ID kotoba yang sudah tersimpan. */
+  existingId?: string | null;
 }
 
 /**
@@ -166,7 +170,7 @@ export class AiService {
     return { source: "ai" as const, data: r.data };
   }
 
-  // -------- bulk kotoba (with duplicate check) ------------------------
+  // -------- bulk kotoba (DB-first, AI only for missing items) ----------
 
   async bulkKotoba(userId: string, dto: BulkKotobaDto) {
     const words = dto.words
@@ -178,61 +182,163 @@ export class AiService {
       return { source: "ai" as const, data: { items: [] as BulkPreviewItem[] } };
     }
 
-    // Tidak bisa lagi dedup pre-AI berdasarkan input mentah karena user
-    // boleh ketik Indonesia ("berat"). Dedup dilakukan setelah AI
-    // mengonversi ke jp Jepang.
-    const sys =
-      SYS_BASE +
-      " Daftar berikut bisa berisi Bahasa Indonesia, Bahasa Jepang, atau campuran. Untuk SETIAP entri tentukan kotoba Jepang yang dimaksud lalu kembalikan strukturnya. Selalu kembalikan jp dalam Jepang dan meaning dalam Bahasa Indonesia. Pertahankan urutan input. " +
-      'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","exampleReading":"string"}]}';
-    const usr = `Daftar input user (urutan harus dipertahankan): ${JSON.stringify(
-      words,
-    )}`;
-    const r = await this.client.chatJson<{ items: BulkPreviewItem[] }>(
-      userId,
-      "bulk-kotoba",
-      sys,
-      usr,
+    // ---- Step 1: DB-first lookup terhadap saved Catatan -----------------
+    // Cari semua kotoba milik user yang cocok di salah satu field input
+    // (jp / reading / romaji / meaning). Ini menghindari panggilan AI untuk
+    // item yang sudah ada (PRD PART 5).
+    const normMap = new Map<string, string>(); // raw -> normalized
+    for (const w of words) normMap.set(w, normalizeKotobaQuery(w));
+    const normSet = new Set<string>(
+      Array.from(normMap.values()).filter((n) => n.length > 0),
     );
-    if (!r.ok || !r.data || !Array.isArray(r.data.items)) {
-      aiCallFailed(r.message);
+
+    type SavedRow = {
+      id: string;
+      jp: string;
+      reading: string | null;
+      romaji: string | null;
+      meaning: string;
+      type: string | null;
+      level: string | null;
+      beginnerExample: string | null;
+      exampleReading: string | null;
+    };
+
+    let savedRows: SavedRow[] = [];
+    if (normSet.size > 0) {
+      const orClauses: Prisma.KotobaWhereInput[] = [];
+      for (const n of normSet) {
+        orClauses.push(
+          { jp: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { reading: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { romaji: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: n, mode: Prisma.QueryMode.insensitive } },
+        );
+      }
+      savedRows = await this.prisma.kotoba.findMany({
+        where: { userId, OR: orClauses },
+        select: {
+          id: true,
+          jp: true,
+          reading: true,
+          romaji: true,
+          meaning: true,
+          type: true,
+          level: true,
+          beginnerExample: true,
+          exampleReading: true,
+        },
+      });
     }
 
-    // Match AI items kembali ke urutan input user. AI biasanya menjaga
-    // urutan, tapi kita defensive: cocokkan via sourceInput exact match.
-    const aiItems = r.data!.items.map((it, idx) => ({
-      ...it,
-      _sourceMatch: (it.sourceInput ?? words[idx] ?? "").trim(),
-    }));
+    /** raw input -> saved row (paling cocok). */
+    const savedByInput = new Map<string, SavedRow>();
+    for (const w of words) {
+      const n = normMap.get(w) ?? "";
+      if (!n) continue;
+      const hit = savedRows.find((r) => {
+        const cands = [
+          normalizeKotobaQuery(r.jp),
+          r.reading ? normalizeKotobaQuery(r.reading) : "",
+          r.romaji ? normalizeKotobaQuery(r.romaji) : "",
+          normalizeKotobaQuery(r.meaning),
+        ];
+        return cands.includes(n);
+      });
+      if (hit) savedByInput.set(w, hit);
+    }
 
-    // Dedup terhadap DB user berdasarkan jp Jepang yang dihasilkan AI.
-    const candidateJp = aiItems
+    // ---- Step 2: items yang belum ada di Catatan dikirim ke AI ----------
+    const missingWords = words.filter((w) => !savedByInput.has(w));
+
+    type AiBulk = {
+      sourceInput?: string;
+      inputLanguage?: "japanese" | "indonesian" | "mixed" | "unknown";
+      jp?: string;
+      reading?: string;
+      romaji?: string;
+      meaning?: string;
+      type?: string;
+      level?: string;
+      beginnerExample?: string;
+      exampleReading?: string;
+    };
+    let aiItems: Array<AiBulk & { _sourceMatch: string }> = [];
+
+    if (missingWords.length > 0) {
+      const sys =
+        SYS_BASE +
+        " Daftar berikut bisa berisi Bahasa Indonesia, Bahasa Jepang, atau campuran. Untuk SETIAP entri tentukan kotoba Jepang yang dimaksud lalu kembalikan strukturnya. Selalu kembalikan jp dalam Jepang dan meaning dalam Bahasa Indonesia. Pertahankan urutan input. " +
+        'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","exampleReading":"string"}]}';
+      const usr = `Daftar input user (urutan harus dipertahankan): ${JSON.stringify(
+        missingWords,
+      )}`;
+      const r = await this.client.chatJson<{ items: AiBulk[] }>(
+        userId,
+        "bulk-kotoba",
+        sys,
+        usr,
+      );
+      if (!r.ok || !r.data || !Array.isArray(r.data.items)) {
+        aiCallFailed(r.message);
+      }
+      aiItems = r.data!.items.map((it, idx) => ({
+        ...it,
+        _sourceMatch: (it.sourceInput ?? missingWords[idx] ?? "").trim(),
+      }));
+    }
+
+    // ---- Step 3: post-AI dedup terhadap DB (mungkin AI menghasilkan jp
+    // yang ternyata sudah ada — input awalnya Indonesia, hasil AI = Jepang). -
+    const aiCandidateJp = aiItems
       .map((it) => it.jp)
       .filter((j): j is string => typeof j === "string" && j.length > 0);
-    const existing = await this.prisma.kotoba.findMany({
-      where: { userId, jp: { in: candidateJp } },
-      select: { jp: true },
-    });
-    const existingSet = new Set(existing.map((e) => e.jp));
+    const postAiExisting = aiCandidateJp.length
+      ? await this.prisma.kotoba.findMany({
+          where: { userId, jp: { in: aiCandidateJp } },
+          select: { id: true, jp: true },
+        })
+      : [];
+    const postAiExistingMap = new Map(postAiExisting.map((e) => [e.jp, e.id]));
 
-    // Dedup di dalam batch sendiri (kalau user double-input).
+    // ---- Step 4: assemble preview, urutkan ulang ke urutan input asli ---
     const seenInBatch = new Set<string>();
-
-    const items: BulkPreviewItem[] = words.map((srcRaw, idx) => {
+    const items: BulkPreviewItem[] = words.map((srcRaw) => {
       const src = srcRaw.trim();
+
+      // Path A: ditemukan di Catatan tersimpan — tidak panggil AI sama sekali.
+      const saved = savedByInput.get(src);
+      if (saved) {
+        return {
+          jp: saved.jp,
+          status: "exists" as const,
+          sourceInput: src,
+          existingId: saved.id,
+          meaning: saved.meaning,
+          reading: saved.reading ?? "",
+          romaji: saved.romaji ?? "",
+          type: saved.type ?? "",
+          level: saved.level ?? "",
+          beginnerExample: saved.beginnerExample ?? "",
+          exampleReading: saved.exampleReading ?? "",
+        };
+      }
+
+      // Path B: hasil AI.
       const ai =
-        aiItems[idx] && aiItems[idx]._sourceMatch === src
-          ? aiItems[idx]
-          : aiItems.find((x) => x._sourceMatch === src) ?? aiItems[idx];
+        aiItems.find((x) => x._sourceMatch === src) ??
+        aiItems[missingWords.indexOf(src)];
       if (!ai || !ai.jp) {
         return { jp: src, status: "manual" as const, sourceInput: src };
       }
       const jp = ai.jp;
-      const isExistingDb = existingSet.has(jp);
+
+      const dbId = postAiExistingMap.get(jp);
       const isDupBatch = seenInBatch.has(jp);
       seenInBatch.add(jp);
       const status: BulkPreviewItem["status"] =
-        isExistingDb || isDupBatch ? "exists" : "new";
+        dbId || isDupBatch ? "exists" : "new";
+
       return {
         jp,
         status,
@@ -245,6 +351,7 @@ export class AiService {
         level: ai.level ?? "",
         beginnerExample: ai.beginnerExample ?? "",
         exampleReading: ai.exampleReading ?? "",
+        existingId: dbId ?? null,
       };
     });
 

@@ -84,7 +84,7 @@ export function BunpouDialog({
     try {
       if (initial) {
         await update.mutateAsync({ id: initial.id, payload });
-        notify.success("Bunpou diperbarui", "Perubahan sudah disimpan.", { icon: "📚" });
+        notify.success("Bunpou diperbarui", "Perubahan sudah disimpan.", { icon: "🌸" });
       } else {
         await create.mutateAsync(payload);
         notify.success(

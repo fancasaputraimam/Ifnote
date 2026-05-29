@@ -91,6 +91,31 @@ export function hasJapaneseReading(input: string | null | undefined): boolean {
   return RUBY_RE.test(input) || (PAREN_RE.test(input) && (PAREN_RE.lastIndex = 0, true));
 }
 
+/**
+ * True kalau string punya minimal satu karakter kanji. Dipakai untuk
+ * menentukan apakah perlu menampilkan helper reading line di mode
+ * Pemula — kalau teks cuma kana, tidak perlu helper.
+ */
+const KANJI_DETECT_RE = /[\u4E00-\u9FFF\u3400-\u4DBF\u3005]/;
+export function hasKanji(input: string | null | undefined): boolean {
+  if (!input) return false;
+  return KANJI_DETECT_RE.test(String(input));
+}
+
+/**
+ * Pure plain string of base text — ruby tags collapsed, parens stripped,
+ * HTML tags stripped, whitespace normalized. Aman dipakai untuk
+ * comparison (mis. "reading equals text") atau untuk truncate.
+ */
+export function plainJapaneseText(input: string | null | undefined): string {
+  if (!input) return "";
+  return stripParentheticalReadings(
+    stripHtmlTags(stripRubyHtml(String(input))),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* ------------------------------------------------------------------ */
 /* Parsers                                                            */
 /* ------------------------------------------------------------------ */
@@ -225,6 +250,12 @@ export function parseJapaneseText(input: string | null | undefined): RubySegment
   // Path 3: plain text
   return [{ base: cleaned }];
 }
+
+/**
+ * @deprecated Pakai `parseJapaneseText`. Alias dipertahankan untuk
+ * konsistensi naming dengan PRD PART 5.
+ */
+export const parseJapaneseReadingText = parseJapaneseText;
 
 /* ------------------------------------------------------------------ */
 /* Reading-to-text alignment                                          */

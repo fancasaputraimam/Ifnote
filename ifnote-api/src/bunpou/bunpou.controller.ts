@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
@@ -23,6 +24,15 @@ export class BunpouController {
   @Get()
   list(@CurrentUser() user: JwtUser) {
     return this.svc.list(user.sub);
+  }
+
+  /**
+   * Database-first lookup. Wajib di-declare *sebelum* `:id` route biar
+   * "lookup" tidak di-parse sebagai UUID.
+   */
+  @Get("lookup")
+  lookup(@CurrentUser() user: JwtUser, @Query("q") q: string) {
+    return this.svc.lookup(user.sub, q ?? "");
   }
 
   @Get(":id")

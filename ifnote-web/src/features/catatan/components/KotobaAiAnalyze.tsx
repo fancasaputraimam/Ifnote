@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { TextInput } from "@/components/ui/TextInput";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
-import { LoadingState } from "@/components/feedback/LoadingState";
+import { AiLoading } from "@/components/ui/ai-loading";
 import { useExplainKotoba } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
@@ -82,7 +82,12 @@ export function KotobaAiAnalyze({
   const dupStatus = draft ? duplicateStatus(draft.jp, existingJp) : "new";
 
   if (explain.isPending) {
-    return <LoadingState label="AI sedang menganalisa kotoba…" />;
+    return (
+      <AiLoading
+        title="AI sedang menganalisa kotoba…"
+        description="Tunggu sebentar ya."
+      />
+    );
   }
 
   if (!draft) {

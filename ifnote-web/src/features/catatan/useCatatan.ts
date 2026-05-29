@@ -170,6 +170,42 @@ export interface AiExplainResult<T> {
   item: T;
 }
 
+// ---- Database-first lookup (PART 3 + PART 4) ----------------------
+
+/**
+ * Database-first lookup. Cek apakah catatan user sudah punya kotoba
+ * yang cocok dengan query input — BEFORE memanggil AI. Backend menerima
+ * input bebas (Jepang, Indonesia, romaji) dan match terhadap field-field
+ * relevannya.
+ */
+export function useLookupKotoba() {
+  return useMutation<
+    { found: false } | { found: true; item: Kotoba },
+    Error,
+    string
+  >({
+    mutationFn: (q) =>
+      api.get<{ found: false } | { found: true; item: Kotoba }>(
+        "/api/kotoba/lookup",
+        { query: { q } },
+      ),
+  });
+}
+
+export function useLookupBunpou() {
+  return useMutation<
+    { found: false } | { found: true; item: Bunpou },
+    Error,
+    string
+  >({
+    mutationFn: (q) =>
+      api.get<{ found: false } | { found: true; item: Bunpou }>(
+        "/api/bunpou/lookup",
+        { query: { q } },
+      ),
+  });
+}
+
 /**
  * Hook combined endpoint `/api/kotoba/:id/ai-explain`.
  * Server akan skip AI call kalau item sudah punya penjelasan.

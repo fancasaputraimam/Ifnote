@@ -22,6 +22,15 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Alert,
+  AlertContent,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  AlertToolbar,
+} from "@/components/ui/alert-1";
+import LoaderGrid from "@/components/ui/loader-grid";
 import { cn } from "@/lib/utils";
 
 // ----------------------------------------------------------------------
@@ -153,52 +162,17 @@ export const toastStore = {
 };
 
 // ----------------------------------------------------------------------
-// Variant tokens (Tailwind classes)
+// Variant → Alert variant mapping
 // ----------------------------------------------------------------------
-
-interface VariantTokens {
-  /** Left accent strip color. */
-  stripe: string;
-  /** Container ring/border. */
-  ring: string;
-  /** Background tint behind icon. */
-  iconBg: string;
-  /** Icon foreground (rare — most icons are emoji and self-colored). */
-  iconFg: string;
-}
-
-const TOKENS: Record<ToastVariant, VariantTokens> = {
-  success: {
-    stripe: "bg-leaf-500",
-    ring:   "ring-leaf-500/20 dark:ring-leaf-500/30",
-    iconBg: "bg-leaf-500/15",
-    iconFg: "text-leaf-600 dark:text-leaf-500",
-  },
-  error: {
-    stripe: "bg-rose-500",
-    ring:   "ring-rose-300/40 dark:ring-rose-500/30",
-    iconBg: "bg-rose-500/15",
-    iconFg: "text-rose-600 dark:text-rose-300",
-  },
-  warning: {
-    stripe: "bg-amber-500",
-    ring:   "ring-amber-300/40 dark:ring-amber-500/30",
-    iconBg: "bg-amber-500/15",
-    iconFg: "text-amber-700 dark:text-amber-300",
-  },
-  info: {
-    stripe: "bg-accent-500",
-    ring:   "ring-accent-300/40 dark:ring-accent-500/30",
-    iconBg: "bg-accent-500/15",
-    iconFg: "text-accent-600 dark:text-accent-300",
-  },
-  loading: {
-    stripe: "bg-lilac-500",
-    ring:   "ring-lilac-400/40 dark:ring-lilac-500/30",
-    iconBg: "bg-lilac-500/15",
-    iconFg: "text-lilac-600 dark:text-lilac-400",
-  },
-};
+//
+// Notification cards are intentionally rendered with the neutral
+// `secondary` Alert variant — we deliberately strip the colored
+// success/error/warning/info chrome from toasts (per project spec).
+// The original variant still drives:
+//   - the emoji/icon (🌸, ⚠️, 🍂, 📘, ✨)
+//   - the accessibility role (`alert` for errors, `status` for the rest)
+//   - the auto-dismiss duration
+// so behavior, copy, and screen-reader semantics stay intact.
 
 // ----------------------------------------------------------------------
 // Viewport
@@ -247,7 +221,6 @@ export function ToastViewport() {
 
 function ToastCard({ item }: { item: ToastItem }) {
   const remove = useToastStore((s) => s.remove);
-  const tokens = TOKENS[item.variant];
 
   // Auto-dismiss timer. Re-armed if the item's duration changes (e.g. a
   // loading toast was upgraded to success/error via notify.update).
@@ -264,49 +237,35 @@ function ToastCard({ item }: { item: ToastItem }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -8, scale: 0.98 }}
       transition={{ duration: 0.22, ease: [0.22, 0.61, 0.36, 1] }}
-      // Reduced motion is honored by framer-motion globally via the user's
-      // OS-level prefers-reduced-motion. As an extra guard we also clamp
-      // scale/translate via CSS-level rule below.
-      className={cn(
-        "pointer-events-auto relative overflow-hidden",
-        "rounded-notebook border border-paper-200 bg-white/95 backdrop-blur",
-        "shadow-notebook-md ring-1",
-        tokens.ring,
-        "dark:border-ink-700 dark:bg-ink-800/95",
-      )}
+      className="pointer-events-auto"
     >
-      {/* left accent strip */}
-      <span
-        aria-hidden
-        className={cn("absolute inset-y-0 left-0 w-1", tokens.stripe)}
-      />
-
-      <div className="flex items-start gap-3 px-3.5 py-3 pl-4 pr-2">
-        {/* icon bubble */}
-        <span
-          aria-hidden
-          className={cn(
-            "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-base",
-            tokens.iconBg,
-            tokens.iconFg,
+      <Alert
+        role={item.variant === "error" ? "alert" : "status"}
+        variant="secondary"
+        appearance="light"
+        close
+        onClose={() => remove(item.id)}
+        className={cn(
+          // Match the original toast's slightly heavier elevation so it
+          // floats convincingly above the page chrome.
+          "shadow-notebook-md",
+          "bg-white/95 dark:bg-ink-800/95",
+        )}
+      >
+        <AlertIcon>
+          {item.variant === "loading" ? (
+            <LoaderGrid label={item.title} className="text-[0.4rem]" />
+          ) : (
+            <span>{item.icon}</span>
           )}
-        >
-          {item.variant === "loading" ? <Spinner /> : <span>{item.icon}</span>}
-        </span>
-
-        {/* content */}
-        <div className="min-w-0 flex-1 pt-0.5">
-          <p className="break-words text-sm font-semibold leading-snug text-ink-800 dark:text-paper-50">
-            {item.title}
-          </p>
+        </AlertIcon>
+        <AlertContent>
+          <AlertTitle>{item.title}</AlertTitle>
           {item.message ? (
-            <p className="mt-0.5 break-words text-xs leading-relaxed text-ink-700 dark:text-paper-50/80">
-              {item.message}
-            </p>
+            <AlertDescription>{item.message}</AlertDescription>
           ) : null}
-
           {item.action ? (
-            <div className="mt-2">
+            <AlertToolbar>
               <button
                 type="button"
                 onClick={() => {
@@ -321,62 +280,11 @@ function ToastCard({ item }: { item: ToastItem }) {
               >
                 {item.action.label}
               </button>
-            </div>
+            </AlertToolbar>
           ) : null}
-        </div>
-
-        {/* close button */}
-        <button
-          type="button"
-          aria-label="Tutup notifikasi"
-          onClick={() => remove(item.id)}
-          className={cn(
-            "shrink-0 rounded-full p-1 text-ink-400 transition-colors",
-            "hover:bg-paper-100 hover:text-ink-700",
-            "dark:hover:bg-ink-700 dark:hover:text-paper-50",
-          )}
-        >
-          <CloseIcon />
-        </button>
-      </div>
+        </AlertContent>
+      </Alert>
     </motion.li>
-  );
-}
-
-// ----------------------------------------------------------------------
-// Tiny inline icons (no extra deps)
-// ----------------------------------------------------------------------
-
-function CloseIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M3 3l8 8M11 3l-8 8"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <span
-      role="presentation"
-      className={cn(
-        "inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent",
-        // Reduced motion — fallback to opacity pulse handled in globals.css
-        "motion-reduce:animate-pulse motion-reduce:border-t-current",
-      )}
-    />
   );
 }
 

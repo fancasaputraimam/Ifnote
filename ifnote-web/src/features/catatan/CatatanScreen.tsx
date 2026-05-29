@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Badge } from "@/components/ui/Badge";
-import { NotebookCard } from "@/components/ui/NotebookCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 import { CatatanFilters } from "./components/CatatanFilters";
@@ -22,6 +21,7 @@ import {
 import type { Bunpou, CatatanItem, JlptLevel, Kotoba } from "@/lib/types";
 import { api } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
+import { PanelCard } from "@/components/ui/PanelCard";
 
 /**
  * Fetch the original Kotoba/Bunpou row when the user clicks "Edit", so the
@@ -166,14 +166,14 @@ export function CatatanScreen() {
       {list.isLoading ? (
         <LoadingState label="Memuat catatan…" />
       ) : list.isError ? (
-        <NotebookCard className="p-5">
+        <PanelCard tone="rose" stripe padding="compact">
           <div className="flex items-center gap-2">
             <Badge tone="warn">Mode offline</Badge>
             <p className="text-sm text-ink-700 dark:text-paper-50">
               Tidak bisa terhubung ke server. Coba lagi setelah koneksi pulih.
             </p>
           </div>
-        </NotebookCard>
+        </PanelCard>
       ) : noResults ? (
         <EmptyState
           icon="📒"
@@ -238,6 +238,11 @@ export function CatatanScreen() {
         initial={editing?.type === "kotoba" ? (editingFull.data as Kotoba | undefined) ?? null : null}
         existingJp={existingKotobaJp}
         initialTab={kotobaTab}
+        onOpenSaved={(id) => {
+          // Buka kotoba yang sudah tersimpan langsung di mode edit.
+          setEditing({ type: "kotoba", id });
+          setKotobaTab("manual");
+        }}
       />
       <BunpouDialog
         open={bunpouOpen}
@@ -245,6 +250,10 @@ export function CatatanScreen() {
         initial={editing?.type === "bunpou" ? (editingFull.data as Bunpou | undefined) ?? null : null}
         existingPatterns={existingBunpouPatterns}
         initialTab={bunpouTab}
+        onOpenSaved={(id) => {
+          setEditing({ type: "bunpou", id });
+          setBunpouTab("manual");
+        }}
       />
     </div>
   );

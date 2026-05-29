@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { appendHafalanOrder, retryOnUniqueViolation } from "../common/utils/hafalan-order.util";
+import { normalizeKotobaQuery } from "../common/utils/normalize-query";
 import { AiService } from "../ai/ai.service";
 import { CreateKotobaDto, UpdateKotobaDto } from "./dto";
 
@@ -29,6 +31,115 @@ export class KotobaService {
     private readonly prisma: PrismaService,
     private readonly ai: AiService,
   ) {}
+
+  /**
+   * Database-first lookup. Cek apakah user sudah punya kotoba yang cocok
+   * dengan query (Jepang/Indonesia/romaji). Match logic:
+   *   1. exact `jp` (case-insensitive)
+   *   2. exact `reading`
+   *   3. exact `romaji`
+   *   4. exact `meaning` (untuk input Indonesia)
+   *   5. fallback: `contains` di salah satu field di atas
+   *
+   * Tidak memanggil AI.
+   */
+  async lookup(
+    userId: string,
+    rawQuery: string,
+  ): Promise<{ found: false } | { found: true; item: unknown }> {
+    const norm = normalizeKotobaQuery(rawQuery);
+    if (!norm) return { found: false };
+    const raw = rawQuery.trim();
+
+    const exact = await this.prisma.kotoba.findFirst({
+      where: {
+        userId,
+        OR: [
+          { jp: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { jp: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+          { reading: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { reading: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+          { romaji: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { romaji: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+        ],
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    if (exact) return { found: true, item: exact };
+
+    if (norm.length >= 2) {
+      const contains = await this.prisma.kotoba.findFirst({
+        where: {
+          userId,
+          OR: [
+            { jp: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { reading: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { romaji: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { meaning: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+          ],
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      if (contains) return { found: true, item: contains };
+    }
+
+    return { found: false };
+  }
+
+  /**
+   * Bulk version of lookup — cek banyak query sekaligus, return Map keyed
+   * oleh *normalized query*. Dipakai oleh `bulk-kotoba` AI flow agar item
+   * yang sudah ada di catatan tidak ikut dikirim ke AI.
+   */
+  async bulkLookup(
+    userId: string,
+    queries: string[],
+  ): Promise<Map<string, { id: string; jp: string; reading: string | null; meaning: string }>> {
+    const result = new Map<
+      string,
+      { id: string; jp: string; reading: string | null; meaning: string }
+    >();
+    const normalized = Array.from(
+      new Set(queries.map((q) => normalizeKotobaQuery(q)).filter(Boolean)),
+    );
+    if (normalized.length === 0) return result;
+
+    const rows = await this.prisma.kotoba.findMany({
+      where: {
+        userId,
+        OR: normalized.flatMap((n) => [
+          { jp: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { reading: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { romaji: { equals: n, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: n, mode: Prisma.QueryMode.insensitive } },
+        ]),
+      },
+      select: { id: true, jp: true, reading: true, romaji: true, meaning: true },
+    });
+
+    for (const r of rows) {
+      const candidates = [
+        normalizeKotobaQuery(r.jp),
+        r.reading ? normalizeKotobaQuery(r.reading) : null,
+        r.romaji ? normalizeKotobaQuery(r.romaji) : null,
+        normalizeKotobaQuery(r.meaning),
+      ];
+      for (const c of candidates) {
+        if (!c) continue;
+        if (normalized.includes(c) && !result.has(c)) {
+          result.set(c, {
+            id: r.id,
+            jp: r.jp,
+            reading: r.reading,
+            meaning: r.meaning,
+          });
+        }
+      }
+    }
+    return result;
+  }
 
   list(userId: string) {
     return this.prisma.kotoba.findMany({

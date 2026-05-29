@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingState } from "@/components/feedback/LoadingState";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PanelCard } from "@/components/ui/PanelCard";
 import { Badge } from "@/components/ui/Badge";
 import { useDashboard } from "@/features/home/useDashboard";
 import { HomeHeader } from "@/features/home/components/HomeHeader";
@@ -41,7 +41,7 @@ export function HomeScreen() {
       ) : (
         <>
           {dash.isFallback ? (
-            <NotebookCard stripe="lilac" className="p-4">
+            <PanelCard tone="lilac" stripe padding="compact">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="warn">Sebagian data offline</Badge>
                 <p className="text-sm text-ink-700 dark:text-paper-50">
@@ -51,7 +51,7 @@ export function HomeScreen() {
               {dash.errorMessage ? (
                 <p className="mt-1 text-xs text-ink-400">{dash.errorMessage}</p>
               ) : null}
-            </NotebookCard>
+            </PanelCard>
           ) : null}
 
           <StatsGrid kotoba={dash.totals.kotoba} bunpou={dash.totals.bunpou} />

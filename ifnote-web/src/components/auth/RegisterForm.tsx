@@ -46,7 +46,7 @@ export function RegisterForm() {
         password: values.password,
       });
       await refresh();
-      notify.success("Akun berhasil dibuat", "Selamat datang di ifNote.");
+      notify.success("Akun dibuat", "Selamat datang di ifNote.", { icon: "🌸" });
       router.replace(ROUTES.app.home);
     } catch (e) {
       const m = mapApiErrorToUserMessage(e, {

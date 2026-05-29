@@ -3,7 +3,14 @@
 import React, { ButtonHTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowUpRight, BookOpen, Flame } from "lucide-react";
+import {
+  Sparkles,
+  ArrowUpRight,
+  BookOpen,
+  Layers,
+  Target,
+  PenLine,
+} from "lucide-react";
 import { APP_NAME, ROUTES } from "@/lib/constants";
 
 /** ifNote landing page — calm Japanese-notebook aesthetic. */
@@ -43,38 +50,6 @@ const SoftButton = ({ children, className = "", ...props }: SoftButtonProps) => 
     {children}
   </button>
 );
-
-/** 4-bar growth chart — represents daily hafalan streak. */
-function MiniBars() {
-  const bars = [
-    { h: 28, label: "Sen" },
-    { h: 56, label: "Sel" },
-    { h: 80, label: "Rab" },
-    { h: 104, label: "Kam" },
-  ];
-  return (
-    <div className="mt-6 rounded-xl bg-gradient-to-b from-accent-50 to-white p-4 dark:from-ink-700 dark:to-ink-800">
-      <div className="flex h-32 items-end gap-3">
-        {bars.map((b, i) => (
-          <motion.div
-            key={b.label}
-            initial={{ height: 0, opacity: 0.6 }}
-            animate={{ height: b.h }}
-            transition={{ delay: 0.5 + i * 0.15, type: "spring" }}
-            className="flex-1 rounded-xl bg-gradient-to-t from-accent-200 to-accent-500 shadow-inner"
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex gap-3">
-        {bars.map((b) => (
-          <div key={b.label} className="flex-1 text-center text-[10px] uppercase tracking-wider text-ink-400">
-            {b.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /** Decorative ring of orbiting kana — replaces fintech "planet". */
 function KanaOrbit() {
@@ -153,7 +128,7 @@ export default function IfNoteLandingPage() {
             { label: "Catatan", href: "#fitur" },
             { label: "Hafalan", href: "#fitur" },
             { label: "Quiz", href: "#fitur" },
-            { label: "AI Tutor", href: "#fitur" },
+            { label: "Cara kerja", href: "#cara-kerja" },
           ].map((item) => (
             <a
               key={item.label}
@@ -186,7 +161,7 @@ export default function IfNoteLandingPage() {
         <div className="flex flex-col justify-center space-y-8 pr-2">
           <div>
             <span className="font-jp text-sm tracking-widest text-accent-500">
-              ノート・記憶・AI
+              ノート・きおく・AI
             </span>
             <h1 className="mt-3 text-5xl font-semibold leading-[1.05] tracking-tight text-ink-800 dark:text-paper-50 md:text-6xl">
               Catat bahasa Jepang
@@ -194,10 +169,8 @@ export default function IfNoteLandingPage() {
               dengan tenang.
             </h1>
             <p className="mt-4 max-w-md text-ink-400">
-              Simpan kotoba dan bunpou, hafalkan dengan slide tetap 20 item, ujikan diri
-              dengan quiz, dan minta bantuan{" "}
-              <span className="font-medium text-ink-800 dark:text-paper-50">AI tutor</span>{" "}
-              untuk fokus N5/N4.
+              Simpan kotoba dan bunpou dengan rapi, hafalkan pelan-pelan, lalu
+              cek pemahamanmu lewat quiz.
             </p>
           </div>
 
@@ -217,20 +190,20 @@ export default function IfNoteLandingPage() {
 
           <div className="grid grid-cols-2 gap-8 pt-2 md:max-w-sm">
             <Stat hint="単語" label="Kotoba & bunpou" value="1.000+" />
-            <Stat hint="JLPT" label="Cakupan level" value="N5 → N4" />
+            <Stat hint="JLPT" label="Cakupan level" value="N5 → N1" />
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 opacity-80">
             <span className="text-xs tracking-widest text-ink-400">DIBANGUN UNTUK</span>
             <div className="flex flex-wrap items-center gap-3 text-ink-400">
               <span className="rounded-full bg-white px-3 py-1 text-xs font-medium ring-1 ring-paper-200 dark:bg-ink-700 dark:ring-ink-700">
-                Pemula JLPT
+                Pelajar JLPT
               </span>
               <span className="rounded-full bg-white px-3 py-1 text-xs font-medium ring-1 ring-paper-200 dark:bg-ink-700 dark:ring-ink-700">
-                Pelajar otodidak
+                Belajar otodidak
               </span>
               <span className="rounded-full bg-white px-3 py-1 text-xs font-medium ring-1 ring-paper-200 dark:bg-ink-700 dark:ring-ink-700">
-                Hafalan harian
+                Catatan harian
               </span>
             </div>
           </div>
@@ -238,7 +211,7 @@ export default function IfNoteLandingPage() {
 
         {/* Right: animated card grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* AI Tutor card (dark) */}
+          {/* Bantuan AI card (dark) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -278,13 +251,13 @@ export default function IfNoteLandingPage() {
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <span className="text-xs uppercase tracking-wider text-accent-200">
-                  AI Tutor
+                  Bantuan AI
                 </span>
               </div>
               <div className="mt-6 text-xl leading-snug text-paper-50/95">
-                Tanya partikel,
-                <br /> contoh kalimat,
-                <br /> dan analisis bunpou
+                Bantu pahami
+                <br /> kotoba dan bunpou
+                <br /> sebelum disimpan.
               </div>
               <motion.div
                 className="absolute right-6 top-6 h-12 w-12 rounded-full bg-lilac-400/40"
@@ -299,7 +272,7 @@ export default function IfNoteLandingPage() {
             </div>
           </motion.div>
 
-          {/* Kotoba & Kanji card (gradient) */}
+          {/* Catatan Kotoba & Bunpou card (gradient) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -309,14 +282,16 @@ export default function IfNoteLandingPage() {
             <div className="pointer-events-none absolute -right-8 -top-10 opacity-80">
               <KanaOrbit />
             </div>
-            <div className="relative mt-24 text-sm text-white/90">Kotoba &amp; Kanji</div>
+            <div className="relative mt-24 text-sm text-white/90">
+              Catatan Kotoba &amp; Bunpou
+            </div>
             <div className="text-xl font-medium leading-snug">
-              Ribuan kosakata
-              <br /> dalam satu catatan
+              Simpan kotoba dan bunpou
+              <br /> dalam satu tempat.
             </div>
           </motion.div>
 
-          {/* Streak hafalan card */}
+          {/* Hafalan card — uses the streak-card visual template, no chart inside */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -324,37 +299,191 @@ export default function IfNoteLandingPage() {
             className="col-span-1 rounded-notebook bg-white p-6 text-ink-800 shadow-notebook-md ring-1 ring-paper-200 dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700"
           >
             <div className="flex items-center justify-between">
-              <div className="text-sm text-ink-400">Streak hafalan</div>
-              <Flame className="h-4 w-4 text-leaf-500" />
+              <div className="text-sm text-ink-400">Hafalan</div>
+              <Layers className="h-4 w-4 text-leaf-500" />
             </div>
-            <div className="mt-2 text-3xl font-semibold tracking-tight">
-              7 hari{" "}
-              <span className="align-middle text-sm font-medium text-ink-400">berturut</span>
+            <div className="mt-2 text-2xl font-semibold tracking-tight">
+              Slide tetap{" "}
+              <span className="align-middle text-sm font-medium text-ink-400">
+                20 item
+              </span>
             </div>
-            <div className="mt-1 text-xs text-leaf-500">↑ 20 kotoba/hari</div>
-            <MiniBars />
+            <p className="mt-2 text-sm text-ink-400">
+              Ulangi materimu dengan urutan tetap, supaya lebih mudah diingat.
+            </p>
+            <div className="mt-5 flex items-center gap-2 rounded-xl bg-paper-100 px-3 py-2 text-xs text-ink-700 dark:bg-ink-700 dark:text-paper-50">
+              <BookOpen className="h-4 w-4 text-accent-500" />
+              <span>Kotoba &amp; bunpou tampil berdampingan.</span>
+            </div>
           </motion.div>
 
-          {/* Catatan tip card */}
+          {/* Quiz card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="col-span-1 hidden rounded-notebook bg-paper-100 p-6 text-ink-700 shadow-notebook ring-1 ring-paper-200 dark:bg-ink-700 dark:text-paper-50 dark:ring-ink-700 md:block"
           >
-            <BookOpen className="h-5 w-5 text-accent-500" />
-            <div className="mt-3 text-sm text-ink-400">Slide tetap 20 item</div>
+            <Target className="h-5 w-5 text-accent-500" />
+            <div className="mt-3 text-sm text-ink-400">Quiz dari catatanmu</div>
             <div className="mt-1 text-base font-medium leading-snug">
-              Hafalan terstruktur,
-              <br /> bukan banjir flashcard.
+              Cek pemahamanmu lewat
+              <br /> latihan singkat.
             </div>
           </motion.div>
         </div>
       </div>
 
-      <footer className="mx-auto w-full max-w-[1180px] px-4 pb-10 text-center text-xs text-ink-400 md:px-0">
-        © {new Date().getFullYear()} {APP_NAME} — catatan tenang untuk belajar bahasa Jepang.
+      {/* Cara kerja — simple 3-step section to balance layout after streak removal */}
+      <section
+        id="cara-kerja"
+        className="mx-auto w-full max-w-[1180px] px-4 pb-16 md:px-0"
+      >
+        <div className="mb-6 flex items-baseline justify-between">
+          <h2 className="text-2xl font-semibold tracking-tight text-ink-800 dark:text-paper-50">
+            Cara kerja ifNote
+          </h2>
+          <span className="hidden text-sm text-ink-400 md:block">
+            Tiga langkah saja.
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StepCard
+            stepNumber="01"
+            icon={<PenLine className="h-4 w-4" aria-hidden />}
+            title="Catat"
+            body="Simpan kotoba dan bunpou yang kamu temui hari ini di satu tempat yang rapi."
+          />
+          <StepCard
+            stepNumber="02"
+            icon={<Layers className="h-4 w-4" aria-hidden />}
+            title="Hafalkan"
+            body="Ulangi catatanmu lewat slide tetap, sedikit demi sedikit, tanpa terburu-buru."
+          />
+          <StepCard
+            stepNumber="03"
+            icon={<Target className="h-4 w-4" aria-hidden />}
+            title="Cek lewat quiz"
+            body="Latihan singkat dari catatan sendiri untuk memastikan kamu benar-benar paham."
+          />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-paper-200 bg-paper-50/60 dark:border-ink-700 dark:bg-paper-900">
+        <div className="mx-auto w-full max-w-[1180px] px-4 py-10 md:px-0">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            {/* Brand block */}
+            <div className="col-span-2">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="grid h-8 w-8 place-items-center rounded-lg bg-accent-500 font-jp text-base text-white shadow-notebook"
+                >
+                  ノ
+                </span>
+                <span className="text-base font-semibold tracking-tight text-ink-800 dark:text-paper-50">
+                  {APP_NAME}
+                </span>
+              </div>
+              <p className="mt-3 max-w-xs text-sm text-ink-400">
+                Catatan tenang untuk belajar bahasa Jepang.
+              </p>
+            </div>
+
+            <FooterCol title="Aplikasi">
+              <FooterLink href="#fitur">Fitur</FooterLink>
+              <FooterLink href="#cara-kerja">Cara kerja</FooterLink>
+              <FooterLink href={ROUTES.login}>Masuk</FooterLink>
+              <FooterLink href={ROUTES.register}>Daftar</FooterLink>
+            </FooterCol>
+
+            <FooterCol title="Belajar">
+              <FooterLink href={ROUTES.register}>Kotoba</FooterLink>
+              <FooterLink href={ROUTES.register}>Bunpou</FooterLink>
+              <FooterLink href={ROUTES.register}>Hafalan</FooterLink>
+              <FooterLink href={ROUTES.register}>Quiz</FooterLink>
+            </FooterCol>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-2 border-t border-paper-200 pt-6 text-xs text-ink-400 dark:border-ink-700 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              © {new Date().getFullYear()} {APP_NAME} — dibuat untuk belajar
+              Jepang dengan lebih rapi.
+            </span>
+            <span className="font-jp tracking-widest text-ink-400/80">
+              ノート・きおく・AI
+            </span>
+          </div>
+        </div>
       </footer>
     </div>
+  );
+}
+
+/* ----------------------------- helpers ----------------------------- */
+
+function StepCard({
+  stepNumber,
+  icon,
+  title,
+  body,
+}: {
+  stepNumber: string;
+  icon: ReactNode;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="rounded-notebook bg-white p-6 shadow-notebook ring-1 ring-paper-200 dark:bg-ink-800 dark:ring-ink-700">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent-500">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent-50 text-accent-600 dark:bg-accent-700/20 dark:text-accent-300">
+          {icon}
+        </span>
+        <span>Langkah {stepNumber}</span>
+      </div>
+      <h3 className="mt-3 text-lg font-semibold tracking-tight text-ink-800 dark:text-paper-50">
+        {title}
+      </h3>
+      <p className="mt-1 text-sm text-ink-400">{body}</p>
+    </div>
+  );
+}
+
+function FooterCol({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-ink-700 dark:text-paper-50">
+        {title}
+      </div>
+      <ul className="mt-3 space-y-2 text-sm">{children}</ul>
+    </div>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
+  const isAnchor = href.startsWith("#");
+  if (isAnchor) {
+    return (
+      <li>
+        <a
+          href={href}
+          className="text-ink-400 transition hover:text-ink-800 dark:hover:text-paper-50"
+        >
+          {children}
+        </a>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <Link
+        href={href}
+        className="text-ink-400 transition hover:text-ink-800 dark:hover:text-paper-50"
+      >
+        {children}
+      </Link>
+    </li>
   );
 }

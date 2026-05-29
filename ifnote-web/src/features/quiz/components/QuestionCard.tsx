@@ -82,10 +82,7 @@ export function QuestionCard({
 
   // After user submits, lock & show feedback. Render proceeds either way.
   return (
-    <NotebookCard
-      stripe={feedback ? (feedback.correct ? "leaf" : "lilac") : "accent"}
-      className="p-5"
-    >
+    <NotebookCard className="p-5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-xs uppercase tracking-wide text-ink-400">
           Pertanyaan {index + 1} / {total}

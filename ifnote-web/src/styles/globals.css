@@ -119,18 +119,114 @@ body {
   [style*="ifnote-dot"] { animation: none !important; opacity: 0.7; }
 }
 
+/* ----------------------------------------------------------------------
+   LoaderGrid — used for AI / analysis loading states (see
+   components/ui/loader-grid.tsx). Size is driven by the parent's
+   font-size; the loader uses `em` units so a smaller `text-*` class on
+   the wrapper shrinks it proportionally.
+   ---------------------------------------------------------------------- */
+.loader-grid .beforeEl,
+.loader-grid .afterEl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  content: "";
+}
+
+.loader-grid .beforeEl {
+  animation: ifnote-loader-before 2s infinite;
+}
+
+.loader-grid .afterEl {
+  animation: ifnote-loader-after 2s infinite;
+}
+
+@keyframes ifnote-loader-before {
+  0% {
+    width: 0.5em;
+    box-shadow:
+      1em -0.5em rgba(225, 20, 98, 0.75),
+      -1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+  35% {
+    width: 2.5em;
+    box-shadow:
+      0 -0.5em rgba(225, 20, 98, 0.75),
+      0 0.5em rgba(111, 202, 220, 0.75);
+  }
+  70% {
+    width: 0.5em;
+    box-shadow:
+      -1em -0.5em rgba(225, 20, 98, 0.75),
+      1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+  100% {
+    box-shadow:
+      1em -0.5em rgba(225, 20, 98, 0.75),
+      -1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+}
+
+@keyframes ifnote-loader-after {
+  0% {
+    height: 0.5em;
+    box-shadow:
+      0.5em 1em rgba(61, 184, 143, 0.75),
+      -0.5em -1em rgba(233, 169, 32, 0.75);
+  }
+  35% {
+    height: 2.5em;
+    box-shadow:
+      0.5em 0 rgba(61, 184, 143, 0.75),
+      -0.5em 0 rgba(233, 169, 32, 0.75);
+  }
+  70% {
+    height: 0.5em;
+    box-shadow:
+      0.5em -1em rgba(61, 184, 143, 0.75),
+      -0.5em 1em rgba(233, 169, 32, 0.75);
+  }
+  100% {
+    box-shadow:
+      0.5em 1em rgba(61, 184, 143, 0.75),
+      -0.5em -1em rgba(233, 169, 32, 0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-grid .beforeEl,
+  .loader-grid .afterEl {
+    animation: none;
+  }
+  .loader-grid .beforeEl {
+    box-shadow:
+      1em -0.5em rgba(225, 20, 98, 0.75),
+      -1em 0.5em rgba(111, 202, 220, 0.75);
+  }
+  .loader-grid .afterEl {
+    box-shadow:
+      0.5em 1em rgba(61, 184, 143, 0.75),
+      -0.5em -1em rgba(233, 169, 32, 0.75);
+  }
+}
+
 /* Furigana (real-data only — never used for placeholder text) */
 ruby {
   ruby-position: over;
 }
 
 ruby rt {
-  font-size: 0.6em;
+  font-size: 0.62em;
   color: theme(colors.ink.400);
   font-weight: 400;
   letter-spacing: 0.02em;
   line-height: 1;
-  opacity: 0.85;
+  opacity: 0.75;
 }
 
 .dark ruby rt {

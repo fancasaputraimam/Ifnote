@@ -35,7 +35,7 @@ export function LoginForm() {
     try {
       await authClient.login(values);
       await refresh();
-      notify.success("Selamat datang kembali", "Senang melihatmu lagi.");
+      notify.success("Berhasil masuk", "Selamat belajar lagi di ifNote.", { icon: "🌸" });
       router.replace(ROUTES.app.home);
     } catch (e) {
       const m = mapApiErrorToUserMessage(e, {

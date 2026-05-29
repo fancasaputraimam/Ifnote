@@ -86,6 +86,8 @@ export interface BulkKotobaItem {
   level?: string;
   beginnerExample?: string;
   exampleReading?: string;
+  /** ID kotoba yang sudah tersimpan kalau status === "exists". */
+  existingId?: string | null;
 }
 export interface BulkKotobaData {
   items: BulkKotobaItem[];

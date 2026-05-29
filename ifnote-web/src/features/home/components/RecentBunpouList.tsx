@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PanelCard } from "@/components/ui/PanelCard";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
@@ -20,19 +20,19 @@ const masteryTone: Record<Mastery, "leaf" | "warn" | "danger"> = {
 
 export function RecentBunpouList({ items }: Props) {
   return (
-    <NotebookCard className="p-5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-          Bunpou Terbaru
-        </h2>
+    <PanelCard
+      eyebrow="📐 Bunpou"
+      title="Bunpou Terbaru"
+      tone="lilac"
+      headerAction={
         <Link
           href={ROUTES.app.catatan}
           className="text-xs text-accent-600 hover:underline dark:text-accent-300"
         >
           Lihat semua →
         </Link>
-      </div>
-
+      }
+    >
       {items.length === 0 ? (
         <EmptyState
           icon="📐"
@@ -40,23 +40,34 @@ export function RecentBunpouList({ items }: Props) {
           description="Tambah pola pertamamu dari Catatan atau Tambah dengan AI."
         />
       ) : (
-        <ul className="mt-3 divide-y divide-paper-200 dark:divide-ink-700">
-          {items.map((it) => (
-            <li key={it.id} className="flex items-center justify-between gap-3 py-2.5">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base text-ink-800 dark:text-paper-50">
-                  <JapaneseText text={it.jpOrPattern} inert />
-                </p>
-                <p className="truncate text-xs text-ink-400">{it.meaning}</p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {it.level ? <Badge tone="lilac">{it.level}</Badge> : null}
-                <Badge tone={masteryTone[it.mastery]}>{it.mastery}</Badge>
-              </div>
-            </li>
-          ))}
+        <ul className="divide-y divide-paper-200 dark:divide-ink-700">
+          {items.map((it) => {
+            const reading =
+              (it.detail as { reading?: string | null })?.reading || undefined;
+            return (
+              <li
+                key={it.id}
+                className="flex items-center justify-between gap-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base text-ink-800 dark:text-paper-50">
+                    <JapaneseText
+                      text={it.jpOrPattern}
+                      reading={reading}
+                      inert
+                    />
+                  </p>
+                  <p className="truncate text-xs text-ink-400">{it.meaning}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {it.level ? <Badge tone="lilac">{it.level}</Badge> : null}
+                  <Badge tone={masteryTone[it.mastery]}>{it.mastery}</Badge>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
-    </NotebookCard>
+    </PanelCard>
   );
 }

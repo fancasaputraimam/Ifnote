@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { appendHafalanOrder, retryOnUniqueViolation } from "../common/utils/hafalan-order.util";
+import { normalizeBunpouQuery } from "../common/utils/normalize-query";
 import { AiService } from "../ai/ai.service";
 import { CreateBunpouDto, UpdateBunpouDto } from "./dto";
 
@@ -30,6 +32,60 @@ export class BunpouService {
     private readonly prisma: PrismaService,
     private readonly ai: AiService,
   ) {}
+
+  /**
+   * Database-first lookup untuk Bunpou. Match logic:
+   *   1. exact `pattern` (case-insensitive, normalized)
+   *   2. exact `meaning`
+   *   3. exact `formula`
+   *   4. fallback: `contains` di pattern/meaning/formula/usage
+   *   5. fallback: tag exact (kalau user input "sambil melakukan")
+   *
+   * Tidak memanggil AI.
+   */
+  async lookup(
+    userId: string,
+    rawQuery: string,
+  ): Promise<{ found: false } | { found: true; item: unknown }> {
+    const norm = normalizeBunpouQuery(rawQuery);
+    if (!norm) return { found: false };
+    const raw = rawQuery.trim();
+
+    const exact = await this.prisma.bunpou.findFirst({
+      where: {
+        userId,
+        OR: [
+          { pattern: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { pattern: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { meaning: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+          { formula: { equals: raw, mode: Prisma.QueryMode.insensitive } },
+          { formula: { equals: norm, mode: Prisma.QueryMode.insensitive } },
+        ],
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    if (exact) return { found: true, item: exact };
+
+    if (norm.length >= 2) {
+      const contains = await this.prisma.bunpou.findFirst({
+        where: {
+          userId,
+          OR: [
+            { pattern: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { meaning: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { formula: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { usage: { contains: norm, mode: Prisma.QueryMode.insensitive } },
+            { tags: { has: norm } },
+          ],
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      if (contains) return { found: true, item: contains };
+    }
+
+    return { found: false };
+  }
 
   list(userId: string) {
     return this.prisma.bunpou.findMany({

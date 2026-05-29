@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PanelCard } from "@/components/ui/PanelCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 import { QuizTypeCards } from "./components/QuizTypeCards";
@@ -174,7 +174,7 @@ export function QuizScreen() {
       {isPoolLoading ? (
         <LoadingState label="Menyiapkan soal…" />
       ) : poolError ? (
-        <NotebookCard className="p-5">
+        <PanelCard tone="rose" stripe padding="compact">
           <div className="flex items-center gap-2">
             <Badge tone="warn">Tidak bisa generate quiz</Badge>
           </div>
@@ -187,7 +187,7 @@ export function QuizScreen() {
               Buka Catatan
             </LinkButton>
           </div>
-        </NotebookCard>
+        </PanelCard>
       ) : null}
 
       {isPlayType && questions && questions.length > 0 ? (
@@ -235,11 +235,8 @@ export function QuizScreen() {
 
       {/* Summary card after all questions answered */}
       {isPlayType && !questions && sessionCorrect + sessionWrong > 0 ? (
-        <NotebookCard stripe="leaf" className="p-5">
-          <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-            Sesi selesai
-          </h2>
-          <p className="mt-1 text-sm text-ink-700 dark:text-paper-50">
+        <PanelCard tone="leaf" stripe eyebrow="🍃 Sesi selesai" title="Sesi selesai">
+          <p className="text-sm text-ink-700 dark:text-paper-50">
             {sessionCorrect} benar · {sessionWrong} salah · akurasi{" "}
             {Math.round((sessionCorrect / (sessionCorrect + sessionWrong)) * 100)}%
           </p>
@@ -249,7 +246,7 @@ export function QuizScreen() {
               Lanjut ke Hafalan
             </LinkButton>
           </div>
-        </NotebookCard>
+        </PanelCard>
       ) : null}
     </div>
   );

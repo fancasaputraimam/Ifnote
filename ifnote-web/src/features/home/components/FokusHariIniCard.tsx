@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { PanelCard } from "@/components/ui/PanelCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/ui/LinkButton";
@@ -32,20 +32,12 @@ export function FokusHariIniCard({ kanji, kotoba, bunpou }: Props) {
   const [kanjiOpen, setKanjiOpen] = useState(false);
 
   return (
-    <NotebookCard stripe="leaf" className="p-4 sm:p-5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-          Fokus Hari Ini
-        </h2>
-        <span className="text-xs text-ink-400 hidden sm:inline">
-          Materi yang perlu kamu ulangi hari ini.
-        </span>
-      </div>
-      <p className="mt-0.5 text-xs text-ink-400 sm:hidden">
-        Materi yang perlu kamu ulangi hari ini.
-      </p>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <PanelCard
+      tone="slate"
+      eyebrow="🍵 Fokus hari ini"
+      title="Materi yang perlu kamu ulangi hari ini"
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <FocusTile
           label="Kanji"
           tone="leaf"
@@ -113,7 +105,7 @@ export function FokusHariIniCard({ kanji, kotoba, bunpou }: Props) {
         kanji={kanji}
         onClose={() => setKanjiOpen(false)}
       />
-    </NotebookCard>
+    </PanelCard>
   );
 }
 

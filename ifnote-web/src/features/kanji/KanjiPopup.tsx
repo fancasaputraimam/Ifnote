@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
-import { LoadingState } from "@/components/feedback/LoadingState";
+import { AiLoading } from "@/components/ui/ai-loading";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { useKanjiInfo } from "@/features/home/useKanjiInfo";
 
@@ -24,13 +24,14 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
   return (
     <Modal open={open} onClose={onClose} title={kanji ? `Kanji: ${kanji}` : "Kanji"}>
       {q.isLoading ? (
-        <LoadingState label="Mengambil info kanji…" />
+        <AiLoading
+          title="AI sedang menyiapkan info kanji…"
+          description="Tunggu sebentar ya."
+          compact
+        />
       ) : q.isError || !data ? (
         <div className="text-sm text-ink-400">
-          Tidak bisa memuat info kanji.
-          <span className="block mt-1 text-xs">
-            Pastikan kamu sudah login dan backend menyala.
-          </span>
+          Detail kanji belum tersedia. Coba lagi nanti.
         </div>
       ) : (
         <div className="space-y-4">
