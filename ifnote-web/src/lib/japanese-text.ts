@@ -408,6 +408,79 @@ export function isFullSentence(text: string | null | undefined): boolean {
   return false;
 }
 
+/* ------------------------------------------------------------------ */
+/* Reading <-> sentence match safety check                            */
+/* ------------------------------------------------------------------ */
+
+const KANA_ONLY_RE =
+  /^[\u3041-\u3096\u30A1-\u30FA\u30FC\u3000-\u303F\s\u3001\u3002\uFF01\uFF1F\uFF0E\uFF0C0-9A-Za-z\u30FB]+$/;
+
+/**
+ * Pasangan kanji → reading-substring yang umum. Dipakai untuk validasi
+ * cepat: kalau kalimat mengandung kanji X tapi reading-nya tidak
+ * mengandung kana yang diharapkan, kemungkinan besar reading itu milik
+ * kalimat LAIN (bug "reuse reading" yang dilaporkan).
+ *
+ * Daftar ini sengaja kecil & high-signal — hanya kanji yang sering
+ * muncul di contoh kalimat beginner. Tidak perlu sempurna; cukup untuk
+ * menangkap mismatch yang jelas-jelas salah.
+ */
+const KANJI_READING_HINTS: Array<[string, string[]]> = [
+  ["\u671d", ["\u3042\u3055"]],
+  ["\u98df", ["\u305f", "\u3057\u3087\u304f"]],
+  ["\u8a66\u9a13", ["\u3057\u3051\u3093"]],
+  ["\u5fa9\u7fd2", ["\u3075\u304f\u3057\u3085\u3046"]],
+  ["\u5f62", ["\u304b\u305f\u3061", "\u304c\u305f"]],
+  ["\u732b", ["\u306d\u3053"]],
+  ["\u9ed2", ["\u304f\u308d"]],
+  ["\u4e38", ["\u307e\u308b"]],
+  ["\u7bb1", ["\u306f\u3053"]],
+  ["\u56db\u89d2", ["\u3057\u304b\u304f"]],
+];
+
+/**
+ * Validasi ringan apakah `reading` masuk akal sebagai pembacaan dari
+ * `sentence`. Tujuan utama: mencegah よみ line yang JELAS salah (reading
+ * milik kalimat lain) tampil di UI.
+ *
+ * Aturan (longgar, by design):
+ *   1. reading wajib kana-heavy (hampir seluruhnya kana/tanda baca).
+ *   2. untuk tiap pasangan kanji-hint yang muncul di kalimat, reading
+ *      harus mengandung salah satu kana yang diharapkan. Kalau kalimat
+ *      punya 試験 tapi reading tidak mengandung しけん → mismatch.
+ *   3. perbandingan panjang kasar: reading kalimat tidak boleh jauh
+ *      lebih pendek dari jumlah karakter non-spasi kalimat.
+ *
+ * Return true kalau reading kemungkinan cocok (atau tidak ada sinyal
+ * mismatch). Return false hanya kalau ada sinyal mismatch yang jelas.
+ */
+export function isReadingLikelyForSentence(
+  sentence: string | null | undefined,
+  reading: string | null | undefined,
+): boolean {
+  const s = String(sentence ?? "").trim();
+  const r = String(reading ?? "").trim();
+  if (!s || !r) return false;
+
+  // (1) reading harus kana-heavy.
+  if (!KANA_ONLY_RE.test(r)) return false;
+
+  // (2) kanji-hint check.
+  for (const [kanji, expectedKana] of KANJI_READING_HINTS) {
+    if (s.includes(kanji)) {
+      const hit = expectedKana.some((k) => r.includes(k));
+      if (!hit) return false;
+    }
+  }
+
+  // (3) rough length sanity.
+  const sLen = s.replace(/\s/g, "").length;
+  const rLen = r.replace(/\s/g, "").length;
+  if (sLen >= 6 && rLen < Math.floor(sLen * 0.5)) return false;
+
+  return true;
+}
+
 /**
  * Output dari `buildSafeRubySegments`. `reliable=false` artinya UI harus
  * menampilkan teks plain (tanpa ruby) dan opsional menunjukkan
@@ -493,11 +566,15 @@ export function buildSafeRubySegments(
   }
 
   // Kasus 4: kalimat penuh + reading → plain text + helperReading.
+  // Tapi cek dulu apakah reading masuk akal untuk kalimat ini. Kalau
+  // mismatch (mis. reading milik kalimat lain karena bug reuse), JANGAN
+  // tampilkan よみ line yang salah — set helperReading undefined.
   if (sentence && trimmedReading) {
+    const likely = isReadingLikelyForSentence(cleaned, trimmedReading);
     return {
       segments: [{ base: cleaned }],
       reliable: false,
-      helperReading: trimmedReading,
+      helperReading: likely ? trimmedReading : undefined,
     };
   }
 

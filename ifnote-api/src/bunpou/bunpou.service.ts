@@ -113,7 +113,11 @@ export class BunpouService {
           level: dto.level ?? null,
           tags: dto.tags ?? [],
           beginnerExample: dto.beginnerExample ?? null,
+          beginnerExampleReading: dto.beginnerExampleReading ?? null,
+          beginnerExampleMeaning: dto.beginnerExampleMeaning ?? null,
           normalExample: dto.normalExample ?? null,
+          normalExampleReading: dto.normalExampleReading ?? null,
+          normalExampleMeaning: dto.normalExampleMeaning ?? null,
           furiganaExample: dto.furiganaExample ?? null,
           exampleReading: dto.exampleReading ?? null,
           exampleMeaning: dto.exampleMeaning ?? null,
@@ -140,7 +144,19 @@ export class BunpouService {
         ...(dto.level !== undefined ? { level: dto.level } : {}),
         ...(dto.tags !== undefined ? { tags: dto.tags } : {}),
         ...(dto.beginnerExample !== undefined ? { beginnerExample: dto.beginnerExample } : {}),
+        ...(dto.beginnerExampleReading !== undefined
+          ? { beginnerExampleReading: dto.beginnerExampleReading }
+          : {}),
+        ...(dto.beginnerExampleMeaning !== undefined
+          ? { beginnerExampleMeaning: dto.beginnerExampleMeaning }
+          : {}),
         ...(dto.normalExample !== undefined ? { normalExample: dto.normalExample } : {}),
+        ...(dto.normalExampleReading !== undefined
+          ? { normalExampleReading: dto.normalExampleReading }
+          : {}),
+        ...(dto.normalExampleMeaning !== undefined
+          ? { normalExampleMeaning: dto.normalExampleMeaning }
+          : {}),
         ...(dto.furiganaExample !== undefined ? { furiganaExample: dto.furiganaExample } : {}),
         ...(dto.exampleReading !== undefined ? { exampleReading: dto.exampleReading } : {}),
         ...(dto.exampleMeaning !== undefined ? { exampleMeaning: dto.exampleMeaning } : {}),

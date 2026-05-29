@@ -26,7 +26,11 @@ const schema = z.object({
   level: z.enum(["", "N5", "N4", "N3", "N2", "N1"]).optional(),
   tags: z.string().trim().max(200).optional(),
   beginnerExample: z.string().trim().max(500).optional().or(z.literal("")),
+  beginnerExampleReading: z.string().trim().max(500).optional().or(z.literal("")),
+  beginnerExampleMeaning: z.string().trim().max(500).optional().or(z.literal("")),
   normalExample: z.string().trim().max(500).optional().or(z.literal("")),
+  normalExampleReading: z.string().trim().max(500).optional().or(z.literal("")),
+  normalExampleMeaning: z.string().trim().max(500).optional().or(z.literal("")),
   furiganaExample: z.string().trim().max(500).optional().or(z.literal("")),
   exampleReading: z.string().trim().max(500).optional().or(z.literal("")),
   exampleMeaning: z.string().trim().max(500).optional().or(z.literal("")),
@@ -224,23 +228,52 @@ export function KotobaDialog({
             {...form.register("beginnerExample")}
             placeholder="ごはんを たべます。"
           />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Pembacaan beginner (hiragana)"
+              {...form.register("beginnerExampleReading")}
+              placeholder="ごはんを たべます。"
+            />
+            <TextInput
+              label="Arti contoh beginner"
+              {...form.register("beginnerExampleMeaning")}
+              placeholder="Saya makan nasi."
+            />
+          </div>
           <TextInput
             label="Contoh kalimat (normal)"
             {...form.register("normalExample")}
             placeholder="ごはんを食べます。"
           />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Pembacaan normal (hiragana)"
+              {...form.register("normalExampleReading")}
+              placeholder="ごはんをたべます。"
+            />
+            <TextInput
+              label="Arti contoh normal"
+              {...form.register("normalExampleMeaning")}
+              placeholder="Saya makan nasi."
+            />
+          </div>
           <TextInput
             label="Contoh kalimat (furigana)"
             {...form.register("furiganaExample")}
             placeholder="ごはんを 食(た)べます。"
           />
+          <p className="text-xs text-ink-400">
+            Field pembacaan/arti lama (di bawah) tetap ada untuk
+            kompatibilitas. Isi pembacaan beginner &amp; normal di atas
+            supaya setiap contoh punya reading-nya sendiri.
+          </p>
           <TextInput
-            label="Pembacaan contoh (hiragana)"
+            label="Pembacaan contoh (lama / shared)"
             {...form.register("exampleReading")}
             placeholder="ごはんを たべます。"
           />
           <TextInput
-            label="Arti contoh"
+            label="Arti contoh (lama / shared)"
             {...form.register("exampleMeaning")}
             placeholder="Saya makan nasi."
           />
@@ -290,7 +323,11 @@ function emptyForm(): FormValues {
     level: "",
     tags: "",
     beginnerExample: "",
+    beginnerExampleReading: "",
+    beginnerExampleMeaning: "",
     normalExample: "",
+    normalExampleReading: "",
+    normalExampleMeaning: "",
     furiganaExample: "",
     exampleReading: "",
     exampleMeaning: "",
@@ -308,7 +345,11 @@ function toForm(k: Kotoba): FormValues {
     level: (k.level ?? "") as FormValues["level"],
     tags: (k.tags ?? []).join(", "),
     beginnerExample: k.beginnerExample ?? "",
+    beginnerExampleReading: k.beginnerExampleReading ?? "",
+    beginnerExampleMeaning: k.beginnerExampleMeaning ?? "",
     normalExample: k.normalExample ?? "",
+    normalExampleReading: k.normalExampleReading ?? "",
+    normalExampleMeaning: k.normalExampleMeaning ?? "",
     furiganaExample: k.furiganaExample ?? "",
     exampleReading: k.exampleReading ?? "",
     exampleMeaning: k.exampleMeaning ?? "",
@@ -330,7 +371,11 @@ function toPayload(v: FormValues): KotobaWritePayload {
     level: v.level ? (v.level as "N5" | "N4" | "N3" | "N2" | "N1") : undefined,
     tags: tags.length ? tags : undefined,
     beginnerExample: v.beginnerExample?.trim() || undefined,
+    beginnerExampleReading: v.beginnerExampleReading?.trim() || undefined,
+    beginnerExampleMeaning: v.beginnerExampleMeaning?.trim() || undefined,
     normalExample: v.normalExample?.trim() || undefined,
+    normalExampleReading: v.normalExampleReading?.trim() || undefined,
+    normalExampleMeaning: v.normalExampleMeaning?.trim() || undefined,
     furiganaExample: v.furiganaExample?.trim() || undefined,
     exampleReading: v.exampleReading?.trim() || undefined,
     exampleMeaning: v.exampleMeaning?.trim() || undefined,

@@ -64,7 +64,11 @@ export interface KotobaWritePayload {
   level?: JlptLevel;
   tags?: string[];
   beginnerExample?: string;
+  beginnerExampleReading?: string;
+  beginnerExampleMeaning?: string;
   normalExample?: string;
+  normalExampleReading?: string;
+  normalExampleMeaning?: string;
   furiganaExample?: string;
   exampleReading?: string;
   exampleMeaning?: string;
@@ -80,7 +84,11 @@ export interface BunpouWritePayload {
   level?: JlptLevel;
   tags?: string[];
   beginnerExample?: string;
+  beginnerExampleReading?: string;
+  beginnerExampleMeaning?: string;
   normalExample?: string;
+  normalExampleReading?: string;
+  normalExampleMeaning?: string;
   furiganaExample?: string;
   exampleReading?: string;
   exampleMeaning?: string;

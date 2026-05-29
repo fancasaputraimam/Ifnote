@@ -37,7 +37,19 @@ export class CreateKotobaDto {
   beginnerExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleMeaning?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   normalExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleMeaning?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;
@@ -78,7 +90,19 @@ export class UpdateKotobaDto {
   beginnerExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleMeaning?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   normalExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleMeaning?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;

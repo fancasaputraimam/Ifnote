@@ -87,7 +87,13 @@ export class HafalanService {
           level: k.level,
           mastery: k.mastery,
           example: k.normalExample ?? k.beginnerExample,
-          exampleReading: k.exampleReading,
+          // Reading harus cocok dengan example yang ditampilkan: kalau
+          // normalExample dipakai -> normalExampleReading (fallback shared
+          // exampleReading); kalau beginnerExample yang dipakai ->
+          // beginnerExampleReading. JANGAN pakai reading kalimat lain.
+          exampleReading: k.normalExample
+            ? k.normalExampleReading ?? k.exampleReading
+            : k.beginnerExampleReading,
         });
       } else {
         const b = bMap.get(row.itemId);
@@ -104,7 +110,9 @@ export class HafalanService {
           level: b.level,
           mastery: b.mastery,
           example: b.normalExample ?? b.beginnerExample,
-          exampleReading: b.exampleReading,
+          exampleReading: b.normalExample
+            ? b.normalExampleReading ?? b.exampleReading
+            : b.beginnerExampleReading,
         });
       }
     }

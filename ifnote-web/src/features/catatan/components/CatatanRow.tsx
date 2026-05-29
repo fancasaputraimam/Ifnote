@@ -249,13 +249,28 @@ function ExplainLoading() {
 
 function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
   const beginnerExample = stringOrNull(detail.beginnerExample);
+  const beginnerExampleReading = stringOrNull(detail.beginnerExampleReading);
+  const beginnerExampleMeaning = stringOrNull(detail.beginnerExampleMeaning);
   const normalExample = stringOrNull(detail.normalExample);
+  const normalExampleReading = stringOrNull(detail.normalExampleReading);
+  const normalExampleMeaning = stringOrNull(detail.normalExampleMeaning);
   const furiganaExample = stringOrNull(detail.furiganaExample);
   const exampleReading = stringOrNull(detail.exampleReading);
   const exampleMeaning = stringOrNull(detail.exampleMeaning);
   const reading = stringOrNull(detail.reading);
   const romaji = stringOrNull(detail.romaji);
   const type = stringOrNull(detail.type);
+
+  // Per-example reading mapping (spec PART 7):
+  //   beginner -> beginnerExampleReading ONLY (no fallback to normal/shared)
+  //   normal   -> normalExampleReading, fallback ke exampleReading (shared)
+  //               karena exampleReading secara historis = reading kalimat normal
+  //   arti     -> per-example meaning, fallback ke shared exampleMeaning
+  //               hanya untuk normal (bukan beginner)
+  const beginnerReading = beginnerExampleReading; // jangan fallback!
+  const normalReading = normalExampleReading || exampleReading;
+  const beginnerMeaning = beginnerExampleMeaning; // jangan fallback ke shared
+  const normalMeaning = normalExampleMeaning || exampleMeaning;
 
   return (
     <div className="space-y-3">
@@ -279,12 +294,22 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
 
       {beginnerExample ? (
         <Section label="Contoh (beginner)">
-          <ExampleLine jp={beginnerExample} reading={exampleReading} />
+          <ExampleLine jp={beginnerExample} reading={beginnerReading} />
+          {beginnerMeaning ? (
+            <p className="mt-1 text-sm leading-relaxed text-ink-700 dark:text-paper-50">
+              {beginnerMeaning}
+            </p>
+          ) : null}
         </Section>
       ) : null}
       {normalExample && normalExample !== beginnerExample ? (
         <Section label="Contoh (normal)">
-          <ExampleLine jp={normalExample} reading={exampleReading} />
+          <ExampleLine jp={normalExample} reading={normalReading} />
+          {normalMeaning ? (
+            <p className="mt-1 text-sm leading-relaxed text-ink-700 dark:text-paper-50">
+              {normalMeaning}
+            </p>
+          ) : null}
         </Section>
       ) : null}
       {furiganaExample ? (
@@ -292,13 +317,18 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
           <ExampleLine jp={furiganaExample} mode="furigana" />
         </Section>
       ) : null}
-      {exampleMeaning ? (
+      {/* Legacy single "Arti contoh" — hanya tampil kalau tidak ada
+          per-example meaning di atas (supaya tidak dobel). */}
+      {!beginnerMeaning && !normalMeaning && exampleMeaning ? (
         <Section label="Arti contoh">
           <p className="leading-relaxed text-ink-700 dark:text-paper-50">
             {exampleMeaning}
           </p>
         </Section>
-      ) : (beginnerExample || normalExample || furiganaExample) ? (
+      ) : !beginnerMeaning &&
+        !normalMeaning &&
+        !exampleMeaning &&
+        (beginnerExample || normalExample || furiganaExample) ? (
         <Section label="Arti contoh">
           <p className="text-xs italic text-ink-400">
             Arti contoh belum tersedia.

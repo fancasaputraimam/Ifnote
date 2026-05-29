@@ -37,7 +37,19 @@ export class CreateBunpouDto {
   beginnerExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleMeaning?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   normalExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleMeaning?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;
@@ -84,7 +96,19 @@ export class UpdateBunpouDto {
   beginnerExample?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  beginnerExampleMeaning?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
   normalExample?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleReading?: string;
+
+  @IsOptional() @IsString() @MaxLength(500)
+  normalExampleMeaning?: string;
 
   @IsOptional() @IsString() @MaxLength(500)
   furiganaExample?: string;

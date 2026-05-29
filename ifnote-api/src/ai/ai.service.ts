@@ -34,7 +34,11 @@ interface BulkPreviewItem {
   type?: string;
   level?: string;
   beginnerExample?: string;
+  beginnerExampleReading?: string;
+  beginnerExampleMeaning?: string;
   normalExample?: string;
+  normalExampleReading?: string;
+  normalExampleMeaning?: string;
   exampleReading?: string;
   exampleMeaning?: string;
   /** Set hanya kalau status === "exists" — ID kotoba yang sudah tersimpan. */
@@ -76,20 +80,26 @@ export class AiService {
       "Jika input Indonesia, terjemahkan menjadi kotoba Jepang yang paling natural. " +
       "Jika input Jepang, kembalikan kata aslinya. " +
       "Jika input adalah deskripsi/keyword (mis. 'kata Jepang untuk berat'), pilih kotoba paling cocok. " +
-      "Selalu kembalikan jp dalam huruf Jepang, meaning dalam Bahasa Indonesia, reading dalam hiragana, dan exampleReading dalam hiragana penuh. " +
-      "PENTING soal exampleMeaning: " +
-      "meaning = arti kotoba (kata/frasa singkat). " +
-      "exampleMeaning = terjemahan natural Bahasa Indonesia DARI KALIMAT CONTOH (normalExample). " +
-      "exampleMeaning HARUS berupa kalimat penuh, bukan sekadar mengulang meaning. " +
-      "Contoh BENAR: meaning='hitam', normalExample='黒い猫がいます。', exampleMeaning='Ada kucing hitam.'. " +
-      "Contoh SALAH: exampleMeaning='hitam' (cuma mengulang meaning, bukan kalimat). " +
-      "Contoh SALAH: exampleMeaning='' (kosong padahal normalExample ada). " +
-      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","normalExample":"string","exampleReading":"string","exampleMeaning":"string","note":"string"}';
+      "Selalu kembalikan jp dalam huruf Jepang, meaning dalam Bahasa Indonesia, reading dalam hiragana. " +
+      "Setiap contoh kalimat WAJIB punya reading + meaning sendiri yang cocok DENGAN KALIMAT ITU. " +
+      "DILARANG memakai readingnya kalimat lain.\n" +
+      "  - beginnerExampleReading = hiragana penuh DARI beginnerExample SAJA.\n" +
+      "  - beginnerExampleMeaning = terjemahan Bahasa Indonesia DARI beginnerExample SAJA (kalimat penuh, bukan sekadar arti kotoba).\n" +
+      "  - normalExampleReading   = hiragana penuh DARI normalExample SAJA.\n" +
+      "  - normalExampleMeaning   = terjemahan Bahasa Indonesia DARI normalExample SAJA.\n" +
+      "Untuk kompatibilitas, juga kembalikan exampleReading + exampleMeaning yang isinya = normalExampleReading + normalExampleMeaning. " +
+      "Contoh BENAR: jp='\u5fc5\u305a', " +
+      "beginnerExample='\u671d\u3054\u306f\u3093\u3092\u5fc5\u305a\u98df\u3079\u307e\u3059\u3002', beginnerExampleReading='\u3042\u3055\u3054\u306f\u3093\u3092\u304b\u306a\u3089\u305a\u305f\u3079\u307e\u3059\u3002', beginnerExampleMeaning='Saya pasti makan sarapan.', " +
+      "normalExample='\u8a66\u9a13\u306e\u524d\u306b\u5fc5\u305a\u5fa9\u7fd2\u3057\u307e\u3059\u3002', normalExampleReading='\u3057\u3051\u3093\u306e\u307e\u3048\u306b\u304b\u306a\u3089\u305a\u3075\u304f\u3057\u3085\u3046\u3057\u307e\u3059\u3002', normalExampleMeaning='Saya selalu mengulang sebelum ujian.'. " +
+      "Contoh SALAH: beginnerExampleReading=normalExampleReading (BERBEDA KALIMAT, jangan!). " +
+      "Contoh SALAH: beginnerExampleMeaning='pasti' (cuma mengulang meaning). " +
+      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","beginnerExampleReading":"string","beginnerExampleMeaning":"string","normalExample":"string","normalExampleReading":"string","normalExampleMeaning":"string","exampleReading":"string","exampleMeaning":"string","note":"string"}';
     const usr =
       `Input user: "${dto.jp}". ` +
       "Identifikasi kotoba Jepang yang paling sesuai dan kembalikan struktur lengkap. " +
       "sourceInput = input asli, inputLanguage = bahasa input. " +
-      "WAJIB sertakan exampleMeaning sebagai terjemahan natural Bahasa Indonesia dari normalExample. " +
+      "WAJIB sertakan reading + meaning UNIK untuk SETIAP contoh kalimat (beginnerExampleReading/Meaning + normalExampleReading/Meaning). " +
+      "DILARANG menyalin reading dari kalimat satu ke kalimat lain. " +
       "JANGAN gunakan tag <ruby>; cukup teks polos. JANGAN balikan markdown.";
     const r = await this.client.chatJson(userId, "explain-kotoba", sys, usr);
     if (!r.ok) aiCallFailed(r.message);
@@ -130,6 +140,39 @@ export class AiService {
       source: "ai" as const,
       data: { exampleMeaning: text },
     };
+  }
+
+  /**
+   * Repair: minta AI mengisi reading hiragana untuk satu kalimat
+   * contoh. Dipakai saat reading hilang atau terdeteksi mismatch
+   * (mis. AI lama menyalin reading kalimat normal ke beginner).
+   *
+   * Spec PART 5: hanya kembalikan reading; JANGAN rewrite kalimatnya.
+   */
+  async translateReading(
+    userId: string,
+    dto: { sentence: string },
+  ): Promise<{ source: "ai"; data: { reading: string } }> {
+    const sentence = (dto.sentence ?? "").trim();
+    if (!sentence) {
+      return { source: "ai" as const, data: { reading: "" } };
+    }
+    const sys =
+      SYS_BASE +
+      " Tugas: kembalikan PEMBACAAN HIRAGANA dari kalimat Jepang yang diberikan. " +
+      "Reading harus hiragana penuh (semua kanji diganti hiragana). " +
+      "JANGAN rewrite kalimat. JANGAN tambahkan terjemahan. JANGAN markdown. JANGAN tag <ruby>. " +
+      'Schema: {"reading":"string"}';
+    const usr = `Kalimat Jepang: "${sentence}". Kembalikan field reading berisi hiragana penuh dari kalimat itu.`;
+    const r = await this.client.chatJson<{ reading?: string }>(
+      userId,
+      "translate-reading",
+      sys,
+      usr,
+    );
+    if (!r.ok) aiCallFailed(r.message);
+    const text = (r.data?.reading ?? "").trim();
+    return { source: "ai" as const, data: { reading: text } };
   }
 
   async explainBunpou(userId: string, dto: ExplainBunpouDto) {
@@ -260,7 +303,11 @@ export class AiService {
       type: string | null;
       level: string | null;
       beginnerExample: string | null;
+      beginnerExampleReading: string | null;
+      beginnerExampleMeaning: string | null;
       normalExample: string | null;
+      normalExampleReading: string | null;
+      normalExampleMeaning: string | null;
       exampleReading: string | null;
       exampleMeaning: string | null;
     };
@@ -287,7 +334,11 @@ export class AiService {
           type: true,
           level: true,
           beginnerExample: true,
+          beginnerExampleReading: true,
+          beginnerExampleMeaning: true,
           normalExample: true,
+          normalExampleReading: true,
+          normalExampleMeaning: true,
           exampleReading: true,
           exampleMeaning: true,
         },
@@ -324,7 +375,11 @@ export class AiService {
       type?: string;
       level?: string;
       beginnerExample?: string;
+      beginnerExampleReading?: string;
+      beginnerExampleMeaning?: string;
       normalExample?: string;
+      normalExampleReading?: string;
+      normalExampleMeaning?: string;
       exampleReading?: string;
       exampleMeaning?: string;
     };
@@ -334,8 +389,11 @@ export class AiService {
       const sys =
         SYS_BASE +
         " Daftar berikut bisa berisi Bahasa Indonesia, Bahasa Jepang, atau campuran. Untuk SETIAP entri tentukan kotoba Jepang yang dimaksud lalu kembalikan strukturnya lengkap. Selalu kembalikan jp dalam Jepang dan meaning dalam Bahasa Indonesia. Pertahankan urutan input. " +
-        "WAJIB sertakan normalExample (kalimat Jepang lengkap memakai kotoba) dan exampleMeaning (terjemahan Bahasa Indonesia natural dari kalimat itu). exampleMeaning JANGAN sama dengan meaning kotoba kalau normalExample adalah kalimat penuh. " +
-        'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","normalExample":"string","beginnerExample":"string","exampleReading":"string","exampleMeaning":"string"}]}';
+        "WAJIB sertakan beginnerExample + beginnerExampleReading + beginnerExampleMeaning, dan normalExample + normalExampleReading + normalExampleMeaning. " +
+        "DILARANG menyalin reading dari satu kalimat ke kalimat lain: tiap reading HARUS unik untuk kalimatnya sendiri. " +
+        "exampleReading = SAMA dengan normalExampleReading; exampleMeaning = SAMA dengan normalExampleMeaning. " +
+        "exampleMeaning JANGAN sama dengan meaning kotoba kalau normalExample adalah kalimat penuh. " +
+        'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","beginnerExampleReading":"string","beginnerExampleMeaning":"string","normalExample":"string","normalExampleReading":"string","normalExampleMeaning":"string","exampleReading":"string","exampleMeaning":"string"}]}';
       const usr = `Daftar input user (urutan harus dipertahankan): ${JSON.stringify(
         missingWords,
       )}`;
@@ -386,8 +444,12 @@ export class AiService {
           type: saved.type ?? "",
           level: saved.level ?? "",
           beginnerExample: saved.beginnerExample ?? "",
+          beginnerExampleReading: saved.beginnerExampleReading ?? "",
+          beginnerExampleMeaning: saved.beginnerExampleMeaning ?? "",
           normalExample:
             saved.normalExample ?? saved.beginnerExample ?? "",
+          normalExampleReading: saved.normalExampleReading ?? "",
+          normalExampleMeaning: saved.normalExampleMeaning ?? "",
           exampleReading: saved.exampleReading ?? "",
           exampleMeaning: saved.exampleMeaning ?? "",
         };
@@ -408,6 +470,27 @@ export class AiService {
       const status: BulkPreviewItem["status"] =
         dbId || isDupBatch ? "exists" : "new";
 
+      // Per-example reading + meaning. Default ke field kalimat-spesifik
+      // dari AI; kalau AI cuma kasih flat exampleReading, dipakai sebagai
+      // alias **untuk normalExample saja**—JANGAN dipakai untuk beginner
+      // (lihat spec PART 1 + PART 3).
+      const beginnerJp = ai.beginnerExample ?? "";
+      const normalJp = ai.normalExample ?? ai.beginnerExample ?? "";
+      const beginnerReading = ai.beginnerExampleReading ?? "";
+      const beginnerMeaning = ai.beginnerExampleMeaning ?? "";
+      // exampleReading hanya boleh diadopsi ke normalExampleReading kalau
+      // beginner !== normal (kalau identik, AI lama biasanya cuma kirim 1).
+      const normalReading =
+        ai.normalExampleReading ??
+        (beginnerJp && beginnerJp === normalJp ? beginnerReading : "") ??
+        ai.exampleReading ??
+        "";
+      const normalMeaning =
+        ai.normalExampleMeaning ??
+        (beginnerJp && beginnerJp === normalJp ? beginnerMeaning : "") ??
+        ai.exampleMeaning ??
+        "";
+
       return {
         jp,
         status,
@@ -418,10 +501,15 @@ export class AiService {
         romaji: ai.romaji ?? "",
         type: ai.type ?? "",
         level: ai.level ?? "",
-        beginnerExample: ai.beginnerExample ?? "",
-        normalExample: ai.normalExample ?? ai.beginnerExample ?? "",
-        exampleReading: ai.exampleReading ?? "",
-        exampleMeaning: ai.exampleMeaning ?? "",
+        beginnerExample: beginnerJp,
+        beginnerExampleReading: beginnerReading,
+        beginnerExampleMeaning: beginnerMeaning,
+        normalExample: normalJp,
+        normalExampleReading: normalReading || undefined,
+        normalExampleMeaning: normalMeaning || undefined,
+        // Backward-compat alias — mirror normal* ke flat field.
+        exampleReading: normalReading || ai.exampleReading || "",
+        exampleMeaning: normalMeaning || ai.exampleMeaning || "",
         existingId: dbId ?? null,
       };
     });

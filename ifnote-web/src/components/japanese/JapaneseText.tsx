@@ -130,20 +130,22 @@ export function JapaneseText({
 
   if (segments.length === 0) return null;
 
-  // Helper line untuk mode Pemula (kana). Spec: tampilkan "よみ: …" di
-  // bawah kalimat kalau ruby tidak reliable. Untuk mode Furigana &
-  // Kanji, helper tidak ditampilkan supaya UI tetap bersih.
-  const helperNode =
-    sentenceMode && !reliable && helperReading && isKana ? (
-      <span
-        className={cn(
-          "mt-1 block text-xs text-ink-400",
-          helperClassName,
-        )}
-      >
-        よみ: <span className="font-jp">{helperReading}</span>
-      </span>
-    ) : null;
+  // Helper line "よみ: …" di bawah kalimat kalau ruby tidak reliable.
+  // Spec PART 6: tampilkan di mode Pemula (kana) DAN Normal (furigana).
+  // Hanya mode Pro/kanji yang menyembunyikan reading. Kalau reading
+  // mismatch, buildSafeRubySegments sudah men-set helperReading=undefined
+  // sehingga よみ line yang salah tidak pernah tampil.
+  const showHelper = sentenceMode && !reliable && !!helperReading && (isKana || isFurigana);
+  const helperNode = showHelper ? (
+    <span
+      className={cn(
+        "japanese-reading-helper mt-1 block text-xs text-ink-400",
+        helperClassName,
+      )}
+    >
+      よみ: <span className="font-jp">{helperReading}</span>
+    </span>
+  ) : null;
 
   // ---- Mode "kana" (Pemula) -----------------------------------------
   // Kanji diganti reading. Kalau segment tidak punya reading dan base-nya
@@ -217,7 +219,8 @@ export function JapaneseText({
 
   // ---- Mode "furigana" (Normal) -------------------------------------
   // Kalau sentenceMode + unreliable, render plain (tanpa ruby) supaya
-  // tidak ada furigana berantakan. Kanji tetap clickable.
+  // tidak ada furigana berantakan. Kanji tetap clickable, dan helper
+  // よみ line tetap tampil (spec PART 6: Normal juga punya reading helper).
   if (sentenceMode && !reliable) {
     const flattened = segments.map((s) => s.base).join("");
     return (
@@ -228,6 +231,7 @@ export function JapaneseText({
           (ch) => setOpenKanji(ch),
           "sp",
         )}
+        {helperNode}
         {!inert ? (
           <KanjiPopup
             open={!!openKanji}

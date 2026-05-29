@@ -101,3 +101,16 @@ export class TranslateExampleDto {
   @IsOptional() @IsString() @MaxLength(500)
   exampleReading?: string;
 }
+
+/**
+ * Repair endpoint: minta AI mengisi reading (hiragana) untuk satu
+ * kalimat. Dipakai saat reading hilang atau terdeteksi mismatch
+ * (mis. AI lama menyalin reading kalimat normal ke beginner).
+ *
+ * Spec PART 5: AI hanya mengembalikan reading; tidak boleh menulis
+ * ulang kalimatnya.
+ */
+export class TranslateReadingDto {
+  @IsString() @MinLength(1) @MaxLength(500)
+  sentence!: string;
+}

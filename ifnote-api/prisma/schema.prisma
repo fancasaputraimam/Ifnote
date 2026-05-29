@@ -71,11 +71,15 @@ model Kotoba {
   type            String?
   level           String?
   tags            String[] @default([])
-  beginnerExample String?
-  normalExample   String?
-  furiganaExample String?
-  exampleReading  String?
-  exampleMeaning  String?
+  beginnerExample        String?
+  beginnerExampleReading String?
+  beginnerExampleMeaning String?
+  normalExample          String?
+  normalExampleReading   String?
+  normalExampleMeaning   String?
+  furiganaExample        String?
+  exampleReading         String?
+  exampleMeaning         String?
   mastery         String   @default("mid") // good | mid | weak
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -99,11 +103,15 @@ model Bunpou {
   usage           String?
   level           String?
   tags            String[] @default([])
-  beginnerExample String?
-  normalExample   String?
-  furiganaExample String?
-  exampleReading  String?
-  exampleMeaning  String?
+  beginnerExample        String?
+  beginnerExampleReading String?
+  beginnerExampleMeaning String?
+  normalExample          String?
+  normalExampleReading   String?
+  normalExampleMeaning   String?
+  furiganaExample        String?
+  exampleReading         String?
+  exampleMeaning         String?
   note            String?
   commonMistake   String?
   mastery         String   @default("mid") // good | mid | weak

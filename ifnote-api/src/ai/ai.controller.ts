@@ -15,6 +15,7 @@ import {
   GenerateSakubunDto,
   MakeExampleDto,
   TranslateExampleDto,
+  TranslateReadingDto,
 } from "./dto";
 
 /**
@@ -58,6 +59,14 @@ export class AiController {
     @Body() dto: TranslateExampleDto,
   ) {
     return this.svc.translateExample(user.sub, dto);
+  }
+
+  @Post("translate-reading")
+  translateReading(
+    @CurrentUser() user: JwtUser,
+    @Body() dto: TranslateReadingDto,
+  ) {
+    return this.svc.translateReading(user.sub, dto);
   }
 
   @Post("explain-bunpou")

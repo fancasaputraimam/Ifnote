@@ -70,7 +70,11 @@ export interface Kotoba {
   level: JlptLevel | null;
   tags: string[];
   beginnerExample: string | null;
+  beginnerExampleReading: string | null;
+  beginnerExampleMeaning: string | null;
   normalExample: string | null;
+  normalExampleReading: string | null;
+  normalExampleMeaning: string | null;
   furiganaExample: string | null;
   exampleReading: string | null;
   exampleMeaning: string | null;
@@ -89,7 +93,11 @@ export interface Bunpou {
   level: JlptLevel | null;
   tags: string[];
   beginnerExample: string | null;
+  beginnerExampleReading: string | null;
+  beginnerExampleMeaning: string | null;
   normalExample: string | null;
+  normalExampleReading: string | null;
+  normalExampleMeaning: string | null;
   furiganaExample: string | null;
   exampleReading: string | null;
   exampleMeaning: string | null;

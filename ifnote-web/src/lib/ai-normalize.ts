@@ -36,7 +36,11 @@ export interface NormalizedKotoba {
   type: string;
   level: JlptLevel | "";
   beginnerExample: string;
+  beginnerExampleReading: string;
+  beginnerExampleMeaning: string;
   normalExample: string;
+  normalExampleReading: string;
+  normalExampleMeaning: string;
   furiganaExample: string;
   exampleReading: string;
   exampleMeaning: string;
@@ -66,6 +70,62 @@ export function normalizeAiKotobaResult(
     lang === "japanese" || lang === "indonesian" || lang === "mixed"
       ? (lang as NormalizedKotoba["inputLanguage"])
       : undefined;
+
+  const beginnerExample = pickStr(r.beginnerExample, example);
+  const normalExample = pickStr(r.normalExample, example);
+
+  // Shared/legacy fields. exampleReading historically = reading dari
+  // normalExample, exampleMeaning = arti dari normalExample.
+  const sharedReading = pickStr(
+    r.exampleReading,
+    r.exampleKana,
+    r.exampleFurigana,
+    r.readingExample,
+  );
+  const sharedMeaning = pickStr(
+    r.exampleMeaning,
+    r.exampleTranslation,
+    r.translationExample,
+    r.artiContoh,
+    r.aiExampleMeaning,
+    r.meaningExample,
+    r.exampleIndonesian,
+    r.sentenceMeaning,
+    r.sentenceTranslation,
+    r.contohArti,
+    r.artiKalimatContoh,
+    r.kalimatContohMeaning,
+  );
+
+  // Per-example reading + meaning. ATURAN KETAT (spec PART 3):
+  //   - beginnerExampleReading HANYA dari field beginner-spesifik.
+  //     JANGAN fallback ke shared/normal reading (itu bug "reuse").
+  //   - normalExampleReading dari field normal-spesifik, fallback ke
+  //     shared exampleReading (yang memang reading kalimat normal).
+  //   - Pengecualian: kalau beginnerExample === normalExample (kalimat
+  //     sama persis), reading shared boleh dipakai untuk keduanya.
+  const sameSentence =
+    !!beginnerExample && beginnerExample === normalExample;
+
+  const beginnerExampleReading = pickStr(
+    r.beginnerExampleReading,
+    r.beginnerReading,
+    sameSentence ? sharedReading : "",
+  );
+  const beginnerExampleMeaning = pickStr(
+    r.beginnerExampleMeaning,
+    sameSentence ? sharedMeaning : "",
+  );
+  const normalExampleReading = pickStr(
+    r.normalExampleReading,
+    r.normalReading,
+    sharedReading,
+  );
+  const normalExampleMeaning = pickStr(
+    r.normalExampleMeaning,
+    sharedMeaning,
+  );
+
   return {
     jp: pickStr(r.jp, r.word, r.japanese, r.term, r.kotoba, r.topic),
     reading: pickStr(r.reading, r.kana, r.yomi, r.furigana, r.hiragana, r.kanaReading),
@@ -73,31 +133,16 @@ export function normalizeAiKotobaResult(
     meaning: pickStr(r.meaning, r.arti, r.translation),
     type: pickStr(r.type, r.partOfSpeech, r.pos),
     level: safeLevel(r.level) ?? "",
-    beginnerExample: pickStr(r.beginnerExample, example),
-    normalExample: pickStr(r.normalExample, example),
+    beginnerExample,
+    beginnerExampleReading,
+    beginnerExampleMeaning,
+    normalExample,
+    normalExampleReading,
+    normalExampleMeaning,
     furiganaExample: pickStr(r.furiganaExample, r.exampleFurigana),
-    exampleReading: pickStr(
-      r.exampleReading,
-      r.exampleKana,
-      r.exampleFurigana,
-      r.readingExample,
-    ),
-    exampleMeaning: pickStr(
-      r.exampleMeaning,
-      r.exampleTranslation,
-      r.translationExample,
-      r.artiContoh,
-      r.aiExampleMeaning,
-      r.normalExampleMeaning,
-      r.beginnerExampleMeaning,
-      r.meaningExample,
-      r.exampleIndonesian,
-      r.sentenceMeaning,
-      r.sentenceTranslation,
-      r.contohArti,
-      r.artiKalimatContoh,
-      r.kalimatContohMeaning,
-    ),
+    // exampleReading/exampleMeaning = alias normal* untuk backward compat.
+    exampleReading: normalExampleReading,
+    exampleMeaning: normalExampleMeaning,
     note: pickStr(r.note, r.catatan, r.tip),
     inputLanguage,
     sourceInput: pickStr(r.sourceInput, r.input) || undefined,

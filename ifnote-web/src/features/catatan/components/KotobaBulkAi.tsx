@@ -105,10 +105,15 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
           ...emptyItem(merged.jp),
           ...merged,
           // Carry the normalized fields the bulk type doesn't model so
-          // itemToPayload can save them.
+          // itemToPayload can save them. Per-example reading/meaning
+          // dikirim terpisah supaya tidak saling tertukar (spec PART 3).
           normalExample: norm.normalExample,
           furiganaExample: norm.furiganaExample,
           exampleMeaning: norm.exampleMeaning,
+          beginnerExampleReading: norm.beginnerExampleReading,
+          beginnerExampleMeaning: norm.beginnerExampleMeaning,
+          normalExampleReading: norm.normalExampleReading,
+          normalExampleMeaning: norm.normalExampleMeaning,
           status,
           // Default-select only complete "new" items. Existing duplicates
           // and items needing manual review stay un-selected by default.
@@ -375,6 +380,10 @@ interface EditableItem extends BulkKotobaItem {
   normalExample?: string;
   furiganaExample?: string;
   exampleMeaning?: string;
+  beginnerExampleReading?: string;
+  beginnerExampleMeaning?: string;
+  normalExampleReading?: string;
+  normalExampleMeaning?: string;
 }
 
 function emptyItem(jp: string): EditableItem {
@@ -408,6 +417,14 @@ function itemToPayload(it: EditableItem): KotobaWritePayload {
   const beginnerExample = it.beginnerExample?.trim() || undefined;
   const normalExample = it.normalExample?.trim() || beginnerExample;
   const furiganaExample = it.furiganaExample?.trim() || undefined;
+  // Per-example reading/meaning. beginnerExampleReading TIDAK boleh
+  // fallback ke shared exampleReading (itu reading kalimat normal).
+  const beginnerExampleReading = it.beginnerExampleReading?.trim() || undefined;
+  const beginnerExampleMeaning = it.beginnerExampleMeaning?.trim() || undefined;
+  const normalExampleReading =
+    it.normalExampleReading?.trim() || it.exampleReading?.trim() || undefined;
+  const normalExampleMeaning =
+    it.normalExampleMeaning?.trim() || it.exampleMeaning?.trim() || undefined;
   return {
     jp: it.jp.trim(),
     reading: it.reading?.trim() || undefined,
@@ -416,10 +433,15 @@ function itemToPayload(it: EditableItem): KotobaWritePayload {
     type: it.type?.trim() || undefined,
     level: safeLevel,
     beginnerExample,
+    beginnerExampleReading,
+    beginnerExampleMeaning,
     normalExample,
+    normalExampleReading,
+    normalExampleMeaning,
     furiganaExample,
-    exampleReading: it.exampleReading?.trim() || undefined,
-    exampleMeaning: it.exampleMeaning?.trim() || undefined,
+    // Shared alias = reading/meaning kalimat normal (backward compat).
+    exampleReading: normalExampleReading,
+    exampleMeaning: normalExampleMeaning,
     mastery: "mid",
   };
 }
