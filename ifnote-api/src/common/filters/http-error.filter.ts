@@ -37,6 +37,23 @@ export class HttpErrorFilter implements ExceptionFilter {
         message = b.message ?? exception.message;
         code = b.error;
       }
+
+      // Throttler 429 → Indonesian-friendly copy. Pesan default
+      // ("ThrottlerException: Too Many Requests") tidak bisa langsung
+      // ditunjukkan ke user. Kita tetap kasih hint endpoint mana yang
+      // di-throttle lewat URL path supaya frontend bisa memilih copy
+      // yang lebih spesifik kalau perlu.
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        const path = req.url || "";
+        if (path.includes("/api/auth/login")) {
+          message = "Terlalu banyak percobaan masuk. Coba lagi nanti.";
+        } else if (path.includes("/api/auth/register")) {
+          message = "Terlalu banyak percobaan daftar. Coba lagi nanti.";
+        } else {
+          message = "Terlalu banyak permintaan. Coba lagi sebentar.";
+        }
+        code = "RATE_LIMIT";
+      }
     } else if (exception && typeof exception === "object") {
       const e = exception as { code?: string; message?: string };
       // Prisma known errors

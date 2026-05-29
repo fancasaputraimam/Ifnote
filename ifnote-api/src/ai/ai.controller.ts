@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
-import { Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtUser } from "../common/auth/jwt.types";
@@ -18,9 +17,17 @@ import {
   TranslateExampleDto,
 } from "./dto";
 
+/**
+ * AI endpoints. PER SECURITY HARDENING SPEC: tidak ada rate limit khusus
+ * di sini — hanya global default ThrottlerGuard (lihat AppModule). Login
+ * & register punya throttle ketat sendiri di AuthController.
+ *
+ * Kalau di masa depan AI cost spike jadi masalah, tambahkan @Throttle
+ * di sini, tapi untuk sekarang biarkan dulu supaya UX bulk import dan
+ * bulk explain tetap mulus.
+ */
 @Controller("api/ai")
 @UseGuards(JwtAuthGuard)
-@Throttle({ default: { limit: 30, ttl: 60_000 } })
 export class AiController {
   constructor(
     private readonly svc: AiService,
@@ -79,7 +86,6 @@ export class AiController {
   }
 
   @Post("bulk-kotoba")
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   bulkKotoba(@CurrentUser() user: JwtUser, @Body() dto: BulkKotobaDto) {
     return this.svc.bulkKotoba(user.sub, dto);
   }
@@ -90,7 +96,6 @@ export class AiController {
   }
 
   @Post("generate-sakubun")
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   generateSakubun(@CurrentUser() user: JwtUser, @Body() dto: GenerateSakubunDto) {
     return this.svc.generateSakubun(user.sub, dto);
   }
