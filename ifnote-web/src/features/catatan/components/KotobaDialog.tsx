@@ -113,30 +113,29 @@ export function KotobaDialog({
 
   const submitting = create.isPending || update.isPending;
 
-  /** AI flow → fill manual form with AI data, switch to manual tab so user
-   *  can review + tweak before final Simpan. */
-  const onAiApply = (payload: KotobaWritePayload) => {
-    form.reset({
-      jp: payload.jp ?? "",
-      reading: payload.reading ?? "",
-      romaji: payload.romaji ?? "",
-      meaning: payload.meaning ?? "",
-      type: payload.type ?? "",
-      level: (payload.level ?? "") as FormValues["level"],
-      tags: (payload.tags ?? []).join(", "),
-      beginnerExample: payload.beginnerExample ?? "",
-      normalExample: payload.normalExample ?? "",
-      furiganaExample: payload.furiganaExample ?? "",
-      exampleReading: payload.exampleReading ?? "",
-      exampleMeaning: payload.exampleMeaning ?? "",
-      mastery: payload.mastery ?? "mid",
-    });
-    setTab("manual");
-    notify.info(
-      "Pratinjau AI siap",
-      "Periksa hasilnya sebelum kamu simpan.",
-      { icon: "✨" },
-    );
+  /**
+   * AI flow — in create mode, save directly to Catatan after AI preview.
+   * Manual form is intentionally NOT rendered for new items (per spec):
+   * the AI panel itself already lets the user review/edit fields before
+   * clicking "Simpan ke Catatan". In edit mode this callback is unused
+   * because the AI tabs are hidden.
+   */
+  const onAiApply = async (payload: KotobaWritePayload) => {
+    try {
+      await create.mutateAsync(payload);
+      notify.success(
+        "Kotoba disimpan",
+        "Catatan baru sudah masuk ke daftar kamu.",
+        { icon: "\uD83C\uDF38" },
+      );
+      onClose();
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan kotoba",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
+    }
   };
 
   /** Bulk flow → save all selected items here, then close modal. */
@@ -193,7 +192,9 @@ export function KotobaDialog({
         </div>
       ) : null}
 
-      {tab === "manual" || isEdit ? (
+      {/* Manual form: rendered ONLY for edit mode. Add mode never
+          shows manual fields per spec — AI panel handles review/edit. */}
+      {isEdit ? (
         <form className="space-y-3" onSubmit={onSubmit} noValidate>
           <TextInput
             label="Tulisan Jepang"

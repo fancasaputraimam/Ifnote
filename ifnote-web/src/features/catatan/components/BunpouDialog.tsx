@@ -110,30 +110,29 @@ export function BunpouDialog({
 
   const submitting = create.isPending || update.isPending;
 
-  const onAiApply = (payload: BunpouWritePayload) => {
-    form.reset({
-      pattern: payload.pattern,
-      reading: payload.reading ?? "",
-      meaning: payload.meaning,
-      formula: payload.formula ?? "",
-      usage: payload.usage ?? "",
-      level: (payload.level ?? "") as FormValues["level"],
-      tags: (payload.tags ?? []).join(", "),
-      beginnerExample: payload.beginnerExample ?? "",
-      normalExample: payload.normalExample ?? "",
-      furiganaExample: payload.furiganaExample ?? "",
-      exampleReading: payload.exampleReading ?? "",
-      exampleMeaning: payload.exampleMeaning ?? "",
-      note: payload.note ?? "",
-      commonMistake: payload.commonMistake ?? "",
-      mastery: payload.mastery ?? "mid",
-    });
-    setTab("manual");
-    notify.info(
-      "Pratinjau AI siap",
-      "Periksa hasilnya sebelum kamu simpan.",
-      { icon: "✨" },
-    );
+  /**
+   * AI flow — in create mode, save directly to Catatan after AI preview.
+   * Manual form is intentionally NOT rendered for new items (per spec):
+   * the AI panel itself already lets the user review/edit fields before
+   * clicking "Simpan ke Catatan". In edit mode this callback is unused
+   * because the AI tab is hidden.
+   */
+  const onAiApply = async (payload: BunpouWritePayload) => {
+    try {
+      await create.mutateAsync(payload);
+      notify.success(
+        "Bunpou disimpan",
+        "Pola bunpou berhasil ditambahkan.",
+        { icon: "\uD83C\uDF38" },
+      );
+      onClose();
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan bunpou",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
+    }
   };
 
   return (
@@ -150,7 +149,9 @@ export function BunpouDialog({
         </div>
       ) : null}
 
-      {tab === "manual" || isEdit ? (
+      {/* Manual form: rendered ONLY for edit mode. Add mode never
+          shows manual fields per spec — AI panel handles review/edit. */}
+      {isEdit ? (
         <form className="space-y-3" onSubmit={onSubmit} noValidate>
           <TextInput
             label="Pola"
