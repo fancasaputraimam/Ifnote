@@ -83,12 +83,13 @@ export function BunpouAiAnalyze({
             rows={3}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Bisa Bahasa Jepang atau Indonesia. Contoh:\n〜ながら\nsambil melakukan dua aktivitas\n音楽を聞きながら、勉強します。`}
+            placeholder={"Contoh: 〜ながら, sambil melakukan, 音楽を聞きながら勉強します"}
             className="block w-full resize-none rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <p className="mt-1 text-xs text-ink-400">
-            AI akan menebak Bahasa input. Pola, arti, formula, contoh, dan
-            kesalahan umum dikembalikan terstruktur. Bisa diedit sebelum disimpan.
+            Bisa bahasa Jepang atau Indonesia. AI akan mengembalikan pola,
+            arti, formula, contoh kalimat, dan kesalahan umum dalam struktur
+            rapi.
           </p>
         </div>
         {error ? (
@@ -101,7 +102,7 @@ export function BunpouAiAnalyze({
             Batal
           </Button>
           <Button type="button" disabled={!input.trim()} onClick={onAnalyze}>
-            Analisa Bunpou dengan AI
+            Analisa pakai AI
           </Button>
         </div>
       </div>

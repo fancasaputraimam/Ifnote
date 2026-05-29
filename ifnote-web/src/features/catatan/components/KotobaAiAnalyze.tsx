@@ -10,6 +10,7 @@ import { useExplainKotoba } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
 import {
+  hasIncompleteExampleMeaning,
   normalizeAiKotobaResult,
   type NormalizedKotoba,
 } from "@/lib/ai-normalize";
@@ -80,6 +81,18 @@ export function KotobaAiAnalyze({
   };
 
   const dupStatus = draft ? duplicateStatus(draft.jp, existingJp) : "new";
+  const exampleIncomplete = draft
+    ? hasIncompleteExampleMeaning({
+        meaning: draft.meaning,
+        normalExample: draft.normalExample,
+        exampleMeaning: draft.exampleMeaning,
+      })
+    : false;
+  const canSave =
+    !!draft &&
+    !!draft.jp.trim() &&
+    !!draft.meaning.trim() &&
+    !exampleIncomplete;
 
   if (explain.isPending) {
     return (
@@ -101,13 +114,13 @@ export function KotobaAiAnalyze({
             rows={3}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Bisa Bahasa Jepang atau Indonesia. Contoh:\n食べます\nmakan\nkata Jepang untuk berat`}
+            placeholder={"Contoh: 食べます, makan, berat, 甜い物"}
             className="block w-full resize-none rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <p className="mt-1 text-xs text-ink-400">
-            AI akan menebak Bahasa input lalu mengembalikan tulisan Jepang,
-            pembacaan kana, arti dalam Bahasa Indonesia, jenis, level, dan
-            contoh kalimat. Kamu bisa mengedit sebelum disimpan.
+            Bisa bahasa Jepang atau Indonesia. AI akan mengembalikan tulisan
+            Jepang, pembacaan, arti, jenis, level, contoh kalimat, dan arti
+            contoh.
           </p>
         </div>
         {error ? (
@@ -120,7 +133,7 @@ export function KotobaAiAnalyze({
             Batal
           </Button>
           <Button type="button" disabled={!input.trim()} onClick={onAnalyze}>
-            Analisa dengan AI
+            Analisa pakai AI
           </Button>
         </div>
       </div>
@@ -236,6 +249,13 @@ export function KotobaAiAnalyze({
         </div>
       ) : null}
 
+      {exampleIncomplete ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-700/10 dark:text-amber-200">
+          🍂 Arti contoh belum lengkap. Isi terjemahan kalimat contoh dulu
+          sebelum simpan.
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap justify-end gap-2 pt-1">
         <Button type="button" variant="ghost" onClick={() => setDraft(null)}>
           Coba Lagi
@@ -243,7 +263,11 @@ export function KotobaAiAnalyze({
         <Button type="button" variant="secondary" onClick={onCancel}>
           Batal
         </Button>
-        <Button type="button" onClick={() => onApply(toPayload(draft))}>
+        <Button
+          type="button"
+          disabled={!canSave}
+          onClick={() => onApply(toPayload(draft))}
+        >
           Simpan ke Catatan
         </Button>
       </div>

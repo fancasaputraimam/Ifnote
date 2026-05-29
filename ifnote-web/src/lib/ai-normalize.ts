@@ -91,11 +91,58 @@ export function normalizeAiKotobaResult(
       r.normalExampleMeaning,
       r.beginnerExampleMeaning,
       r.meaningExample,
+      r.exampleIndonesian,
+      r.sentenceMeaning,
+      r.sentenceTranslation,
+      r.contohArti,
+      r.artiKalimatContoh,
+      r.kalimatContohMeaning,
     ),
     note: pickStr(r.note, r.catatan, r.tip),
     inputLanguage,
     sourceInput: pickStr(r.sourceInput, r.input) || undefined,
   };
+}
+
+/* -------------- example meaning validation ----------------------- */
+
+/**
+ * True if the AI returned a normalExample but its exampleMeaning is
+ * missing or trivially equal to the kotoba meaning (which means it
+ * cannot be a sentence translation). Used by the AI preview UI to
+ * surface a "Arti contoh belum lengkap" warning and disable Save.
+ *
+ * Rules per project spec PART 5/9:
+ *   - normalExample exists, exampleMeaning empty   → incomplete
+ *   - normalExample exists, exampleMeaning equal to kotoba meaning   → incomplete
+ *     (only when normalExample is clearly a full sentence — i.e.
+ *      contains 。/、/.,/space, or longer than the kotoba itself)
+ */
+export function hasIncompleteExampleMeaning(d: {
+  meaning: string;
+  normalExample: string;
+  exampleMeaning: string;
+}): boolean {
+  const example = (d.normalExample ?? "").trim();
+  if (!example) return false;
+  const meaning = (d.meaning ?? "").trim().toLowerCase();
+  const exMeaning = (d.exampleMeaning ?? "").trim().toLowerCase();
+
+  if (!exMeaning) return true;
+
+  // Only treat as incomplete when the example reads like a full sentence:
+  //   - has Japanese sentence terminator 。 or comma 、
+  //   - or has whitespace (multi-word)
+  //   - or is materially longer than the kotoba meaning
+  const looksLikeSentence =
+    /[。、.,!?！？]/.test(example) ||
+    /\s/.test(example) ||
+    example.length > Math.max(8, meaning.length + 4);
+
+  if (!looksLikeSentence) return false;
+
+  // exampleMeaning must not be a verbatim copy of the kotoba meaning.
+  return exMeaning === meaning;
 }
 
 /* -------------- bunpou -------------------------------------------- */
@@ -224,6 +271,12 @@ export function normalizeAiBunpouResult(
       r.normalExampleMeaning,
       r.beginnerExampleMeaning,
       r.meaningExample,
+      r.exampleIndonesian,
+      r.sentenceMeaning,
+      r.sentenceTranslation,
+      r.contohArti,
+      r.artiKalimatContoh,
+      r.kalimatContohMeaning,
     );
 
   // If AI returned multiple examples, serialize them as numbered text

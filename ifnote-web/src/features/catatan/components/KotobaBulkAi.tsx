@@ -9,7 +9,10 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { useBulkKotobaAi } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
-import { normalizeAiKotobaResult } from "@/lib/ai-normalize";
+import {
+  hasIncompleteExampleMeaning,
+  normalizeAiKotobaResult,
+} from "@/lib/ai-normalize";
 import { cleanJapaneseResponse } from "@/lib/japanese-text";
 import { cn } from "@/lib/utils";
 import type { BulkKotobaItem } from "@/features/ai/types";
@@ -78,8 +81,26 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
           type: norm.type || it.type,
           level: norm.level || it.level,
           beginnerExample: norm.beginnerExample || it.beginnerExample,
+          normalExample: norm.normalExample || it.normalExample,
           exampleReading: norm.exampleReading || it.exampleReading,
+          exampleMeaning: norm.exampleMeaning || it.exampleMeaning,
         };
+
+        const isExisting = existingNorm.has(normalize(merged.jp));
+        // Mark items as "manual" (Perlu dicek) when AI returned a
+        // sentence example but no Indonesian translation — user must
+        // fill it before bulk save (PRD PART 10).
+        const incompleteMeaning = hasIncompleteExampleMeaning({
+          meaning: merged.meaning ?? "",
+          normalExample: merged.normalExample ?? merged.beginnerExample ?? "",
+          exampleMeaning: merged.exampleMeaning ?? "",
+        });
+
+        let status: BulkKotobaItem["status"];
+        if (isExisting) status = "exists";
+        else if (incompleteMeaning) status = "manual";
+        else status = it.status ?? "new";
+
         return {
           ...emptyItem(merged.jp),
           ...merged,
@@ -88,10 +109,10 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
           normalExample: norm.normalExample,
           furiganaExample: norm.furiganaExample,
           exampleMeaning: norm.exampleMeaning,
-          status: existingNorm.has(normalize(merged.jp)) ? "exists" : it.status,
-          selected: existingNorm.has(normalize(merged.jp))
-            ? false
-            : it.status !== "manual",
+          status,
+          // Default-select only complete "new" items. Existing duplicates
+          // and items needing manual review stay un-selected by default.
+          selected: status === "new",
         };
       });
       setItems(list);

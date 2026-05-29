@@ -33,7 +33,9 @@ interface BulkPreviewItem {
   type?: string;
   level?: string;
   beginnerExample?: string;
+  normalExample?: string;
   exampleReading?: string;
+  exampleMeaning?: string;
   /** Set hanya kalau status === "exists" — ID kotoba yang sudah tersimpan. */
   existingId?: string | null;
 }
@@ -214,7 +216,9 @@ export class AiService {
       type: string | null;
       level: string | null;
       beginnerExample: string | null;
+      normalExample: string | null;
       exampleReading: string | null;
+      exampleMeaning: string | null;
     };
 
     let savedRows: SavedRow[] = [];
@@ -239,7 +243,9 @@ export class AiService {
           type: true,
           level: true,
           beginnerExample: true,
+          normalExample: true,
           exampleReading: true,
+          exampleMeaning: true,
         },
       });
     }
@@ -274,15 +280,18 @@ export class AiService {
       type?: string;
       level?: string;
       beginnerExample?: string;
+      normalExample?: string;
       exampleReading?: string;
+      exampleMeaning?: string;
     };
     let aiItems: Array<AiBulk & { _sourceMatch: string }> = [];
 
     if (missingWords.length > 0) {
       const sys =
         SYS_BASE +
-        " Daftar berikut bisa berisi Bahasa Indonesia, Bahasa Jepang, atau campuran. Untuk SETIAP entri tentukan kotoba Jepang yang dimaksud lalu kembalikan strukturnya. Selalu kembalikan jp dalam Jepang dan meaning dalam Bahasa Indonesia. Pertahankan urutan input. " +
-        'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","exampleReading":"string"}]}';
+        " Daftar berikut bisa berisi Bahasa Indonesia, Bahasa Jepang, atau campuran. Untuk SETIAP entri tentukan kotoba Jepang yang dimaksud lalu kembalikan strukturnya lengkap. Selalu kembalikan jp dalam Jepang dan meaning dalam Bahasa Indonesia. Pertahankan urutan input. " +
+        "WAJIB sertakan normalExample (kalimat Jepang lengkap memakai kotoba) dan exampleMeaning (terjemahan Bahasa Indonesia natural dari kalimat itu). exampleMeaning JANGAN sama dengan meaning kotoba kalau normalExample adalah kalimat penuh. " +
+        'Schema: {"items":[{"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","normalExample":"string","beginnerExample":"string","exampleReading":"string","exampleMeaning":"string"}]}';
       const usr = `Daftar input user (urutan harus dipertahankan): ${JSON.stringify(
         missingWords,
       )}`;
@@ -333,7 +342,10 @@ export class AiService {
           type: saved.type ?? "",
           level: saved.level ?? "",
           beginnerExample: saved.beginnerExample ?? "",
+          normalExample:
+            saved.normalExample ?? saved.beginnerExample ?? "",
           exampleReading: saved.exampleReading ?? "",
+          exampleMeaning: saved.exampleMeaning ?? "",
         };
       }
 
@@ -363,7 +375,9 @@ export class AiService {
         type: ai.type ?? "",
         level: ai.level ?? "",
         beginnerExample: ai.beginnerExample ?? "",
+        normalExample: ai.normalExample ?? ai.beginnerExample ?? "",
         exampleReading: ai.exampleReading ?? "",
+        exampleMeaning: ai.exampleMeaning ?? "",
         existingId: dbId ?? null,
       };
     });
