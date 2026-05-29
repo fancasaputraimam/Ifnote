@@ -8,6 +8,7 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { useBulkKotobaAi } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
+import { normalizeAiKotobaResult } from "@/lib/ai-normalize";
 import { cleanJapaneseResponse } from "@/lib/japanese-text";
 import { cn } from "@/lib/utils";
 import type { BulkKotobaItem } from "@/features/ai/types";
@@ -58,12 +59,40 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
       }) as { items: BulkKotobaItem[] };
       // Re-check duplicates against current catatan list (defense in depth).
       const existingNorm = new Set(existingJp.map(normalize));
-      const list: EditableItem[] = (cleaned.items ?? []).map((it) => ({
-        ...emptyItem(it.jp),
-        ...it,
-        status: existingNorm.has(normalize(it.jp)) ? "exists" : it.status,
-        selected: existingNorm.has(normalize(it.jp)) ? false : it.status !== "manual",
-      }));
+      const list: EditableItem[] = (cleaned.items ?? []).map((it) => {
+        // Lewatkan response per-item ke normalisasi alias supaya
+        // kana/yomi/furigana/hiragana di-collapse ke `reading`, dan
+        // exampleFurigana/exampleKana di-collapse ke `exampleReading`.
+        // Tanpa ini, bulk endpoint kehilangan furigana saat provider
+        // membalas dengan key alternatif.
+        const norm = normalizeAiKotobaResult(
+          it as unknown as Record<string, unknown>,
+        );
+        const merged: BulkKotobaItem = {
+          ...it,
+          jp: norm.jp || it.jp,
+          reading: norm.reading || it.reading,
+          romaji: norm.romaji || it.romaji,
+          meaning: norm.meaning || it.meaning,
+          type: norm.type || it.type,
+          level: norm.level || it.level,
+          beginnerExample: norm.beginnerExample || it.beginnerExample,
+          exampleReading: norm.exampleReading || it.exampleReading,
+        };
+        return {
+          ...emptyItem(merged.jp),
+          ...merged,
+          // Carry the normalized fields the bulk type doesn't model so
+          // itemToPayload can save them.
+          normalExample: norm.normalExample,
+          furiganaExample: norm.furiganaExample,
+          exampleMeaning: norm.exampleMeaning,
+          status: existingNorm.has(normalize(merged.jp)) ? "exists" : it.status,
+          selected: existingNorm.has(normalize(merged.jp))
+            ? false
+            : it.status !== "manual",
+        };
+      });
       setItems(list);
       notify.success(
         "Analisa selesai",
@@ -321,6 +350,10 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
 
 interface EditableItem extends BulkKotobaItem {
   selected: boolean;
+  /** Field tambahan dari normalisasi (tidak ada di BulkKotobaItem). */
+  normalExample?: string;
+  furiganaExample?: string;
+  exampleMeaning?: string;
 }
 
 function emptyItem(jp: string): EditableItem {
@@ -348,6 +381,12 @@ function itemToPayload(it: EditableItem): KotobaWritePayload {
     lv === "N5" || lv === "N4" || lv === "N3" || lv === "N2" || lv === "N1"
       ? (lv as JlptLevel)
       : undefined;
+  // Pastikan furigana lengkap ikut tersimpan ke DB. Tanpa ini, accordion
+  // detail di Catatan dan baris contoh di Hafalan render kanji tanpa
+  // furigana karena `normalExample`/`furiganaExample` selalu null.
+  const beginnerExample = it.beginnerExample?.trim() || undefined;
+  const normalExample = it.normalExample?.trim() || beginnerExample;
+  const furiganaExample = it.furiganaExample?.trim() || undefined;
   return {
     jp: it.jp.trim(),
     reading: it.reading?.trim() || undefined,
@@ -355,8 +394,11 @@ function itemToPayload(it: EditableItem): KotobaWritePayload {
     meaning: (it.meaning ?? "").trim() || it.jp,
     type: it.type?.trim() || undefined,
     level: safeLevel,
-    beginnerExample: it.beginnerExample?.trim() || undefined,
+    beginnerExample,
+    normalExample,
+    furiganaExample,
     exampleReading: it.exampleReading?.trim() || undefined,
+    exampleMeaning: it.exampleMeaning?.trim() || undefined,
     mastery: "mid",
   };
 }

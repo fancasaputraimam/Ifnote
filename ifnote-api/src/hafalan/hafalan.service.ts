@@ -23,10 +23,14 @@ interface ResolvedItem {
   itemType: "kotoba" | "bunpou";
   itemId: string;
   jpOrPattern: string;
+  /** Reading hiragana untuk kanji utama (untuk furigana). */
+  reading: string | null;
   meaning: string;
   level: string | null;
   mastery: string;
   example: string | null;
+  /** Reading hiragana untuk contoh kalimat. */
+  exampleReading: string | null;
 }
 
 @Injectable()
@@ -78,10 +82,12 @@ export class HafalanService {
           itemType: "kotoba",
           itemId: k.id,
           jpOrPattern: k.jp,
+          reading: k.reading,
           meaning: k.meaning,
           level: k.level,
           mastery: k.mastery,
           example: k.normalExample ?? k.beginnerExample,
+          exampleReading: k.exampleReading,
         });
       } else {
         const b = bMap.get(row.itemId);
@@ -93,10 +99,12 @@ export class HafalanService {
           itemType: "bunpou",
           itemId: b.id,
           jpOrPattern: b.pattern,
+          reading: b.reading,
           meaning: b.meaning,
           level: b.level,
           mastery: b.mastery,
           example: b.normalExample ?? b.beginnerExample,
+          exampleReading: b.exampleReading,
         });
       }
     }

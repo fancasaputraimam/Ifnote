@@ -138,7 +138,11 @@ function SlideRow({ item, hideMeaning }: RowProps) {
 
         <div className="min-w-0">
           <p className="truncate text-base text-ink-800 dark:text-paper-50">
-            <JapaneseText text={item.jpOrPattern} inert />
+            <JapaneseText
+              text={item.jpOrPattern}
+              reading={item.reading || undefined}
+              inert
+            />
           </p>
         </div>
 
@@ -166,7 +170,10 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         <div className="border-t border-paper-200 px-4 py-3 dark:border-ink-700">
           {explained ? (
             <p className="rounded-xl bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
-              <JapaneseText text={item.example ?? ""} />
+              <JapaneseText
+                text={item.example ?? ""}
+                reading={item.exampleReading || undefined}
+              />
             </p>
           ) : aiPending ? (
             <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:border-ink-700 dark:bg-ink-900/30 dark:text-paper-50">

@@ -121,10 +121,14 @@ export interface HafalanSlide {
     itemType: NoteType;
     itemId: string;
     jpOrPattern: string;
+    /** Reading hiragana untuk kanji utama (untuk furigana). */
+    reading: string | null;
     meaning: string;
     level: JlptLevel | null;
     mastery: Mastery;
     example: string | null;
+    /** Reading hiragana untuk contoh kalimat (untuk furigana di contoh). */
+    exampleReading: string | null;
   }>;
 }
 
