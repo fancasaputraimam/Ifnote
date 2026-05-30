@@ -12,7 +12,7 @@ import {
   useAiExplainBunpou,
   useAiExplainKotoba,
 } from "@/features/catatan/useCatatan";
-import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import type { HafalanSlide, Mastery } from "@/lib/types";
 
 type Item = HafalanSlide["items"][number];
@@ -161,18 +161,37 @@ function SlideRow({ item, hideMeaning }: RowProps) {
         <div className="flex items-center gap-1.5 pr-1">
           {item.level ? <Badge tone="neutral" size="sm">{item.level}</Badge> : null}
           <Badge tone={masteryTone[item.mastery]} size="sm">{item.mastery}</Badge>
-          <span aria-hidden className={cn("ml-1 text-ink-400 transition-transform", open && "rotate-180")}>▾</span>
+          <motion.span
+            aria-hidden
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="ml-1 text-ink-400"
+          >
+            ▾
+          </motion.span>
         </div>
       </button>
 
-      {open ? (
-        <div className="border-t border-paper-200 px-4 py-3 dark:border-ink-700">
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="detail"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 border-t border-paper-200 px-4 py-3 dark:border-ink-700">
           {/* Arti penuh kotoba/bunpou — tidak di-truncate, jadi arti dengan
               beberapa makna (mis. "X, Y, Z") kelihatan semua. */}
           {!hideMeaning && item.meaning ? (
-            <div className="mb-3">
-              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-ink-400">
-                Arti
+            <div className="rounded-xl border border-paper-200/70 bg-paper-50/40 px-3 py-2.5 dark:border-ink-700/70 dark:bg-ink-900/20">
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <span aria-hidden className="h-3 w-1 rounded-full bg-accent-400/70" />
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+                  Arti
+                </span>
               </div>
               <p className="text-sm leading-relaxed text-ink-700 dark:text-paper-50">
                 {item.meaning}
@@ -181,7 +200,13 @@ function SlideRow({ item, hideMeaning }: RowProps) {
           ) : null}
 
           {explained ? (
-            <div className="rounded-xl bg-paper-50/60 px-3 py-2 dark:bg-ink-900/30">
+            <div className="rounded-xl border border-paper-200/70 bg-paper-50/40 px-3 py-2.5 dark:border-ink-700/70 dark:bg-ink-900/20">
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <span aria-hidden className="h-3 w-1 rounded-full bg-accent-400/70" />
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+                  Contoh kalimat
+                </span>
+              </div>
               <p className="text-sm text-ink-700 dark:text-paper-50">
                 <JapaneseText
                   text={item.example ?? ""}
@@ -245,8 +270,10 @@ function SlideRow({ item, hideMeaning }: RowProps) {
               </Button>
             ) : null}
           </div>
-        </div>
-      ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </li>
   );
 }
