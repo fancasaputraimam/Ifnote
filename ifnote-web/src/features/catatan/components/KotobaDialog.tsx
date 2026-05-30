@@ -5,7 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { TextInput } from "@/components/ui/TextInput";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
@@ -155,11 +160,11 @@ export function KotobaDialog({
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={initial ? "Edit Kotoba" : "Tambah Kotoba"}
-    >
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{initial ? "Edit Kotoba" : "Tambah Kotoba"}</DialogTitle>
+      </DialogHeader>
       {/* Tab pills removed in create mode: dialog renders the bulk-AI
           textarea directly per spec. Edit mode renders the manual form. */}
 
@@ -278,7 +283,8 @@ export function KotobaDialog({
           existingJp={existingJp}
         />
       ) : null}
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 

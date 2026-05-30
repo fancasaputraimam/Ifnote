@@ -5,7 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { TextInput } from "@/components/ui/TextInput";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
@@ -136,11 +141,11 @@ export function BunpouDialog({
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={initial ? "Edit Bunpou" : "Tambah Bunpou"}
-    >
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{initial ? "Edit Bunpou" : "Tambah Bunpou"}</DialogTitle>
+      </DialogHeader>
       {/* Tab pill removed in create mode — dialog renders the AI
           Analyze input directly per spec. Edit mode renders the
           manual form. */}
@@ -272,7 +277,8 @@ export function BunpouDialog({
           onOpenSaved={onOpenSaved}
         />
       ) : null}
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 
