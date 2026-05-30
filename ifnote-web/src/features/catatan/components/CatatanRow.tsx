@@ -276,6 +276,24 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
   const beginnerMeaning = beginnerExampleMeaning; // jangan fallback ke shared
   const normalMeaning = normalExampleMeaning || exampleMeaning;
 
+  // Satu contoh kalimat saja. Memisah "beginner" vs "normal" tidak masuk
+  // akal karena JapaneseText sudah merender sesuai Mode Jepang
+  // (kana / furigana / kanji). Prioritas: normal (paling kaya, ada kanji)
+  // → beginner → furigana. Reading & arti diambil berpasangan dengan
+  // contoh yang dipilih.
+  const exampleJp = normalExample || beginnerExample || furiganaExample;
+  const exampleJpReading = normalExample
+    ? normalReading
+    : beginnerExample
+      ? beginnerReading
+      : null;
+  const exampleJpMeaning =
+    (normalExample
+      ? normalMeaning
+      : beginnerExample
+        ? beginnerMeaning
+        : null) || exampleMeaning;
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -296,47 +314,18 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
         ) : null}
       </div>
 
-      {beginnerExample ? (
-        <Section label="Contoh (beginner)">
-          <ExampleLine jp={beginnerExample} reading={beginnerReading} />
-          {beginnerMeaning ? (
+      {exampleJp ? (
+        <Section label="Contoh kalimat">
+          <ExampleLine jp={exampleJp} reading={exampleJpReading} />
+          {exampleJpMeaning ? (
             <p className="mt-1 text-sm leading-relaxed text-ink-700 dark:text-paper-50">
-              {beginnerMeaning}
+              {exampleJpMeaning}
             </p>
-          ) : null}
-        </Section>
-      ) : null}
-      {normalExample && normalExample !== beginnerExample ? (
-        <Section label="Contoh (normal)">
-          <ExampleLine jp={normalExample} reading={normalReading} />
-          {normalMeaning ? (
-            <p className="mt-1 text-sm leading-relaxed text-ink-700 dark:text-paper-50">
-              {normalMeaning}
+          ) : (
+            <p className="mt-1 text-xs italic text-ink-400">
+              Arti contoh belum tersedia.
             </p>
-          ) : null}
-        </Section>
-      ) : null}
-      {furiganaExample ? (
-        <Section label="Contoh (furigana)">
-          <ExampleLine jp={furiganaExample} />
-        </Section>
-      ) : null}
-      {/* Legacy single "Arti contoh" — hanya tampil kalau tidak ada
-          per-example meaning di atas (supaya tidak dobel). */}
-      {!beginnerMeaning && !normalMeaning && exampleMeaning ? (
-        <Section label="Arti contoh">
-          <p className="leading-relaxed text-ink-700 dark:text-paper-50">
-            {exampleMeaning}
-          </p>
-        </Section>
-      ) : !beginnerMeaning &&
-        !normalMeaning &&
-        !exampleMeaning &&
-        (beginnerExample || normalExample || furiganaExample) ? (
-        <Section label="Arti contoh">
-          <p className="text-xs italic text-ink-400">
-            Arti contoh belum tersedia.
-          </p>
+          )}
         </Section>
       ) : null}
     </div>

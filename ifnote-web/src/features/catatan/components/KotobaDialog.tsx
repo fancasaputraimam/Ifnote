@@ -224,59 +224,28 @@ export function KotobaDialog({
             placeholder="makanan, verb-1"
           />
           <TextInput
-            label="Contoh kalimat (beginner)"
-            {...form.register("beginnerExample")}
-            placeholder="ごはんを たべます。"
-          />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <TextInput
-              label="Pembacaan beginner (hiragana)"
-              {...form.register("beginnerExampleReading")}
-              placeholder="ごはんを たべます。"
-            />
-            <TextInput
-              label="Arti contoh beginner"
-              {...form.register("beginnerExampleMeaning")}
-              placeholder="Saya makan nasi."
-            />
-          </div>
-          <TextInput
-            label="Contoh kalimat (normal)"
+            label="Contoh kalimat"
             {...form.register("normalExample")}
             placeholder="ごはんを食べます。"
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput
-              label="Pembacaan normal (hiragana)"
+              label="Pembacaan contoh (hiragana)"
               {...form.register("normalExampleReading")}
               placeholder="ごはんをたべます。"
             />
             <TextInput
-              label="Arti contoh normal"
+              label="Arti contoh"
               {...form.register("normalExampleMeaning")}
               placeholder="Saya makan nasi."
             />
           </div>
-          <TextInput
-            label="Contoh kalimat (furigana)"
-            {...form.register("furiganaExample")}
-            placeholder="ごはんを 食(た)べます。"
-          />
           <p className="text-xs text-ink-400">
-            Field pembacaan/arti lama (di bawah) tetap ada untuk
-            kompatibilitas. Isi pembacaan beginner &amp; normal di atas
-            supaya setiap contoh punya reading-nya sendiri.
+            Cukup satu contoh kalimat. Tampilannya menyesuaikan Mode Jepang
+            otomatis: kana di Pemula, kanji + furigana di Normal, kanji saja
+            di Pro. Isi pembacaan (hiragana) supaya furigana &amp; mode Pemula
+            tampil benar.
           </p>
-          <TextInput
-            label="Pembacaan contoh (lama / shared)"
-            {...form.register("exampleReading")}
-            placeholder="ごはんを たべます。"
-          />
-          <TextInput
-            label="Arti contoh (lama / shared)"
-            {...form.register("exampleMeaning")}
-            placeholder="Saya makan nasi."
-          />
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
               Mastery
@@ -336,6 +305,18 @@ function emptyForm(): FormValues {
 }
 
 function toForm(k: Kotoba): FormValues {
+  // Satu contoh kalimat. Ambil dari normal → beginner → furigana (mana yang
+  // ada), beserta reading & arti yang berpasangan. Field beginner/furigana
+  // tetap disimpan di balik layar untuk kompatibilitas data lama.
+  const example = k.normalExample || k.beginnerExample || k.furiganaExample || "";
+  const exampleReading =
+    (k.normalExample ? k.normalExampleReading : k.beginnerExample ? k.beginnerExampleReading : "") ||
+    k.exampleReading ||
+    "";
+  const exampleMeaning =
+    (k.normalExample ? k.normalExampleMeaning : k.beginnerExample ? k.beginnerExampleMeaning : "") ||
+    k.exampleMeaning ||
+    "";
   return {
     jp: k.jp,
     reading: k.reading ?? "",
@@ -347,9 +328,9 @@ function toForm(k: Kotoba): FormValues {
     beginnerExample: k.beginnerExample ?? "",
     beginnerExampleReading: k.beginnerExampleReading ?? "",
     beginnerExampleMeaning: k.beginnerExampleMeaning ?? "",
-    normalExample: k.normalExample ?? "",
-    normalExampleReading: k.normalExampleReading ?? "",
-    normalExampleMeaning: k.normalExampleMeaning ?? "",
+    normalExample: example,
+    normalExampleReading: exampleReading,
+    normalExampleMeaning: exampleMeaning,
     furiganaExample: k.furiganaExample ?? "",
     exampleReading: k.exampleReading ?? "",
     exampleMeaning: k.exampleMeaning ?? "",
@@ -362,6 +343,12 @@ function toPayload(v: FormValues): KotobaWritePayload {
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
+  // Form sekarang cuma punya satu contoh kalimat (disimpan di field
+  // normal*). Mirror ke beginner* + shared example* supaya tampilan
+  // (Catatan/Hafalan) konsisten apa pun mode yang dipilih user.
+  const example = v.normalExample?.trim() || undefined;
+  const exampleReading = v.normalExampleReading?.trim() || undefined;
+  const exampleMeaning = v.normalExampleMeaning?.trim() || undefined;
   return {
     jp: v.jp.trim(),
     reading: v.reading?.trim() || undefined,
@@ -370,15 +357,15 @@ function toPayload(v: FormValues): KotobaWritePayload {
     type: v.type?.trim() || undefined,
     level: v.level ? (v.level as "N5" | "N4" | "N3" | "N2" | "N1") : undefined,
     tags: tags.length ? tags : undefined,
-    beginnerExample: v.beginnerExample?.trim() || undefined,
-    beginnerExampleReading: v.beginnerExampleReading?.trim() || undefined,
-    beginnerExampleMeaning: v.beginnerExampleMeaning?.trim() || undefined,
-    normalExample: v.normalExample?.trim() || undefined,
-    normalExampleReading: v.normalExampleReading?.trim() || undefined,
-    normalExampleMeaning: v.normalExampleMeaning?.trim() || undefined,
+    beginnerExample: example,
+    beginnerExampleReading: exampleReading,
+    beginnerExampleMeaning: exampleMeaning,
+    normalExample: example,
+    normalExampleReading: exampleReading,
+    normalExampleMeaning: exampleMeaning,
     furiganaExample: v.furiganaExample?.trim() || undefined,
-    exampleReading: v.exampleReading?.trim() || undefined,
-    exampleMeaning: v.exampleMeaning?.trim() || undefined,
+    exampleReading,
+    exampleMeaning,
     mastery: v.mastery,
   };
 }
