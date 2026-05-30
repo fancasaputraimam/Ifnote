@@ -267,6 +267,19 @@ function isKanjiChar(c: string): boolean {
   return KANJI_TEST_RE.test(c);
 }
 
+/** Katakana → hiragana untuk perbandingan kana saja (tidak mengubah teks). */
+function toHiraganaChar(c: string): string {
+  const code = c.charCodeAt(0);
+  // Katakana block 0x30A1..0x30F6 → hiragana dengan offset 0x60.
+  if (code >= 0x30a1 && code <= 0x30f6) return String.fromCharCode(code - 0x60);
+  return c;
+}
+
+/** True kalau dua karakter sama secara kana-insensitive (パ === ぱ). */
+function kanaCharEq(a: string, b: string): boolean {
+  return toHiraganaChar(a) === toHiraganaChar(b);
+}
+
 /**
  * Align full-sentence reading kana ke teks Jepang sehingga `<rt>` hanya
  * muncul di atas RUN kanji. Kana / katakana / tanda baca dirender plain.
@@ -310,10 +323,11 @@ export function alignReadingToText(
       while (ti < text.length && !isKanjiChar(text[ti])) {
         const ch = text[ti];
         plain += ch;
-        // Konsumsi 1:1 di reading kalau karakternya sama. Kalau beda
+        // Konsumsi 1:1 di reading kalau karakternya sama (kana-insensitive,
+        // jadi パン di teks cocok dengan ぱん di reading). Kalau beda
         // (mis. AI hilangkan tanda baca di reading), biarkan ri menunggu
         // sampai anchor kanji berikutnya.
-        if (ri < reading.length && reading[ri] === ch) ri++;
+        if (ri < reading.length && kanaCharEq(reading[ri], ch)) ri++;
         ti++;
       }
       if (plain) segs.push({ base: plain });
@@ -336,7 +350,15 @@ export function alignReadingToText(
         ri = reading.length;
       } else {
         const anchor = text[ti];
-        const found = reading.indexOf(anchor, kanjiStart + minRead);
+        // Cari anchor secara kana-insensitive supaya katakana di teks
+        // (mis. partikel setelah コーヒー) tetap cocok dengan hiragana reading.
+        let found = -1;
+        for (let k = kanjiStart + minRead; k < reading.length; k++) {
+          if (kanaCharEq(reading[k], anchor)) {
+            found = k;
+            break;
+          }
+        }
         if (found === -1) {
           kanjiReading = reading.slice(kanjiStart);
           ri = reading.length;
@@ -523,6 +545,39 @@ export interface BuildSafeRubyOptions {
  *                                          ada upaya alignment yang
  *                                          bisa salah).
  */
+/**
+ * Validasi apakah hasil `alignReadingToText` benar-benar merekonstruksi
+ * `reading` asli. Kalau cocok (kana-insensitive, abaikan tanda baca/spasi),
+ * alignment dianggap reliable dan aman dipakai sebagai furigana. Kalau
+ * tidak, caller harus fallback ke helper `よみ:` line.
+ *
+ * Ini mencegah furigana berantakan: kalau satu kanji-run menyerap reading
+ * milik kata lain, rekonstruksi tidak akan sama dengan reading asli.
+ */
+function isAlignmentReliable(
+  segments: RubySegment[],
+  reading: string,
+): boolean {
+  if (segments.length === 0) return false;
+  // Harus ada minimal satu segmen dengan reading (kalau tidak, tidak ada
+  // furigana yang dihasilkan → bukan "reliable furigana").
+  if (!segments.some((s) => s.reading)) return false;
+
+  // Rekonstruksi pembacaan penuh: untuk segmen kanji pakai reading-nya,
+  // untuk segmen kana pakai base-nya.
+  const rebuilt = segments.map((s) => s.reading ?? s.base).join("");
+
+  const norm = (x: string) =>
+    Array.from(x)
+      .map(toHiraganaChar)
+      .join("")
+      // buang spasi + tanda baca Jepang/latin yang sering beda antara
+      // teks dan reading.
+      .replace(/[\s\u3000\u3001\u3002\uFF01\uFF1F\uFF0E\uFF0C.,!?]/g, "");
+
+  return norm(rebuilt) === norm(reading);
+}
+
 export function buildSafeRubySegments(
   text: string | null | undefined,
   reading: string | null | undefined,
@@ -565,12 +620,20 @@ export function buildSafeRubySegments(
     };
   }
 
-  // Kasus 4: kalimat penuh + reading → plain text + helperReading.
-  // Tapi cek dulu apakah reading masuk akal untuk kalimat ini. Kalau
-  // mismatch (mis. reading milik kalimat lain karena bug reuse), JANGAN
-  // tampilkan よみ line yang salah — set helperReading undefined.
+  // Kasus 4: kalimat penuh + reading. Coba bikin furigana word-level via
+  // alignment. Kalau hasilnya merekonstruksi reading dengan tepat (reliable),
+  // pakai sebagai furigana (rt hanya di atas kanji-run). Kalau tidak
+  // reliable, fallback ke kanji bersih + helper `よみ:` line — tapi hanya
+  // kalau reading masuk akal untuk kalimat ini (cegah reading milik kalimat
+  // lain karena bug reuse).
   if (sentence && trimmedReading) {
     const likely = isReadingLikelyForSentence(cleaned, trimmedReading);
+    if (likely) {
+      const aligned = alignReadingToText(cleaned, trimmedReading);
+      if (isAlignmentReliable(aligned, trimmedReading)) {
+        return { segments: aligned, reliable: true };
+      }
+    }
     return {
       segments: [{ base: cleaned }],
       reliable: false,
