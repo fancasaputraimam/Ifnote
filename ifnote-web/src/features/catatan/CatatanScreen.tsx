@@ -91,7 +91,7 @@ export function CatatanScreen() {
     limit: 100,
   });
 
-  const items = list.data?.items ?? [];
+  const items = useMemo(() => list.data?.items ?? [], [list.data]);
 
   const summary = useMemo(() => {
     return {
@@ -107,6 +107,18 @@ export function CatatanScreen() {
   );
   const existingBunpouPatterns = useMemo(
     () => items.filter((i) => i.noteType === "bunpou").map((i) => i.jpOrPattern),
+    [items],
+  );
+
+  // Saran live untuk ActionSearchBar — dari item yang sudah dimuat.
+  const searchSuggestions = useMemo(
+    () =>
+      items.map((i) => ({
+        id: `${i.noteType}-${i.id}`,
+        label: i.jpOrPattern,
+        description: i.meaning,
+        end: i.level ?? (i.noteType === "kotoba" ? "Kotoba" : "Bunpou"),
+      })),
     [items],
   );
 
@@ -159,6 +171,7 @@ export function CatatanScreen() {
         setType={setType}
         level={level}
         setLevel={setLevel}
+        suggestions={searchSuggestions}
       />
 
       <SummaryRow {...summary} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { ButtonHTMLAttributes, ReactNode, useEffect, useId, useRef, useState } from "react";
-import { SearchInput } from "@/components/ui/SearchInput";
+import { ActionSearchBar, type SearchAction } from "@/components/ui/action-search-bar";
 import type { CatatanFilterType } from "@/features/catatan/useCatatan";
 import type { JlptLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ interface Props {
   setType: (v: CatatanFilterType) => void;
   level: JlptLevel | null;
   setLevel: (v: JlptLevel | null) => void;
+  /** Saran live (kotoba/bunpou yang sudah dimuat) untuk dropdown search. */
+  suggestions?: SearchAction[];
 }
 
 const LEVELS: { value: JlptLevel; label: string }[] = [
@@ -43,6 +45,7 @@ export function CatatanFilters({
   setType,
   level,
   setLevel,
+  suggestions = [],
 }: Props) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -83,11 +86,13 @@ export function CatatanFilters({
       {/* Search + filter toggle row */}
       <div className="flex items-center gap-2">
         <div className="flex-1">
-          <SearchInput
+          <ActionSearchBar
+            query={search}
+            onQueryChange={setSearch}
+            actions={suggestions}
+            onSelect={(a) => setSearch(a.label)}
             placeholder="Cari kotoba atau bunpou…"
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            onClear={() => setSearch("")}
+            hint="Pilih untuk memfilter"
           />
         </div>
         <button
