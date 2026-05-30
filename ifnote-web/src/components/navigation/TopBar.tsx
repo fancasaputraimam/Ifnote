@@ -4,16 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { APP_NAME, ROUTES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useSettings } from "@/features/settings/useSettings";
+import { normalizeJpMode } from "@/hooks/useJapaneseMode";
 import { IconButton } from "@/components/ui/IconButton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { LogOut, Settings } from "lucide-react";
+import { ProfileDropdown } from "@/components/ui/profile-dropdown";
+import { notify } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -25,8 +20,20 @@ export function TopBar({ subtitle }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const settingsQ = useSettings();
 
   const onSettings = pathname?.startsWith(ROUTES.app.settings);
+
+  const jpMode = normalizeJpMode(settingsQ.data?.jpMode);
+  const aiModel =
+    settingsQ.data?.canManageAi === true
+      ? settingsQ.data.aiModelId ?? null
+      : null;
+
+  const onLogout = async () => {
+    notify.info("Keluar dari akun", "Sampai jumpa lagi.", { icon: "👋" });
+    await logout();
+  };
 
   return (
     <header className="sticky top-0 z-30 border-b border-paper-200 bg-paper-50/85 backdrop-blur dark:border-ink-700 dark:bg-paper-900/85">
@@ -55,40 +62,18 @@ export function TopBar({ subtitle }: Props) {
           >
             ⚙️
           </IconButton>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex h-8 items-center gap-1 rounded-full px-2 text-sm font-medium text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700"
-              >
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-paper-200 text-xs uppercase dark:bg-ink-700">
-                  {(user?.name || user?.email || "?").charAt(0)}
-                </span>
-                <span className="hidden max-w-[10ch] truncate sm:block">
-                  {user?.name || user?.email || "—"}
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                <div className="text-sm font-semibold text-ink-800 dark:text-paper-50">
-                  {user?.name || user?.email || "Pengguna"}
-                </div>
-                {user?.email ? (
-                  <div className="truncate text-xs text-ink-400">{user.email}</div>
-                ) : null}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => router.push(ROUTES.app.settings)}>
-                <Settings size={16} strokeWidth={2} className="opacity-60" aria-hidden />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem destructive onSelect={() => void logout()}>
-                <LogOut size={16} strokeWidth={2} aria-hidden />
-                <span>Keluar</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ProfileDropdown
+            user={{
+              name: user?.name,
+              email: user?.email,
+              avatar: user?.avatarUrl,
+              role: user?.role,
+              canManageAi: user?.canManageAi,
+              model: aiModel,
+              jpMode,
+            }}
+            onLogout={onLogout}
+          />
         </div>
       </div>
     </header>
