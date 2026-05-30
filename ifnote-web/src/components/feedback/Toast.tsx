@@ -165,14 +165,21 @@ export const toastStore = {
 // Variant → Alert variant mapping
 // ----------------------------------------------------------------------
 //
-// Notification cards are intentionally rendered with the neutral
-// `secondary` Alert variant — we deliberately strip the colored
-// success/error/warning/info chrome from toasts (per project spec).
-// The original variant still drives:
-//   - the emoji/icon (🌸, ⚠️, 🍂, 📘, ✨)
-//   - the accessibility role (`alert` for errors, `status` for the rest)
-//   - the auto-dismiss duration
-// so behavior, copy, and screen-reader semantics stay intact.
+// Setiap jenis notifikasi memakai warna Alert-nya sendiri (sesuai
+// komponen Alert yang diminta): success=hijau, error=merah,
+// warning=amber, info=biru-accent, loading=primary. Ini membuat
+// notifikasi terlihat jelas berbeda per jenis, bukan netral seragam.
+
+const VARIANT_TO_ALERT: Record<
+  ToastVariant,
+  "primary" | "success" | "destructive" | "info" | "warning"
+> = {
+  success: "success",
+  error: "destructive",
+  warning: "warning",
+  info: "info",
+  loading: "primary",
+};
 
 // ----------------------------------------------------------------------
 // Viewport
@@ -241,16 +248,11 @@ function ToastCard({ item }: { item: ToastItem }) {
     >
       <Alert
         role={item.variant === "error" ? "alert" : "status"}
-        variant="secondary"
+        variant={VARIANT_TO_ALERT[item.variant]}
         appearance="light"
         close
         onClose={() => remove(item.id)}
-        className={cn(
-          // Match the original toast's slightly heavier elevation so it
-          // floats convincingly above the page chrome.
-          "shadow-notebook-md",
-          "bg-white/95 dark:bg-ink-800/95",
-        )}
+        className="shadow-notebook-md"
       >
         <AlertIcon>
           {item.variant === "loading" ? (
