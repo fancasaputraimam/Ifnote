@@ -1,10 +1,15 @@
 "use client";
 
-import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { AiLoading } from "@/components/ui/ai-loading";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { useKanjiInfo } from "@/features/home/useKanjiInfo";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Props {
   open: boolean;
@@ -22,7 +27,11 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
   const data = q.data;
 
   return (
-    <Modal open={open} onClose={onClose} title={kanji ? `Kanji: ${kanji}` : "Kanji"}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{kanji ? `Kanji: ${kanji}` : "Kanji"}</DialogTitle>
+      </DialogHeader>
       {q.isLoading ? (
         <AiLoading
           title="AI sedang menyiapkan info kanji…"
@@ -91,6 +100,7 @@ export function KanjiPopup({ open, kanji, onClose }: Props) {
           ) : null}
         </div>
       )}
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
