@@ -37,6 +37,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 // ----------------------------------------------------------------------
@@ -191,22 +192,42 @@ function DropdownMenuContent({
     };
   }, [open, setOpen, triggerRef]);
 
-  if (!open || !mounted || !pos) return null;
+  if (!mounted || !pos) return null;
+
+  // Strip DOM animation/drag handlers that conflict with MotionProps.
+  const {
+    onAnimationStart: _as,
+    onAnimationEnd: _ae,
+    onAnimationIteration: _ai,
+    onDrag: _od,
+    onDragStart: _ods,
+    onDragEnd: _ode,
+    onTransitionEnd: _ote,
+    ...safeProps
+  } = props;
 
   return createPortal(
-    <div
-      ref={menuRef}
-      role="menu"
-      className={cn(
-        "fixed z-50 min-w-56 overflow-hidden rounded-notebook border border-paper-200 bg-white p-1 text-ink-800 shadow-notebook-md",
-        "dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50",
-        className,
-      )}
-      style={{ top: pos.top, left: pos.left }}
-      {...props}
-    >
-      {children}
-    </div>,
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          ref={menuRef}
+          role="menu"
+          className={cn(
+            "fixed z-50 min-w-56 overflow-hidden rounded-notebook border border-paper-200 bg-white p-1 text-ink-800 shadow-notebook-md",
+            "dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50",
+            className,
+          )}
+          style={{ top: pos.top, left: pos.left, transformOrigin: "top" }}
+          initial={{ opacity: 0, scale: 0.95, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -6 }}
+          transition={{ duration: 0.14, ease: [0.22, 0.61, 0.36, 1] }}
+          {...safeProps}
+        >
+          {children}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>,
     document.body,
   );
 }

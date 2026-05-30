@@ -47,6 +47,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cva, type VariantProps } from "class-variance-authority";
+import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -195,37 +196,67 @@ function DialogContent({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, setOpen]);
 
-  if (!open || !mounted) return null;
+  if (!mounted) return null;
+
+  // framer-motion's MotionProps redefine onAnimationStart/Drag handlers,
+  // so strip the DOM versions before spreading onto motion.div.
+  const {
+    onAnimationStart: _as,
+    onAnimationEnd: _ae,
+    onAnimationIteration: _ai,
+    onDrag: _od,
+    onDragStart: _ods,
+    onDragEnd: _ode,
+    onTransitionEnd: _ote,
+    ...safeProps
+  } = props;
 
   const node = (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4",
-        overlay && "bg-ink-800/40 backdrop-blur-[2px]",
-      )}
-      onClick={() => setOpen(false)}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={cn(dialogContentVariants({ variant }), "p-6", className)}
-        onClick={(e) => e.stopPropagation()}
-        {...props}
-      >
-        {children}
-        {showCloseButton ? (
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Tutup"
-            className="absolute right-4 top-4 rounded-full p-1.5 text-ink-400 transition-colors hover:bg-paper-100 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-ink-700 dark:hover:text-paper-50"
+    <AnimatePresence>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+          {overlay ? (
+            <motion.div
+              className="absolute inset-0 bg-ink-800/40 backdrop-blur-[2px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setOpen(false)}
+            />
+          ) : null}
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            className={cn(
+              "relative",
+              dialogContentVariants({ variant }),
+              "p-6",
+              className,
+            )}
+            initial={{ opacity: 0, scale: 0.92, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 12 }}
+            transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            {...safeProps}
           >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Tutup</span>
-          </button>
-        ) : null}
-      </div>
-    </div>
+            {children}
+            {showCloseButton ? (
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Tutup"
+                className="absolute right-4 top-4 rounded-full p-1.5 text-ink-400 transition-colors hover:bg-paper-100 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-ink-700 dark:hover:text-paper-50"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Tutup</span>
+              </button>
+            ) : null}
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
   );
 
   return createPortal(node, document.body);
