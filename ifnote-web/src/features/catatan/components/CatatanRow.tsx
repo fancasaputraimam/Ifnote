@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -151,46 +152,64 @@ export function CatatanRow({ item, onEdit }: Props) {
             <Badge tone={isKotoba ? "accent" : "lilac"}>{item.level}</Badge>
           ) : null}
           <Badge tone={masteryTone[item.mastery]}>{item.mastery}</Badge>
-          <span aria-hidden className={cn("text-ink-400 transition-transform", open && "rotate-180")}>▾</span>
+          <motion.span
+            aria-hidden
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-ink-400"
+          >
+            ▾
+          </motion.span>
         </div>
       </button>
 
-      {open ? (
-        <div className="border-t border-paper-200 px-3 py-4 text-sm dark:border-ink-700 sm:px-4">
-          {/* Cached vs missing explanation states */}
-          {!explained && aiPending ? (
-            <ExplainLoading />
-          ) : !explained ? (
-            <ExplainPrompt onExplain={onExplain} pending={aiPending} />
-          ) : isKotoba ? (
-            <KotobaDetail detail={detail} />
-          ) : (
-            <BunpouDetail detail={detail} />
-          )}
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="detail"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-paper-200 px-3 py-4 text-sm dark:border-ink-700 sm:px-4">
+              {/* Cached vs missing explanation states */}
+              {!explained && aiPending ? (
+                <ExplainLoading />
+              ) : !explained ? (
+                <ExplainPrompt onExplain={onExplain} pending={aiPending} />
+              ) : isKotoba ? (
+                <KotobaDetail detail={detail} />
+              ) : (
+                <BunpouDetail detail={detail} />
+              )}
 
-          {item.tags?.length ? (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {item.tags.map((t) => (
-                <Badge key={t} tone="neutral">#{t}</Badge>
-              ))}
+              {item.tags?.length ? (
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {item.tags.map((t) => (
+                    <Badge key={t} tone="neutral">#{t}</Badge>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={() => onEdit(item)}>
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-700/10"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Hapus
+                </Button>
+              </div>
             </div>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" onClick={() => onEdit(item)}>
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-700/10"
-              onClick={() => setConfirmDelete(true)}
-            >
-              Hapus
-            </Button>
-          </div>
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <ConfirmDialog
         open={confirmDelete}
@@ -473,9 +492,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-ink-400">
-        {label}
+    <div className="rounded-xl border border-paper-200/70 bg-paper-50/40 px-3 py-2.5 dark:border-ink-700/70 dark:bg-ink-900/20">
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <span aria-hidden className="h-3 w-1 rounded-full bg-accent-400/70" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+          {label}
+        </span>
       </div>
       <div>{children}</div>
     </div>
