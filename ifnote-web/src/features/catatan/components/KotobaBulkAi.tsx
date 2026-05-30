@@ -217,17 +217,14 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
             {error}
           </div>
         ) : null}
-        <div className="flex flex-wrap justify-end gap-2 pt-1">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Batal
-          </Button>
-          <Button
+        <div className="flex justify-end pt-0.5">
+          <button
             type="button"
-            disabled={parsed.length === 0 || overLimit}
-            onClick={onAnalyze}
+            onClick={onCancel}
+            className="text-xs font-medium text-ink-400 underline-offset-4 hover:text-ink-700 hover:underline dark:hover:text-paper-50"
           >
-            Analisa pakai AI
-          </Button>
+            Batal
+          </button>
         </div>
       </div>
     );

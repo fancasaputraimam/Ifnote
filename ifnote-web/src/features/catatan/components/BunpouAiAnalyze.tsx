@@ -103,13 +103,14 @@ export function BunpouAiAnalyze({
             {error}
           </div>
         ) : null}
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+        <div className="flex justify-end pt-0.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs font-medium text-ink-400 underline-offset-4 hover:text-ink-700 hover:underline dark:hover:text-paper-50"
+          >
             Batal
-          </Button>
-          <Button type="button" disabled={!input.trim()} onClick={onAnalyze}>
-            Analisa pakai AI
-          </Button>
+          </button>
         </div>
       </div>
     );
