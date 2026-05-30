@@ -337,7 +337,6 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
   const usage = stringOrNull(detail.usage);
   const beginnerExample = stringOrNull(detail.beginnerExample);
   const normalExample = stringOrNull(detail.normalExample);
-  const furiganaExample = stringOrNull(detail.furiganaExample);
   const exampleReading = stringOrNull(detail.exampleReading);
   const exampleMeaning = stringOrNull(detail.exampleMeaning);
   const note = stringOrNull(detail.note);
@@ -436,12 +435,6 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
               </li>
             ))}
           </ol>
-        </Section>
-      ) : null}
-
-      {furiganaExample ? (
-        <Section label="Contoh (furigana)">
-          <ExampleLine jp={furiganaExample} />
         </Section>
       ) : null}
 

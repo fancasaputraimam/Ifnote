@@ -209,22 +209,24 @@ export function BunpouDialog({
             />
           </div>
           <TextInput
-            label="Contoh (beginner)"
-            {...form.register("beginnerExample")}
-          />
-          <TextInput
-            label="Contoh (normal)"
+            label="Contoh kalimat"
             {...form.register("normalExample")}
+            placeholder="音楽を聞きながら勉強します。"
           />
-          <TextInput
-            label="Contoh (furigana)"
-            {...form.register("furiganaExample")}
-          />
-          <TextInput
-            label="Pembacaan contoh (hiragana)"
-            {...form.register("exampleReading")}
-          />
-          <TextInput label="Arti contoh" {...form.register("exampleMeaning")} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <TextInput
+              label="Pembacaan contoh (hiragana)"
+              {...form.register("exampleReading")}
+              placeholder="おんがくをききながらべんきょうします。"
+            />
+            <TextInput label="Arti contoh" {...form.register("exampleMeaning")} />
+          </div>
+          <p className="text-xs text-ink-400">
+            Cukup satu contoh kalimat. Tampilannya menyesuaikan Mode Jepang
+            otomatis: kana di Pemula, kanji + furigana di Normal, kanji saja
+            di Pro. Isi pembacaan (hiragana) supaya furigana &amp; mode Pemula
+            tampil benar.
+          </p>
           <TextInput label="Catatan" {...form.register("note")} />
           <div>
             <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
@@ -295,6 +297,8 @@ function emptyForm(): FormValues {
 }
 
 function toForm(b: Bunpou): FormValues {
+  // Satu contoh kalimat: normal → beginner → furigana (mana yang ada).
+  const example = b.normalExample || b.beginnerExample || b.furiganaExample || "";
   return {
     pattern: b.pattern,
     reading: b.reading ?? "",
@@ -304,7 +308,7 @@ function toForm(b: Bunpou): FormValues {
     level: (b.level ?? "") as FormValues["level"],
     tags: (b.tags ?? []).join(", "),
     beginnerExample: b.beginnerExample ?? "",
-    normalExample: b.normalExample ?? "",
+    normalExample: example,
     furiganaExample: b.furiganaExample ?? "",
     exampleReading: b.exampleReading ?? "",
     exampleMeaning: b.exampleMeaning ?? "",
@@ -319,6 +323,9 @@ function toPayload(v: FormValues): BunpouWritePayload {
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
+  // Satu contoh kalimat (disimpan di normalExample). Mirror ke beginner
+  // supaya tampilan konsisten di semua mode.
+  const example = v.normalExample?.trim() || undefined;
   return {
     pattern: v.pattern.trim(),
     reading: v.reading?.trim() || undefined,
@@ -327,8 +334,8 @@ function toPayload(v: FormValues): BunpouWritePayload {
     usage: v.usage?.trim() || undefined,
     level: v.level ? (v.level as "N5" | "N4" | "N3" | "N2" | "N1") : undefined,
     tags: tags.length ? tags : undefined,
-    beginnerExample: v.beginnerExample?.trim() || undefined,
-    normalExample: v.normalExample?.trim() || undefined,
+    beginnerExample: example,
+    normalExample: example,
     furiganaExample: v.furiganaExample?.trim() || undefined,
     exampleReading: v.exampleReading?.trim() || undefined,
     exampleMeaning: v.exampleMeaning?.trim() || undefined,
