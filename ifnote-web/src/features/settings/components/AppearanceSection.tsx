@@ -58,7 +58,7 @@ export function AppearanceSection() {
       await update.mutateAsync({ jpMode: next });
       notify.success(
         "Mode Jepang diperbarui",
-        JP_MODE_OPTIONS.find((o) => o.id === next)?.helper,
+        "Tampilan bacaan sudah disesuaikan.",
         { icon: "⚙️" },
       );
     } catch (e) {

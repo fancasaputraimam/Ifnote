@@ -371,7 +371,7 @@ function SakubunResult({
                 </div>
                 {b.sentence ? (
                   <div className="mt-1 text-sm text-ink-700 dark:text-paper-50">
-                    <JapaneseText text={b.sentence} />
+                    <JapaneseText text={b.sentence} sentenceMode enableKanjiClick />
                   </div>
                 ) : null}
                 {b.meaning ? (

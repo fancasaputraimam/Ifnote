@@ -324,6 +324,16 @@ export function KotobaAiAnalyze({
 }
 
 function toPayload(d: NormalizedKotoba): KotobaWritePayload {
+  // Preserve every per-example reading/meaning field (spec PART 10:
+  // "do not drop reading fields when saving"). The form only edits the
+  // shared normalExample/exampleReading/exampleMeaning inputs, so mirror
+  // those edits back into the normal* fields and keep the beginner* fields
+  // the normalizer produced.
+  const normalExample = d.normalExample.trim() || undefined;
+  const normalExampleReading =
+    d.normalExampleReading.trim() || d.exampleReading.trim() || undefined;
+  const normalExampleMeaning =
+    d.normalExampleMeaning.trim() || d.exampleMeaning.trim() || undefined;
   return {
     jp: d.jp.trim(),
     reading: d.reading.trim() || undefined,
@@ -332,10 +342,14 @@ function toPayload(d: NormalizedKotoba): KotobaWritePayload {
     type: d.type.trim() || undefined,
     level: d.level || undefined,
     beginnerExample: d.beginnerExample.trim() || undefined,
-    normalExample: d.normalExample.trim() || undefined,
+    beginnerExampleReading: d.beginnerExampleReading.trim() || undefined,
+    beginnerExampleMeaning: d.beginnerExampleMeaning.trim() || undefined,
+    normalExample,
+    normalExampleReading,
+    normalExampleMeaning,
     furiganaExample: d.furiganaExample.trim() || undefined,
-    exampleReading: d.exampleReading.trim() || undefined,
-    exampleMeaning: d.exampleMeaning.trim() || undefined,
+    exampleReading: normalExampleReading,
+    exampleMeaning: normalExampleMeaning,
     mastery: "mid",
   };
 }
