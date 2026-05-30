@@ -7,14 +7,16 @@
  * (e.g. KanjiPopup, AppearanceSection preview) but never invent another
  * mode state somewhere else.
  *
- * Mode mapping:
- *   - "kana"     → Pemula  : hiragana/katakana saja (kanji → reading)
- *   - "furigana" → Normal  : kanji + furigana di atasnya
- *   - "kanji"    → Pro     : kanji bersih, tanpa furigana
+ * Mode mapping (spec final):
+ *   - "beginner" → Pemula : hiragana/katakana saja sebagai teks utama
+ *                           (tanpa kanji, tanpa furigana, tanpa よみ)
+ *   - "normal"   → Normal : kanji + furigana (atau よみ helper kalau
+ *                           alignment tidak reliable)
+ *   - "pro"      → Pro    : kanji bersih, tanpa furigana / よみ
  *
  * Source:
  *   - server settings via `useSettings()`  (TanStack Query key: ["settings"])
- *   - fallback "kana" (paling aman untuk pemula) kalau belum loaded
+ *   - fallback "beginner" (paling aman untuk pemula) kalau belum loaded
  *
  * Live update:
  *   - `useUpdateSettings()` calls `qc.setQueryData(["settings"], data)`
@@ -24,55 +26,62 @@
 import { useSettings } from "@/features/settings/useSettings";
 import type { JpMode } from "@/lib/types";
 
-const FALLBACK: JpMode = "kana";
+const FALLBACK: JpMode = "beginner";
 
 export interface JapaneseModeState {
   jpMode: JpMode;
-  /** True kalau mode Pemula (kana-only). */
-  isKana: boolean;
+  /** True kalau mode Pemula (kana-only sebagai teks utama). */
+  isBeginner: boolean;
   /** True kalau mode Normal (kanji + furigana). */
-  isFurigana: boolean;
+  isNormal: boolean;
   /** True kalau mode Pro (kanji bersih). */
-  isKanji: boolean;
+  isPro: boolean;
   /** True kalau JapaneseText harus render `<rt>` di atas kanji. */
   showFurigana: boolean;
-  /** True kalau kanji harus diganti dengan reading kana. */
+  /** True kalau teks utama harus berupa kana (kanji diganti reading). */
   replaceKanjiWithKana: boolean;
 }
 
 export function useJapaneseMode(): JapaneseModeState {
   const settingsQ = useSettings();
   const jpMode: JpMode = normalizeJpMode(settingsQ.data?.jpMode);
-  const isKana = jpMode === "kana";
-  const isFurigana = jpMode === "furigana";
-  const isKanji = jpMode === "kanji";
+  const isBeginner = jpMode === "beginner";
+  const isNormal = jpMode === "normal";
+  const isPro = jpMode === "pro";
   return {
     jpMode,
-    isKana,
-    isFurigana,
-    isKanji,
-    showFurigana: isFurigana,
-    replaceKanjiWithKana: isKana,
+    isBeginner,
+    isNormal,
+    isPro,
+    showFurigana: isNormal,
+    replaceKanjiWithKana: isBeginner,
   };
 }
 
 /**
- * Convert legacy `JpMode` values yang mungkin masih nyangkut di browser
- * cache (TanStack persisted query, atau backup JSON lama) ke nilai
- * canonical baru.
+ * Normalisasi semua nilai `jpMode` (canonical baru + legacy) ke nilai
+ * canonical: "beginner" | "normal" | "pro".
  *
- *   "beginner"  → "furigana"  (lama beginner = furigana + helper line)
- *   "normal"    → "kanji"     (lama normal = kanji bersih)
- *   "furigana"  → "furigana"  (sama)
- *   "kana"      → "kana"
- *   "kanji"     → "kanji"
- *   undefined   → "kana"      (fallback default Pemula)
+ * Canonical baru:
+ *   "beginner" | "normal" | "pro"  → apa adanya
+ *
+ * Legacy (skema lama internal kana/furigana/kanji):
+ *   "kana"     → "beginner"  (Pemula = kana only)
+ *   "furigana" → "normal"    (Normal = kanji + furigana)
+ *   "kanji"    → "pro"        (Pro = kanji bersih)
+ *
+ * Legacy lain yang mungkin nyangkut di backup/cache:
+ *   "advanced" / "clean"     → "pro"
+ *
+ * undefined / tak dikenal    → "beginner" (fallback default Pemula)
  */
 export function normalizeJpMode(value: unknown): JpMode {
-  if (value === "kana" || value === "furigana" || value === "kanji") {
+  if (value === "beginner" || value === "normal" || value === "pro") {
     return value;
   }
-  if (value === "beginner") return "furigana";
-  if (value === "normal") return "kanji";
+  if (value === "kana") return "beginner";
+  if (value === "furigana") return "normal";
+  if (value === "kanji") return "pro";
+  if (value === "advanced" || value === "clean") return "pro";
   return FALLBACK;
 }

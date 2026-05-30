@@ -8,6 +8,7 @@ import {
   buildSafeRubySegments,
   parseJapaneseText,
   stripParentheticalReadings,
+  stripRubyHtml,
   stripHtmlTags,
   type RubySegment,
 } from "@/lib/japanese-text";
@@ -24,19 +25,35 @@ interface Props {
   text?: string | null;
   /** Reading tunggal kalau backend menyediakannya secara terpisah. */
   reading?: string | null;
+  /**
+   * Teks kana penuh untuk mode Pemula (beginner). Ini yang dipakai sebagai
+   * teks UTAMA di mode beginner — hiragana/katakana saja, tanpa kanji.
+   * Untuk kata: `kanaText = reading`. Untuk kalimat contoh:
+   * `kanaText = beginnerExampleReading` / `normalExampleReading`.
+   * Kalau tidak diisi, beginner mode fallback ke `reading` lalu ke `text`.
+   */
+  kanaText?: string | null;
   /** Pre-parsed segments. Override `text` kalau diberikan. */
   ruby?: RubySegment[];
   /**
    * Override JP display mode. Kalau tidak diset, ambil dari user settings
    * via `useJapaneseMode()`.
    *
-   *   - "kana"     : hiragana/katakana saja (kanji diganti reading)
-   *   - "furigana" : kanji + furigana di atasnya
-   *   - "kanji"    : kanji bersih, tanpa furigana
+   *   - "beginner" : hiragana/katakana saja (kanaText/reading sebagai teks utama)
+   *   - "normal"   : kanji + furigana (atau よみ helper bila ruby tak reliable)
+   *   - "pro"      : kanji bersih, tanpa furigana / よみ
    */
   mode?: JpMode;
-  /** Suppress klik kanji untuk buka KanjiPopup. */
+  /** Suppress klik kanji untuk buka KanjiPopup (legacy prop). */
   inert?: boolean;
+  /**
+   * Aktifkan klik kanji secara eksplisit. Kalau di-set, override `inert`.
+   * Default: kanji clickable kecuali `inert` true.
+   */
+  enableKanjiClick?: boolean;
+  /** Callback kustom saat kanji diklik. Kalau diisi, KanjiPopup internal
+   *  tidak dibuka — caller yang menangani. */
+  onKanjiClick?: (kanji: string) => void;
   className?: string;
   /** Class untuk `<rt>` element (furigana). */
   rtClassName?: string;
@@ -44,8 +61,8 @@ interface Props {
   fallbackToParsedParentheses?: boolean;
   /**
    * True untuk teks contoh kalimat. Cegah furigana berantakan di atas
-   * kalimat penuh: kalau alignment tidak reliable, render kalimat
-   * bersih + (di mode Pemula) helper line `よみ: …` di bawahnya.
+   * kalimat penuh: di mode Normal, kalau alignment tidak reliable, render
+   * kalimat bersih + helper line `よみ: …`.
    */
   sentenceMode?: boolean;
   /** Class untuk helper line (よみ: …) di bawah teks saat sentenceMode. */
@@ -53,32 +70,32 @@ interface Props {
 }
 
 /**
- * Komponen tunggal global untuk render teks Jepang. Pakai komponen ini
- * di mana saja teks Jepang muncul: Catatan, Hafalan, Quiz, Home, Kanji
- * popup, AI preview, Bulk preview.
+ * Komponen tunggal global untuk render teks Jepang. Pakai komponen ini di
+ * mana saja teks Jepang muncul: Catatan, Hafalan, Quiz, Home, KanjiPopup,
+ * AI preview, Bulk preview.
  *
- * Mode behaviour:
- *   - "kana"     (Pemula) : kanji diganti reading kana. Kalau tidak ada
- *                           reading, fallback ke teks asli (mis. kalau
- *                           kata cuma kana, atau backend tidak supply
- *                           reading) — tidak pernah error.
- *   - "furigana" (Normal) : kanji ditampilkan dengan furigana di atasnya
- *                           pakai native `<ruby><rt>`. Reading sumber:
- *                             a. prop `ruby={[...]}` (pre-parsed)
- *                             b. tag `<ruby>...<rt>...</rt></ruby>` di `text`
- *                             c. parens "甘い物（あまいもの）"
- *                             d. prop `reading` (single reading)
- *   - "kanji"    (Pro)    : plain Japanese, tanpa furigana / parens.
+ * MODE FINAL (spec):
+ *   - "beginner" (Pemula) : tampilkan kana penuh sebagai teks utama
+ *                           (`kanaText || reading || fallback`). TIDAK ada
+ *                           ruby, TIDAK ada baris よみ, dan kanji tidak
+ *                           ditampilkan kalau kana tersedia.
+ *   - "normal"   (Normal) : kanji + furigana via `<ruby><rt>` kalau reliable.
+ *                           Kalau ruby kalimat penuh tidak reliable tapi ada
+ *                           reading, tampilkan kanji + baris `よみ: …`.
+ *   - "pro"      (Pro)    : kanji bersih, tanpa furigana, tanpa よみ.
  *
- * Klik kanji buka KanjiPopup (kecuali `inert` true). Tidak ada
- * `dangerouslySetInnerHTML` di komponen ini.
+ * Klik kanji buka KanjiPopup (kecuali `inert`/`enableKanjiClick=false`).
+ * Tidak ada `dangerouslySetInnerHTML` di komponen ini.
  */
 export function JapaneseText({
   text,
   reading,
+  kanaText,
   ruby,
   mode,
   inert,
+  enableKanjiClick,
+  onKanjiClick,
   className,
   rtClassName,
   fallbackToParsedParentheses = true,
@@ -89,21 +106,101 @@ export function JapaneseText({
   const effectiveMode: JpMode = mode ?? globalMode;
   const [openKanji, setOpenKanji] = useState<string | null>(null);
 
-  const isKana = effectiveMode === "kana";
-  const isFurigana = effectiveMode === "furigana";
-  // const isKanji = effectiveMode === "kanji";
+  // Resolusi clickable: enableKanjiClick override `inert`. Default clickable
+  // kecuali `inert`. Kalau ada onKanjiClick eksternal, popup internal off.
+  const clickable =
+    enableKanjiClick !== undefined ? enableKanjiClick : !inert;
+  const usesInternalPopup = clickable && !onKanjiClick;
+  const handleKanji = (ch: string) => {
+    if (onKanjiClick) onKanjiClick(ch);
+    else setOpenKanji(ch);
+  };
 
-  // Resolve segments based on inputs.
-  // Rule of thumb:
-  //   - kalau ada ruby pre-parsed → pakai
-  //   - kalau sentenceMode=true → buildSafeRubySegments (cegah ruby
-  //     berantakan di atas kalimat penuh)
-  //   - kalau ada `text` + `reading` (frasa pendek) → align ke run kanji
-  //   - kalau text punya parens / ruby tags → parse
-  //   - kalau tidak → single plain segment
+  const wrapperClass = cn("japanese-text font-jp", className);
+
+  const popup = usesInternalPopup ? (
+    <KanjiPopup
+      open={!!openKanji}
+      kanji={openKanji}
+      onClose={() => setOpenKanji(null)}
+    />
+  ) : null;
+
+  // ===================================================================
+  // MODE BEGINNER (Pemula) — kana penuh sebagai teks utama.
+  // ===================================================================
+  if (effectiveMode === "beginner") {
+    const kana = (kanaText ?? "").trim() || (reading ?? "").trim();
+
+    if (kana) {
+      // Kana tersedia → tampilkan apa adanya. TANPA ruby, TANPA よみ helper,
+      // TANPA kanji. Ini inti perbaikan: beginner = kana only.
+      return (
+        <span className={wrapperClass}>
+          {kana}
+          {popup}
+        </span>
+      );
+    }
+
+    // Tidak ada kana terpisah. Coba ekstrak reading yang mungkin tertanam
+    // di teks (ruby / parens). Kalau ada, pakai itu sebagai kana.
+    const segs = text ? parseJapaneseText(text) : [];
+    const hasEmbeddedReading = segs.some((s) => s.reading);
+    if (hasEmbeddedReading) {
+      const kanaJoined = segs.map((s) => s.reading || s.base).join("");
+      return (
+        <span className={wrapperClass}>
+          {kanaJoined}
+          {popup}
+        </span>
+      );
+    }
+
+    // Benar-benar tidak ada reading → fallback ke teks asli (mungkin sudah
+    // kana, mungkin kanji). Kanji tetap bisa diklik supaya tidak buntu.
+    const fallback = stripParentheticalReadings(
+      stripHtmlTags(stripRubyHtml(text ?? "")),
+    );
+    if (!fallback) return null;
+    return (
+      <span className={wrapperClass}>
+        {clickable
+          ? renderClickableKanji(fallback, handleKanji, "b")
+          : fallback}
+        {popup}
+      </span>
+    );
+  }
+
+  // ===================================================================
+  // MODE PRO — kanji bersih, tanpa furigana / よみ.
+  // ===================================================================
+  if (effectiveMode === "pro") {
+    let flat: string;
+    if (ruby && ruby.length > 0) {
+      flat = ruby.map((s) => s.base).join("");
+    } else {
+      flat = stripParentheticalReadings(
+        stripHtmlTags(stripRubyHtml(text ?? "")),
+      );
+    }
+    if (!flat) return null;
+    return (
+      <span className={wrapperClass}>
+        {clickable ? renderClickableKanji(flat, handleKanji, "p") : flat}
+        {popup}
+      </span>
+    );
+  }
+
+  // ===================================================================
+  // MODE NORMAL — kanji + furigana, atau kanji + よみ helper.
+  // ===================================================================
   let segments: RubySegment[] = [];
   let helperReading: string | null = null;
   let reliable = true;
+
   if (ruby && ruby.length > 0) {
     segments = ruby;
   } else if (sentenceMode) {
@@ -114,181 +211,77 @@ export function JapaneseText({
     reliable = r.reliable;
     helperReading = r.helperReading ?? null;
   } else if (text && reading) {
-    // Align selalu, even di mode Pro/kanji — supaya kana mode bisa pakai
-    // segment.reading untuk replace kanji. Mode Pro nanti collapse ke base.
     segments = alignReadingToText(stripHtmlTags(text), reading);
   } else if (text) {
-    // Coba parse parens / ruby tags. Kalau tidak ketemu, single segment.
-    if (fallbackToParsedParentheses) {
-      segments = parseJapaneseText(text);
-    } else {
-      segments = [
-        { base: stripParentheticalReadings(stripHtmlTags(text)) },
-      ];
-    }
+    segments = fallbackToParsedParentheses
+      ? parseJapaneseText(text)
+      : [{ base: stripParentheticalReadings(stripHtmlTags(text)) }];
   }
 
   if (segments.length === 0) return null;
 
-  // Helper line "よみ: …" di bawah kalimat kalau ruby tidak reliable.
-  // Spec PART 6: tampilkan di mode Pemula (kana) DAN Normal (furigana).
-  // Hanya mode Pro/kanji yang menyembunyikan reading. Kalau reading
-  // mismatch, buildSafeRubySegments sudah men-set helperReading=undefined
-  // sehingga よみ line yang salah tidak pernah tampil.
-  const showHelper = sentenceMode && !reliable && !!helperReading && (isKana || isFurigana);
-  const helperNode = showHelper ? (
-    <span
-      className={cn(
-        "japanese-reading-helper mt-1 block text-xs text-ink-400",
-        helperClassName,
-      )}
-    >
-      よみ: <span className="font-jp">{helperReading}</span>
-    </span>
-  ) : null;
-
-  // ---- Mode "kana" (Pemula) -----------------------------------------
-  // Kanji diganti reading. Kalau segment tidak punya reading dan base-nya
-  // mengandung kanji, kita biarkan kanji-nya (better than empty) dan
-  // tetap tidak render furigana. Ini terjadi kalau backend tidak supply
-  // reading untuk item tersebut.
-  if (isKana) {
-    const out: ReactNode[] = [];
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      if (seg.reading) {
-        out.push(
-          <span key={`k-${i}`} className="font-jp">
-            {seg.reading}
-          </span>,
-        );
-      } else {
-        // Plain kana / latin / punctuation — render apa adanya. Kalau
-        // base mengandung kanji (sentence mode + unreliable),
-        // pertahankan kanji-nya supaya helper line cocok dan kanji
-        // tetap bisa diklik.
-        out.push(
-          <Fragment key={`k-${i}`}>
-            {renderClickableKanji(
-              seg.base,
-              inert,
-              (ch) => setOpenKanji(ch),
-              `kp-${i}`,
-            )}
-          </Fragment>,
-        );
-      }
-    }
-    return (
-      <span className={cn("font-jp", className)}>
-        {out}
-        {helperNode}
-        {!inert ? (
-          <KanjiPopup
-            open={!!openKanji}
-            kanji={openKanji}
-            onClose={() => setOpenKanji(null)}
-          />
-        ) : null}
-      </span>
-    );
-  }
-
-  // ---- Mode "kanji" (Pro) -------------------------------------------
-  // Plain Japanese, tanpa furigana. Strip apapun yang berbentuk reading.
-  if (!isFurigana) {
-    const flattened = segments.map((s) => s.base).join("");
-    return (
-      <span className={cn("font-jp", className)}>
-        {renderClickableKanji(
-          flattened,
-          inert,
-          (ch) => setOpenKanji(ch),
-          "p",
+  // Helper line "よみ: …" hanya di mode Normal saat ruby kalimat penuh tidak
+  // reliable tapi reading-nya masuk akal (buildSafeRubySegments sudah
+  // menyaring reading yang mismatch jadi undefined).
+  const helperNode =
+    sentenceMode && !reliable && helperReading ? (
+      <span
+        className={cn(
+          "japanese-reading-helper mt-1 block text-xs text-ink-400",
+          helperClassName,
         )}
-        {!inert ? (
-          <KanjiPopup
-            open={!!openKanji}
-            kanji={openKanji}
-            onClose={() => setOpenKanji(null)}
-          />
-        ) : null}
+      >
+        よみ: <span className="font-jp">{helperReading}</span>
       </span>
-    );
-  }
+    ) : null;
 
-  // ---- Mode "furigana" (Normal) -------------------------------------
-  // Kalau sentenceMode + unreliable, render plain (tanpa ruby) supaya
-  // tidak ada furigana berantakan. Kanji tetap clickable, dan helper
-  // よみ line tetap tampil (spec PART 6: Normal juga punya reading helper).
+  // Kalimat penuh + ruby tidak reliable → render kanji bersih + よみ helper.
   if (sentenceMode && !reliable) {
     const flattened = segments.map((s) => s.base).join("");
     return (
-      <span className={cn("font-jp", className)}>
-        {renderClickableKanji(
-          flattened,
-          inert,
-          (ch) => setOpenKanji(ch),
-          "sp",
-        )}
+      <span className={wrapperClass}>
+        {clickable
+          ? renderClickableKanji(flattened, handleKanji, "nsp")
+          : flattened}
         {helperNode}
-        {!inert ? (
-          <KanjiPopup
-            open={!!openKanji}
-            kanji={openKanji}
-            onClose={() => setOpenKanji(null)}
-          />
-        ) : null}
+        {popup}
       </span>
     );
   }
 
-  // ---- Mode "furigana" (Normal) -------------------------------------
+  // Ruby reliable → render furigana di atas kanji.
   return (
-    <span className={cn("font-jp", className)}>
+    <span className={wrapperClass}>
       {segments.map((seg, i) => {
         if (seg.reading) {
           return (
             <ruby key={`r-${i}`}>
-              {renderClickableKanji(
-                seg.base,
-                inert,
-                (ch) => setOpenKanji(ch),
-                `r-${i}`,
-              )}
+              {clickable
+                ? renderClickableKanji(seg.base, handleKanji, `r-${i}`)
+                : seg.base}
               <rt className={cn("text-ink-400", rtClassName)}>{seg.reading}</rt>
             </ruby>
           );
         }
         return (
           <Fragment key={`p-${i}`}>
-            {renderClickableKanji(
-              seg.base,
-              inert,
-              (ch) => setOpenKanji(ch),
-              `p-${i}`,
-            )}
+            {clickable
+              ? renderClickableKanji(seg.base, handleKanji, `p-${i}`)
+              : seg.base}
           </Fragment>
         );
       })}
-      {!inert ? (
-        <KanjiPopup
-          open={!!openKanji}
-          kanji={openKanji}
-          onClose={() => setOpenKanji(null)}
-        />
-      ) : null}
+      {popup}
     </span>
   );
 }
 
 /**
- * Render base text dengan setiap karakter kanji jadi tombol clickable
- * (kecuali `inert`). Karakter non-kanji dirender plain.
+ * Render base text dengan setiap karakter kanji jadi tombol clickable.
+ * Karakter non-kanji dirender plain.
  */
 function renderClickableKanji(
   s: string,
-  inert: boolean | undefined,
   onClickKanji: (ch: string) => void,
   keyPrefix: string,
 ): ReactNode[] {
@@ -302,30 +295,26 @@ function renderClickableKanji(
     const ch = m[0];
     const idx = m.index;
     out.push(
-      inert ? (
-        <span key={`${keyPrefix}-k-${idx}`}>{ch}</span>
-      ) : (
-        <span
-          key={`${keyPrefix}-k-${idx}`}
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
+      <span
+        key={`${keyPrefix}-k-${idx}`}
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClickKanji(ch);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
             e.stopPropagation();
             onClickKanji(ch);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              e.stopPropagation();
-              onClickKanji(ch);
-            }
-          }}
-          className="inline cursor-pointer rounded px-0.5 underline-offset-2 decoration-dotted decoration-accent-300 hover:bg-accent-50 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-accent-700/20"
-          aria-label={`Lihat info kanji ${ch}`}
-        >
-          {ch}
-        </span>
-      ),
+          }
+        }}
+        className="inline cursor-pointer rounded px-0.5 underline-offset-2 decoration-dotted decoration-accent-300 hover:bg-accent-50 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-accent-700/20"
+        aria-label={`Lihat info kanji ${ch}`}
+      >
+        {ch}
+      </span>,
     );
     last = idx + ch.length;
   }

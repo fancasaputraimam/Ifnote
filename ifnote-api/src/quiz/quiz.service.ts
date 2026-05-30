@@ -7,6 +7,8 @@ interface QuizQuestion {
   itemType: "kotoba" | "bunpou";
   itemId: string;
   prompt: string;
+  /** Reading hiragana penuh untuk prompt — dipakai mode Pemula (kana). */
+  reading?: string | null;
   meaning?: string;
   choices: { id: string; label: string }[];
   correctChoiceId: string;
@@ -79,6 +81,7 @@ export class QuizService {
           itemType: "kotoba",
           itemId: row.id,
           prompt: row.jp,
+          reading: row.reading,
           meaning: row.meaning,
           choices,
           correctChoiceId: correct.id,
@@ -99,6 +102,7 @@ export class QuizService {
           itemType: "bunpou",
           itemId: row.id,
           prompt: row.pattern,
+          reading: row.reading,
           meaning: row.meaning,
           choices,
           correctChoiceId: correct.id,

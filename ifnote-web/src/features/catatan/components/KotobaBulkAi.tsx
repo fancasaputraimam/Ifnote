@@ -317,6 +317,7 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
                   <JapaneseText
                     text={it.jp}
                     reading={it.reading || undefined}
+                    kanaText={it.reading || undefined}
                     inert
                   />
                 </div>
@@ -344,7 +345,9 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
                     Contoh:{" "}
                     <JapaneseText
                       text={it.beginnerExample}
-                      reading={it.exampleReading || undefined}
+                      reading={it.beginnerExampleReading || undefined}
+                      kanaText={it.beginnerExampleReading || undefined}
+                      sentenceMode
                       inert
                     />
                   </div>

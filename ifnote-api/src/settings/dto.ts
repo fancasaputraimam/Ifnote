@@ -13,18 +13,19 @@ export class UpdateSettingsDto {
   theme?: "system" | "light" | "dark";
 
   /**
-   * Mode tampilan teks Jepang.
+   * Mode tampilan teks Jepang (canonical).
    *
-   *   - "kana"     : Pemula  — hiragana/katakana saja
-   *   - "furigana" : Normal  — kanji + furigana
-   *   - "kanji"    : Pro     — kanji bersih
+   *   - "beginner" : Pemula  — hiragana/katakana tanpa kanji
+   *   - "normal"   : Normal  — kanji dengan furigana
+   *   - "pro"      : Pro     — kanji saja
    *
-   * Legacy values ("beginner", "normal") tetap diterima dan dinormalisasi
-   * di service layer supaya backup JSON / klien lama tidak rusak.
+   * Legacy values ("kana"/"furigana"/"kanji") tetap diterima dan
+   * dinormalisasi di service layer supaya backup JSON / klien lama tidak
+   * rusak.
    */
   @IsOptional()
-  @IsIn(["kana", "furigana", "kanji", "beginner", "normal"])
-  jpMode?: "kana" | "furigana" | "kanji" | "beginner" | "normal";
+  @IsIn(["beginner", "normal", "pro", "kana", "furigana", "kanji"])
+  jpMode?: "beginner" | "normal" | "pro" | "kana" | "furigana" | "kanji";
 
   @IsOptional() @IsBoolean()
   onboardingSeen?: boolean;

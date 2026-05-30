@@ -190,6 +190,79 @@ export function hasIncompleteExampleMeaning(d: {
   return exMeaning === meaning;
 }
 
+/* -------------- reading/field validation (PART 10) --------------- */
+
+const KANA_HEAVY_RE =
+  /^[\u3041-\u3096\u30A1-\u30FA\u30FC\u3000-\u303F\s\u3001\u3002\uFF01\uFF1F\uFF0E\uFF0C0-9A-Za-z\u30FB～]+$/;
+const HAS_KANJI_RE = /[\u4E00-\u9FFF\u3400-\u4DBF\u3005]/;
+
+function hasKanji(s: string | null | undefined): boolean {
+  return !!s && HAS_KANJI_RE.test(s);
+}
+
+/** True kalau string adalah kana penuh (boleh tanda baca / angka / latin). */
+export function isPureKana(s: string | null | undefined): boolean {
+  const t = (s ?? "").trim();
+  if (!t) return false;
+  return KANA_HEAVY_RE.test(t);
+}
+
+export interface KotobaReadingIssues {
+  /** reading kata utama hilang padahal jp mengandung kanji. */
+  missingReading: boolean;
+  /** beginnerExample ada tapi beginnerExampleReading hilang. */
+  missingBeginnerReading: boolean;
+  /** normalExample ada tapi normalExampleReading hilang. */
+  missingNormalReading: boolean;
+  /** beginnerExample ada tapi beginnerExampleMeaning hilang. */
+  missingBeginnerMeaning: boolean;
+  /** normalExample ada tapi normalExampleMeaning hilang. */
+  missingNormalMeaning: boolean;
+  /** beginnerExampleReading masih mengandung kanji (bukan kana murni). */
+  beginnerReadingNotKana: boolean;
+  /** normalExampleReading masih mengandung kanji (bukan kana murni). */
+  normalReadingNotKana: boolean;
+}
+
+/**
+ * Periksa kelengkapan reading/meaning hasil AI Kotoba (spec PART 10).
+ * Dipakai UI untuk memutuskan apakah perlu repair / mark "Perlu dicek"
+ * sebelum simpan — supaya data contoh tidak tersimpan setengah jadi.
+ */
+export function checkKotobaReadingIssues(d: {
+  jp: string;
+  reading: string;
+  beginnerExample: string;
+  beginnerExampleReading: string;
+  beginnerExampleMeaning: string;
+  normalExample: string;
+  normalExampleReading: string;
+  normalExampleMeaning: string;
+}): KotobaReadingIssues {
+  const hasBeginner = !!d.beginnerExample.trim();
+  const hasNormal = !!d.normalExample.trim();
+  return {
+    missingReading: hasKanji(d.jp) && !d.reading.trim(),
+    missingBeginnerReading: hasBeginner && !d.beginnerExampleReading.trim(),
+    missingNormalReading: hasNormal && !d.normalExampleReading.trim(),
+    missingBeginnerMeaning: hasBeginner && !d.beginnerExampleMeaning.trim(),
+    missingNormalMeaning: hasNormal && !d.normalExampleMeaning.trim(),
+    beginnerReadingNotKana:
+      hasBeginner &&
+      !!d.beginnerExampleReading.trim() &&
+      !isPureKana(d.beginnerExampleReading),
+    normalReadingNotKana:
+      hasNormal &&
+      !!d.normalExampleReading.trim() &&
+      !isPureKana(d.normalExampleReading),
+  };
+}
+
+/** True kalau ada masalah reading yang perlu diperbaiki. */
+export function hasAnyKotobaReadingIssue(issues: KotobaReadingIssues): boolean {
+  return Object.values(issues).some(Boolean);
+}
+
 /* -------------- bunpou -------------------------------------------- */
 
 export interface NormalizedBunpou {

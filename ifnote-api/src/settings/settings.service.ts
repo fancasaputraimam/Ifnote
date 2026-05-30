@@ -229,21 +229,31 @@ function toNormalPublic(row: SettingsRow, aiAvailable: boolean): NormalSettingsR
 }
 
 /**
- * Translate legacy `jpMode` values yang masih nyangkut di DB / backup
- * JSON ke nilai canonical baru.
+ * Translate semua nilai `jpMode` (canonical + legacy) ke nilai canonical
+ * baru: "beginner" | "normal" | "pro".
  *
- *   "beginner" → "furigana"  (dulu beginner = furigana + helper)
- *   "normal"   → "kanji"     (dulu normal = kanji bersih)
- *   "furigana" → "furigana"  (sama)
- *   "kana"     → "kana"
- *   "kanji"    → "kanji"
- *   undefined  → "kana"      (default Pemula)
+ * Canonical baru (apa adanya):
+ *   "beginner" → "beginner"   (Pemula = kana only)
+ *   "normal"   → "normal"     (Normal = kanji + furigana)
+ *   "pro"      → "pro"        (Pro = kanji bersih)
+ *
+ * Legacy internal lama (skema kana/furigana/kanji):
+ *   "kana"     → "beginner"
+ *   "furigana" → "normal"
+ *   "kanji"    → "pro"
+ *
+ * Legacy lain yang mungkin nyangkut di backup/cache:
+ *   "advanced" / "clean" → "pro"
+ *
+ *   undefined / tak dikenal → "beginner" (default Pemula)
  */
-function normalizeJpMode(value: unknown): "kana" | "furigana" | "kanji" {
-  if (value === "kana" || value === "furigana" || value === "kanji") {
+function normalizeJpMode(value: unknown): "beginner" | "normal" | "pro" {
+  if (value === "beginner" || value === "normal" || value === "pro") {
     return value;
   }
-  if (value === "beginner") return "furigana";
-  if (value === "normal") return "kanji";
-  return "kana";
+  if (value === "kana") return "beginner";
+  if (value === "furigana") return "normal";
+  if (value === "kanji") return "pro";
+  if (value === "advanced" || value === "clean") return "pro";
+  return "beginner";
 }

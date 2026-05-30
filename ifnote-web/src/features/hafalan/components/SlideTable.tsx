@@ -142,6 +142,7 @@ function SlideRow({ item, hideMeaning }: RowProps) {
             <JapaneseText
               text={item.jpOrPattern}
               reading={item.reading || undefined}
+              kanaText={item.reading || undefined}
               inert
             />
           </p>
@@ -171,7 +172,9 @@ function SlideRow({ item, hideMeaning }: RowProps) {
               <JapaneseText
                 text={item.example ?? ""}
                 reading={item.exampleReading || undefined}
+                kanaText={item.exampleReading || undefined}
                 sentenceMode
+                enableKanjiClick
               />
             </p>
           ) : aiPending ? (

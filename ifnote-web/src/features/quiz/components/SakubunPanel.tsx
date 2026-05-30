@@ -208,6 +208,10 @@ export function SakubunPanel() {
                             (it.detail as { reading?: string | null })
                               ?.reading || undefined
                           }
+                          kanaText={
+                            (it.detail as { reading?: string | null })
+                              ?.reading || undefined
+                          }
                         />
                       </div>
                       {it.meaning ? (
@@ -339,6 +343,9 @@ function SakubunResult({
           <JapaneseText
             text={data.sakubun}
             reading={data.reading || undefined}
+            kanaText={data.reading || undefined}
+            sentenceMode
+            enableKanjiClick
           />
         </div>
       </Section>

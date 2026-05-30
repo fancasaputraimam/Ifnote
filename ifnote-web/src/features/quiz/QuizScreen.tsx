@@ -259,6 +259,7 @@ function toRuntimeFromPool(q: QuizQuestion): QuestionRuntime {
     view: {
       id: q.id,
       prompt: q.prompt,
+      reading: q.reading,
       meaning: q.meaning,
       choices: q.choices,
       correctChoiceId: q.correctChoiceId,

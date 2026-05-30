@@ -17,11 +17,11 @@ import {
 } from "./dto";
 
 const SYS_BASE =
-  "Anda adalah tutor bahasa Jepang untuk pelajar Indonesia level N5/N4. " +
+  "Anda adalah tutor bahasa Jepang untuk pelajar Indonesia level N5 sampai N1. " +
   "Selalu balas dalam JSON object yang sesuai dengan schema yang diminta. " +
   "Gunakan bahasa Indonesia sederhana untuk penjelasan. " +
-  "Untuk furigana gunakan format <ruby>kanji<rt>kana</rt></ruby> atau " +
-  "format kanji(kana) jika ruby tidak diminta.";
+  "JANGAN gunakan tag <ruby>/<rt>, markdown, atau HTML apa pun. " +
+  "Untuk pembacaan kanji, gunakan field reading terpisah berisi hiragana penuh.";
 
 interface BulkPreviewItem {
   jp: string;

@@ -162,7 +162,7 @@ function KotobaBunpouSnippet({ item }: { item: CatatanItem }) {
   return (
     <div>
       <div className="text-base font-medium text-ink-800 dark:text-paper-50">
-        <JapaneseText text={item.jpOrPattern} reading={reading} />
+        <JapaneseText text={item.jpOrPattern} reading={reading} kanaText={reading} />
       </div>
       <p className="mt-0.5 line-clamp-2 text-xs text-ink-400">{item.meaning}</p>
       {item.mastery === "weak" ? (

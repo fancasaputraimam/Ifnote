@@ -18,6 +18,8 @@ export interface QuestionViewModel {
   id: string;
   /** What to render as the prompt. JP for kotoba, pattern for bunpou, free text for AI. */
   prompt: string;
+  /** Reading hiragana penuh untuk prompt — dipakai mode Pemula (kana). */
+  reading?: string | null;
   /** Indonesian meaning (used for blank-answer mode + tooltip). */
   meaning?: string;
   choices: { id: string; label: string }[];
@@ -93,7 +95,12 @@ export function QuestionCard({
       </div>
 
       <h2 className="mt-2 text-2xl text-ink-800 dark:text-paper-50">
-        <JapaneseText text={question.prompt} inert={!!feedback} />
+        <JapaneseText
+          text={question.prompt}
+          reading={question.reading || undefined}
+          kanaText={question.reading || undefined}
+          enableKanjiClick={!feedback}
+        />
       </h2>
       {question.meaning && mode === "choice" ? null : null}
 

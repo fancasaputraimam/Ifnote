@@ -129,6 +129,7 @@ export function BunpouAiAnalyze({
           <JapaneseText
             text={draft.pattern}
             reading={draft.reading || undefined}
+            kanaText={draft.reading || undefined}
             inert
           />
         </div>

@@ -17,7 +17,7 @@ export function AppearanceSection() {
   const update = useUpdateSettings();
 
   const [theme, setThemePref] = useState<ThemeMode>("system");
-  const [jpMode, setJpMode] = useState<JpMode>("kana");
+  const [jpMode, setJpMode] = useState<JpMode>("beginner");
 
   // Hydrate from server settings once. Lewatkan via `normalizeJpMode`
   // supaya legacy values ("beginner"/"normal") yang masih nyangkut di
@@ -177,21 +177,21 @@ interface JpModeOption {
 
 const JP_MODE_OPTIONS: JpModeOption[] = [
   {
-    id: "kana",
+    id: "beginner",
     label: "Pemula",
-    helper: "Hanya hiragana / katakana. Kanji diganti dengan bacaannya.",
+    helper: "Hiragana/katakana tanpa kanji",
     preview: "たべます",
   },
   {
-    id: "furigana",
+    id: "normal",
     label: "Normal",
-    helper: "Kanji dengan furigana di atasnya.",
+    helper: "Kanji dengan furigana",
     preview: "食(た)べます",
   },
   {
-    id: "kanji",
+    id: "pro",
     label: "Pro",
-    helper: "Kanji bersih, tanpa furigana.",
+    helper: "Kanji saja",
     preview: "食べます",
   },
 ];

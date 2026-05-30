@@ -209,6 +209,7 @@ export function KotobaAiAnalyze({
           <JapaneseText
             text={draft.jp}
             reading={draft.reading || undefined}
+            kanaText={draft.reading || undefined}
             inert
           />
         </div>

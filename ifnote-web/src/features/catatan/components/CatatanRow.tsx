@@ -8,7 +8,7 @@ import LoaderGrid from "@/components/ui/loader-grid";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
-import type { Bunpou, CatatanItem, Kotoba, Mastery } from "@/lib/types";
+import type { Bunpou, CatatanItem, JpMode, Kotoba, Mastery } from "@/lib/types";
 import {
   useAiExplainBunpou,
   useAiExplainKotoba,
@@ -132,6 +132,10 @@ export function CatatanRow({ item, onEdit }: Props) {
                   // dari endpoint catatan list sudah melalui field ini.
                   ((item.detail as { reading?: string | null })?.reading) || undefined
                 }
+                kanaText={
+                  ((item.detail as { reading?: string | null })?.reading) || undefined
+                }
+                enableKanjiClick
               />
             </span>
             <span className="truncate text-xs text-ink-400">
@@ -314,7 +318,7 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
       ) : null}
       {furiganaExample ? (
         <Section label="Contoh (furigana)">
-          <ExampleLine jp={furiganaExample} mode="furigana" />
+          <ExampleLine jp={furiganaExample} />
         </Section>
       ) : null}
       {/* Legacy single "Arti contoh" — hanya tampil kalau tidak ada
@@ -448,7 +452,7 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
 
       {furiganaExample ? (
         <Section label="Contoh (furigana)">
-          <ExampleLine jp={furiganaExample} mode="furigana" />
+          <ExampleLine jp={furiganaExample} />
         </Section>
       ) : null}
 
@@ -502,21 +506,24 @@ function ExampleLine({
   reading,
 }: {
   jp: string;
-  mode?: "furigana";
+  mode?: JpMode;
   reading?: string | null;
 }) {
   return (
     <div className="text-base">
       {/* sentenceMode mencegah ruby dipaksakan di atas kalimat penuh —
-          pakai helper `よみ: …` di mode Pemula kalau alignment tidak
-          reliable. Tidak `inert`: kanji di contoh kalimat tetap bisa
-          diklik untuk buka KanjiPopup. KanjiPopup pakai portal jadi
-          aman walau komponen ini ada di dalam accordion `<button>`. */}
+          pakai helper `よみ: …` di mode Normal kalau alignment tidak
+          reliable. Di mode Pemula, `kanaText` (reading) jadi teks utama.
+          enableKanjiClick: kanji di contoh kalimat tetap bisa diklik untuk
+          buka KanjiPopup. KanjiPopup pakai portal jadi aman walau komponen
+          ini ada di dalam accordion `<button>`. */}
       <JapaneseText
         text={jp}
         mode={mode}
         reading={reading || undefined}
+        kanaText={reading || undefined}
         sentenceMode
+        enableKanjiClick
       />
     </div>
   );

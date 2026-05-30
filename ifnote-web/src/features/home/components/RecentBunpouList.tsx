@@ -54,6 +54,7 @@ export function RecentBunpouList({ items }: Props) {
                     <JapaneseText
                       text={it.jpOrPattern}
                       reading={reading}
+                      kanaText={reading}
                       inert
                     />
                   </p>

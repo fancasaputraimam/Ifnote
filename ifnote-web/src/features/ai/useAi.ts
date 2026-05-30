@@ -70,6 +70,25 @@ export function useTranslateExample() {
   });
 }
 
+export interface TranslateReadingData {
+  reading: string;
+}
+
+/**
+ * Repair: minta AI mengisi reading (hiragana penuh) untuk satu kalimat
+ * contoh saat reading hilang / mismatch. AI hanya mengembalikan reading,
+ * tidak menulis ulang kalimatnya (spec PART 10).
+ */
+export function useTranslateReading() {
+  return useMutation({
+    mutationFn: (body: { sentence: string }) =>
+      api.post<AiEnvelope<TranslateReadingData>>(
+        "/api/ai/translate-reading",
+        body,
+      ),
+  });
+}
+
 export function useExplainBunpou() {
   return useMutation({
     mutationFn: (body: { pattern: string }) =>

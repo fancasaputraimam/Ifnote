@@ -10,14 +10,17 @@ export type ThemeMode = "system" | "light" | "dark";
 /**
  * Mode tampilan teks Jepang.
  *
- *   - "kana"     : Pemula — hiragana/katakana saja, kanji diganti reading
- *   - "furigana" : Normal — kanji dengan furigana di atasnya
- *   - "kanji"    : Pro — kanji bersih, tanpa furigana
+ *   - "beginner" : Pemula — hiragana/katakana saja sebagai teks utama,
+ *                  tanpa kanji, tanpa furigana, tanpa baris よみ
+ *   - "normal"   : Normal — kanji dengan furigana (atau baris よみ
+ *                  helper kalau alignment tidak reliable)
+ *   - "pro"      : Pro — kanji bersih, tanpa furigana, tanpa よみ
  *
- * Legacy values ("beginner", "normal") dinormalisasi di backend
+ * Legacy values ("kana"/"furigana"/"kanji" dan lama "advanced")
+ * dinormalisasi di `normalizeJpMode` (frontend) + backend
  * `settings.service` saat read/write supaya data lama tidak rusak.
  */
-export type JpMode = "kana" | "furigana" | "kanji";
+export type JpMode = "beginner" | "normal" | "pro";
 export type AiRequestFormat = "openai" | "azure" | "custom";
 export type HafalanMode = "kotoba" | "bunpou" | "mixed" | "weak";
 export type QuizType = "kotoba" | "bunpou" | "mixed" | "ai" | "sakubun";
@@ -155,6 +158,8 @@ export interface QuizQuestion {
   itemType: NoteType;
   itemId: string;
   prompt: string;
+  /** Reading hiragana penuh untuk prompt — dipakai mode Pemula (kana). */
+  reading?: string | null;
   meaning?: string;
   choices: { id: string; label: string }[];
   correctChoiceId: string;
