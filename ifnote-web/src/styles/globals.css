@@ -263,3 +263,18 @@ ruby rb {
   text-align: center;
   text-indent: 0;
 }
+
+/* AI prompt input — slim scrollbar (no JS style injection). */
+.ai-prompt-input textarea::-webkit-scrollbar {
+  width: 6px;
+}
+.ai-prompt-input textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ai-prompt-input textarea::-webkit-scrollbar-thumb {
+  background-color: theme(colors.paper.200);
+  border-radius: 3px;
+}
+.dark .ai-prompt-input textarea::-webkit-scrollbar-thumb {
+  background-color: theme(colors.ink.600);
+}

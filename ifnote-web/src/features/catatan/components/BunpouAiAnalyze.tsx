@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { TextInput } from "@/components/ui/TextInput";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { AiLoading } from "@/components/ui/ai-loading";
+import { AiPromptInput, PromptChip } from "@/components/ui/ai-prompt-input";
 import { useExplainBunpou } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
@@ -75,21 +76,28 @@ export function BunpouAiAnalyze({
   if (!draft) {
     return (
       <div className="space-y-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-            Masukkan bunpou, arti, atau contoh kalimat
-          </label>
-          <textarea
-            rows={4}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={"〜ながら\nsambil melakukan\n音楽を聞きながら勉強します"}
-            className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-          />
-          <p className="mt-1 text-xs text-ink-400">
-            Bisa bahasa Jepang atau Indonesia.
-          </p>
-        </div>
+        <AiPromptInput
+          value={input}
+          onChange={setInput}
+          onSubmit={onAnalyze}
+          submitDisabled={!input.trim()}
+          ariaLabel="Bunpou, arti, atau contoh kalimat"
+          submitLabel="Analisa pakai AI"
+          autoFocus
+          placeholder={"〜ながら\nsambil melakukan\n音楽を聞きながら勉強します"}
+          footer={
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <PromptChip>Pola bunpou</PromptChip>
+                <PromptChip>Arti</PromptChip>
+                <PromptChip>Contoh kalimat</PromptChip>
+              </div>
+              <p className="text-xs text-ink-400">
+                Bisa bahasa Jepang atau Indonesia.
+              </p>
+            </div>
+          }
+        />
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-700/40 dark:bg-rose-700/10 dark:text-rose-200">
             {error}

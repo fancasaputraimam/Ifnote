@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { AiLoading } from "@/components/ui/ai-loading";
+import { AiPromptInput, PromptChip } from "@/components/ui/ai-prompt-input";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { useBulkKotobaAi } from "@/features/ai/useAi";
 import { ApiError } from "@/lib/api-client";
@@ -176,31 +177,41 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
   if (!items) {
     return (
       <div className="space-y-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-            Masukkan kotoba atau artinya
-          </label>
-          <textarea
-            rows={8}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={"食べます\nmakan\nberat\n甜い物"}
-            className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 font-mono text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-          />
-          <div className="mt-1 flex items-center justify-between text-xs">
-            <p className="text-ink-400">
-              Bisa isi 1 sampai {MAX_ITEMS} kotoba. Bisa bahasa Jepang atau Indonesia.
-            </p>
-            <span
-              className={cn(
-                "font-medium",
-                overLimit ? "text-rose-600 dark:text-rose-400" : "text-ink-400",
-              )}
-            >
-              {parsed.length} / {MAX_ITEMS} kotoba
-            </span>
-          </div>
-        </div>
+        <AiPromptInput
+          value={text}
+          onChange={setText}
+          onSubmit={onAnalyze}
+          submitDisabled={parsed.length === 0 || overLimit}
+          ariaLabel="Kotoba atau arti"
+          submitLabel="Analisa pakai AI"
+          autoFocus
+          placeholder={"食べます\nmakan\nberat\n甘い物"}
+          footer={
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <PromptChip>1 kata</PromptChip>
+                <PromptChip>Banyak kotoba</PromptChip>
+                <PromptChip>Jepang / Indonesia</PromptChip>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <p className="text-ink-400">
+                  Bisa bahasa Jepang atau Indonesia. Maksimal {MAX_ITEMS} item
+                  sekali analisa.
+                </p>
+                <span
+                  className={cn(
+                    "font-medium",
+                    overLimit
+                      ? "text-rose-600 dark:text-rose-400"
+                      : "text-ink-400",
+                  )}
+                >
+                  {parsed.length} / {MAX_ITEMS} item
+                </span>
+              </div>
+            </div>
+          }
+        />
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-700/40 dark:bg-rose-700/10 dark:text-rose-200">
             {error}
