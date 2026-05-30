@@ -187,6 +187,11 @@ export class AiService {
       "Jika input adalah kalimat (bukan pola), tetap kembalikan pattern utamanya, dan set detectedFromSentence:true. " +
       "Selalu kembalikan pattern dalam Jepang dan meaning dalam Indonesia. " +
       "Pisahkan: formulaPatterns sebagai array baris pendek (formula saja, JANGAN sertakan 'Contoh:' di dalamnya). " +
+      "PENTING: formula HARUS pakai istilah mudah dimengerti pelajar Indonesia, BUKAN kanji. " +
+      "Gunakan istilah seperti: 'kata kerja bentuk masu', 'kata kerja bentuk te', 'kata kerja bentuk kamus', 'kata kerja bentuk nai', 'kata kerja bentuk futsu/biasa', 'kata sifat-i', 'kata sifat-na', 'kata benda'. " +
+      "Contoh formula BENAR: 'kata kerja bentuk masu (tanpa masu) + nagara'. " +
+      "Contoh formula SALAH (jangan pakai kanji): '動詞ます形 + ながら'. " +
+      "Boleh tetap tampilkan partikel/akhiran Jepang dalam kana (mis. ながら, て, た), tapi nama bentuk kata HARUS Indonesia. " +
       "transformExamples sebagai array {from,to,readingFrom,readingTo} (contoh perubahan kata kerja/sifat saja, opsional). " +
       "usage sebagai array kalimat pendek bahasa Indonesia (bullet, tanpa nomor). " +
       "examples sebagai array {jp,reading,meaning} berisi 1-3 kalimat contoh lengkap; reading harus hiragana penuh, meaning harus terjemahan Indonesia natural. " +
@@ -216,7 +221,12 @@ export class AiService {
       "Tugas: identifikasikan pola bunpou yang dimaksud, lalu jelaskan dalam Bahasa Indonesia dengan struktur jelas. " +
       "Jika input adalah kalimat (bukan pola), tetap kembalikan pattern utamanya, dan set detectedFromSentence:true. " +
       "Selalu kembalikan pattern dalam Jepang dan meaning dalam Indonesia. " +
-      "Pisahkan formulaPatterns sebagai array baris pendek. transformExamples sebagai array {from,to}. usage sebagai array kalimat pendek. examples sebagai array {jp, reading, meaning}. commonMistakes sebagai array. JANGAN tag <ruby>. JANGAN markdown. " +
+      "Pisahkan formulaPatterns sebagai array baris pendek. " +
+      "PENTING: formula HARUS pakai istilah mudah dimengerti pelajar Indonesia, BUKAN kanji. " +
+      "Gunakan istilah seperti: 'kata kerja bentuk masu', 'kata kerja bentuk te', 'kata kerja bentuk kamus', 'kata kerja bentuk nai', 'kata kerja bentuk futsu/biasa', 'kata sifat-i', 'kata sifat-na', 'kata benda'. " +
+      "Contoh BENAR: 'kata kerja bentuk masu (tanpa masu) + nagara'. Contoh SALAH: '動詞ます形 + ながら'. " +
+      "Partikel/akhiran Jepang boleh dalam kana, tapi nama bentuk kata HARUS Indonesia. " +
+      "transformExamples sebagai array {from,to}. usage sebagai array kalimat pendek. examples sebagai array {jp, reading, meaning}. commonMistakes sebagai array. JANGAN tag <ruby>. JANGAN markdown. " +
       'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","meaning":"string","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
     const usr =
       `Input user: "${dto.pattern}". ` +

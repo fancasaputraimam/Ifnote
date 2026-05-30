@@ -167,16 +167,36 @@ function SlideRow({ item, hideMeaning }: RowProps) {
 
       {open ? (
         <div className="border-t border-paper-200 px-4 py-3 dark:border-ink-700">
+          {/* Arti penuh kotoba/bunpou — tidak di-truncate, jadi arti dengan
+              beberapa makna (mis. "X, Y, Z") kelihatan semua. */}
+          {!hideMeaning && item.meaning ? (
+            <div className="mb-3">
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-ink-400">
+                Arti
+              </div>
+              <p className="text-sm leading-relaxed text-ink-700 dark:text-paper-50">
+                {item.meaning}
+              </p>
+            </div>
+          ) : null}
+
           {explained ? (
-            <p className="rounded-xl bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
-              <JapaneseText
-                text={item.example ?? ""}
-                reading={item.exampleReading || undefined}
-                kanaText={item.exampleReading || undefined}
-                sentenceMode
-                enableKanjiClick
-              />
-            </p>
+            <div className="rounded-xl bg-paper-50/60 px-3 py-2 dark:bg-ink-900/30">
+              <p className="text-sm text-ink-700 dark:text-paper-50">
+                <JapaneseText
+                  text={item.example ?? ""}
+                  reading={item.exampleReading || undefined}
+                  kanaText={item.exampleReading || undefined}
+                  sentenceMode
+                  enableKanjiClick
+                />
+              </p>
+              {!hideMeaning && item.exampleMeaning ? (
+                <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-paper-50/70">
+                  {item.exampleMeaning}
+                </p>
+              ) : null}
+            </div>
           ) : aiPending ? (
             <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:border-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
               <div className="flex items-center gap-3">

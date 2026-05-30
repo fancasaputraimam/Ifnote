@@ -150,6 +150,8 @@ export interface HafalanSlide {
     example: string | null;
     /** Reading hiragana untuk contoh kalimat (untuk furigana di contoh). */
     exampleReading: string | null;
+    /** Arti (terjemahan) contoh kalimat. */
+    exampleMeaning: string | null;
   }>;
 }
 

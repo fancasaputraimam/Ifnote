@@ -31,6 +31,8 @@ interface ResolvedItem {
   example: string | null;
   /** Reading hiragana untuk contoh kalimat. */
   exampleReading: string | null;
+  /** Arti (terjemahan) contoh kalimat. */
+  exampleMeaning: string | null;
 }
 
 @Injectable()
@@ -94,6 +96,9 @@ export class HafalanService {
           exampleReading: k.normalExample
             ? k.normalExampleReading ?? k.exampleReading
             : k.beginnerExampleReading,
+          exampleMeaning: k.normalExample
+            ? k.normalExampleMeaning ?? k.exampleMeaning
+            : k.beginnerExampleMeaning ?? k.exampleMeaning,
         });
       } else {
         const b = bMap.get(row.itemId);
@@ -113,6 +118,9 @@ export class HafalanService {
           exampleReading: b.normalExample
             ? b.normalExampleReading ?? b.exampleReading
             : b.beginnerExampleReading,
+          exampleMeaning: b.normalExample
+            ? b.normalExampleMeaning ?? b.exampleMeaning
+            : b.beginnerExampleMeaning ?? b.exampleMeaning,
         });
       }
     }
