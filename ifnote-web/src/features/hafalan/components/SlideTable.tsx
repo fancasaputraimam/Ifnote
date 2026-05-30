@@ -12,6 +12,7 @@ import {
   useAiExplainBunpou,
   useAiExplainKotoba,
 } from "@/features/catatan/useCatatan";
+import { splitNumberedExamples } from "@/lib/bunpou-format";
 import { AnimatePresence, motion } from "framer-motion";
 import type { HafalanSlide, Mastery } from "@/lib/types";
 
@@ -207,20 +208,65 @@ function SlideRow({ item, hideMeaning }: RowProps) {
                   Contoh kalimat
                 </span>
               </div>
-              <p className="text-sm text-ink-700 dark:text-paper-50">
-                <JapaneseText
-                  text={item.example ?? ""}
-                  reading={item.exampleReading || undefined}
-                  kanaText={item.exampleReading || undefined}
-                  sentenceMode
-                  enableKanjiClick
-                />
-              </p>
-              {!hideMeaning && item.exampleMeaning ? (
-                <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-paper-50/70">
-                  {item.exampleMeaning}
-                </p>
-              ) : null}
+              {(() => {
+                // Contoh bisa berupa numbered list ("1. …\n2. …") terutama
+                // untuk bunpou. Pecah jadi per-kalimat supaya furigana
+                // (alignment) bekerja dan penomoran rapi — sama seperti
+                // detail Bunpou di Catatan.
+                const examples = splitNumberedExamples(
+                  item.example ?? "",
+                  item.exampleReading,
+                  item.exampleMeaning,
+                );
+                if (examples.length <= 1) {
+                  const ex = examples[0];
+                  return (
+                    <>
+                      <p className="text-sm text-ink-700 dark:text-paper-50">
+                        <JapaneseText
+                          text={ex?.jp ?? item.example ?? ""}
+                          reading={ex?.reading || item.exampleReading || undefined}
+                          kanaText={ex?.reading || item.exampleReading || undefined}
+                          sentenceMode
+                          enableKanjiClick
+                        />
+                      </p>
+                      {!hideMeaning && (ex?.meaning || item.exampleMeaning) ? (
+                        <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-paper-50/70">
+                          {ex?.meaning || item.exampleMeaning}
+                        </p>
+                      ) : null}
+                    </>
+                  );
+                }
+                return (
+                  <ol className="space-y-2">
+                    {examples.map((ex, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="mt-0.5 shrink-0 text-xs font-semibold tabular-nums text-ink-400">
+                          {i + 1}.
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-ink-700 dark:text-paper-50">
+                            <JapaneseText
+                              text={ex.jp}
+                              reading={ex.reading || undefined}
+                              kanaText={ex.reading || undefined}
+                              sentenceMode
+                              enableKanjiClick
+                            />
+                          </p>
+                          {!hideMeaning && ex.meaning ? (
+                            <p className="mt-0.5 text-sm leading-relaxed text-ink-500 dark:text-paper-50/70">
+                              {ex.meaning}
+                            </p>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                );
+              })()}
             </div>
           ) : aiPending ? (
             <div className="rounded-xl border border-paper-200 bg-paper-50/60 px-3 py-2 text-sm text-ink-700 dark:border-ink-700 dark:bg-ink-900/30 dark:text-paper-50">
