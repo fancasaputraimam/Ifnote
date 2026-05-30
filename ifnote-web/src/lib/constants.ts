@@ -16,6 +16,7 @@ export const ROUTES = {
     quiz: "/app/quiz",
     ai: "/app/ai",
     settings: "/app/settings",
+    profile: "/app/profile",
   },
 } as const;
 

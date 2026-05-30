@@ -156,7 +156,7 @@ export function ProfileDropdown({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onSelect={() => router.push(ROUTES.app.settings)}>
+        <DropdownMenuItem onSelect={() => router.push(ROUTES.app.profile)}>
           <User size={16} strokeWidth={2} className="opacity-70" aria-hidden />
           <span>Profil</span>
         </DropdownMenuItem>
