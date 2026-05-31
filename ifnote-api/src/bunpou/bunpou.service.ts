@@ -196,6 +196,7 @@ export class BunpouService {
     const data = r.data as {
       meaning?: string;
       reading?: string;
+      readingRuby?: string;
       formulaPatterns?: string[];
       transformExamples?: Array<{ from?: string; to?: string }>;
       usage?: string[] | string;
@@ -243,6 +244,7 @@ export class BunpouService {
 
     if (!item.note && data.note) patch.note = data.note;
     if (!item.reading && data.reading) patch.reading = data.reading;
+    if (!item.readingRuby && data.readingRuby) patch.readingRuby = data.readingRuby;
 
     const ex = (data.examples ?? [])[0];
     if (ex) {

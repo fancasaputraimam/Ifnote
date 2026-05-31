@@ -123,6 +123,12 @@ export function CatatanRow({ item, onEdit }: Props) {
                   // dari endpoint catatan list sudah melalui field ini.
                   ((item.detail as { reading?: string | null })?.reading) || undefined
                 }
+                readingRuby={
+                  // Furigana per-kanji eksplisit dari AI ("勉(べん)強(きょう)"),
+                  // kalau tersedia. Jadi sumber utama; kalau null fallback ke
+                  // pemecah kamus dari `reading`.
+                  ((item.detail as { readingRuby?: string | null })?.readingRuby) || undefined
+                }
                 kanaText={
                   ((item.detail as { reading?: string | null })?.reading) || undefined
                 }

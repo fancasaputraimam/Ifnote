@@ -7,11 +7,13 @@ import {
   alignReadingToText,
   buildSafeRubySegments,
   parseJapaneseText,
+  parseParentheticalReadings,
   stripParentheticalReadings,
   stripRubyHtml,
   stripHtmlTags,
   type RubySegment,
 } from "@/lib/japanese-text";
+import { expandSegmentsPerKanji } from "@/lib/kanji-readings";
 import { cn } from "@/lib/utils";
 import type { JpMode } from "@/lib/types";
 
@@ -25,6 +27,13 @@ interface Props {
   text?: string | null;
   /** Reading tunggal kalau backend menyediakannya secara terpisah. */
   reading?: string | null;
+  /**
+   * Furigana per-kanji eksplisit dari AI, format parenthetical
+   * "勉(べん)強(きょう)". Kalau ada, ini jadi sumber UTAMA furigana di mode
+   * Normal (di-parse langsung → per-kanji), mengalahkan alignment heuristik.
+   * Kalau kosong, fallback ke jalur lama (align + pemecah kamus).
+   */
+  readingRuby?: string | null;
   /**
    * Teks kana penuh untuk mode Pemula (beginner). Ini yang dipakai sebagai
    * teks UTAMA di mode beginner — hiragana/katakana saja, tanpa kanji.
@@ -90,6 +99,7 @@ interface Props {
 export function JapaneseText({
   text,
   reading,
+  readingRuby,
   kanaText,
   ruby,
   mode,
@@ -203,6 +213,10 @@ export function JapaneseText({
 
   if (ruby && ruby.length > 0) {
     segments = ruby;
+  } else if (readingRuby && readingRuby.trim()) {
+    // Sumber utama: furigana per-kanji eksplisit dari AI ("勉(べん)強(きょう)").
+    // Parse langsung jadi segmen per-kanji — tidak perlu align/kamus.
+    segments = parseParentheticalReadings(readingRuby.trim());
   } else if (sentenceMode) {
     const r = buildSafeRubySegments(text ?? "", reading ?? "", {
       sentenceMode: true,
@@ -249,10 +263,14 @@ export function JapaneseText({
     );
   }
 
-  // Ruby reliable → render furigana di atas kanji.
+  // Ruby reliable → render furigana di atas kanji. Pecah furigana yang
+  // tadinya per-kotoba (1 ruby untuk seluruh run kanji) menjadi per-kanji
+  // (mis. 勉強→べんきょう jadi 勉(べん) 強(きょう)). Kalau pembacaan tidak
+  // bisa dipecah aman, segmen tetap utuh (perilaku lama).
+  const perKanji = expandSegmentsPerKanji(segments);
   return (
     <span className={wrapperClass}>
-      {segments.map((seg, i) => {
+      {perKanji.map((seg, i) => {
         if (seg.reading) {
           return (
             <ruby key={`r-${i}`}>

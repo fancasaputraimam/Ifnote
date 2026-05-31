@@ -66,6 +66,9 @@ model Kotoba {
   userId          String   @db.Uuid
   jp              String
   reading         String?
+  /// Furigana per-kanji format parenthetical, mis. "勉(べん)強(きょう)".
+  /// Diisi AI bila tersedia; null → frontend pecah sendiri dari `reading`.
+  readingRuby     String?
   romaji          String?
   meaning         String
   type            String?
@@ -98,6 +101,9 @@ model Bunpou {
   userId          String   @db.Uuid
   pattern         String
   reading         String?
+  /// Furigana per-kanji format parenthetical, mis. "勉(べん)強(きょう)".
+  /// Diisi AI bila tersedia; null → frontend pecah sendiri dari `reading`.
+  readingRuby     String?
   meaning         String
   formula         String?
   usage           String?

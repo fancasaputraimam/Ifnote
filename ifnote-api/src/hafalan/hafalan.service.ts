@@ -25,6 +25,8 @@ interface ResolvedItem {
   jpOrPattern: string;
   /** Reading hiragana untuk kanji utama (untuk furigana). */
   reading: string | null;
+  /** Furigana per-kanji eksplisit dari AI ("勉(べん)強(きょう)"), kalau ada. */
+  readingRuby: string | null;
   meaning: string;
   level: string | null;
   mastery: string;
@@ -85,6 +87,7 @@ export class HafalanService {
           itemId: k.id,
           jpOrPattern: k.jp,
           reading: k.reading,
+          readingRuby: k.readingRuby,
           meaning: k.meaning,
           level: k.level,
           mastery: k.mastery,
@@ -111,6 +114,7 @@ export class HafalanService {
           itemId: b.id,
           jpOrPattern: b.pattern,
           reading: b.reading,
+          readingRuby: b.readingRuby,
           meaning: b.meaning,
           level: b.level,
           mastery: b.mastery,

@@ -67,6 +67,7 @@ export interface Kotoba {
   id: string;
   jp: string;
   reading: string | null;
+  readingRuby?: string | null;
   romaji: string | null;
   meaning: string;
   type: string | null;
@@ -90,6 +91,7 @@ export interface Bunpou {
   id: string;
   pattern: string;
   reading: string | null;
+  readingRuby?: string | null;
   meaning: string;
   formula: string | null;
   usage: string | null;
@@ -144,6 +146,8 @@ export interface HafalanSlide {
     jpOrPattern: string;
     /** Reading hiragana untuk kanji utama (untuk furigana). */
     reading: string | null;
+    /** Furigana per-kanji eksplisit dari AI ("勉(べん)強(きょう)"), kalau ada. */
+    readingRuby?: string | null;
     meaning: string;
     level: JlptLevel | null;
     mastery: Mastery;

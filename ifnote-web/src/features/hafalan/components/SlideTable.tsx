@@ -142,6 +142,7 @@ function SlideRow({ item, hideMeaning, index }: RowProps) {
             <JapaneseText
               text={item.jpOrPattern}
               reading={item.reading || undefined}
+              readingRuby={item.readingRuby || undefined}
               kanaText={item.reading || undefined}
               inert
             />

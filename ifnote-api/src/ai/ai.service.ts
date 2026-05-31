@@ -81,6 +81,11 @@ export class AiService {
       "Jika input Jepang, kembalikan kata aslinya. " +
       "Jika input adalah deskripsi/keyword (mis. 'kata Jepang untuk berat'), pilih kotoba paling cocok. " +
       "Selalu kembalikan jp dalam huruf Jepang, meaning dalam Bahasa Indonesia, reading dalam hiragana. " +
+      "Sertakan juga readingRuby: pembacaan PER-KANJI dalam format kurung, mis. " +
+      "'勉(べん)強(きょう)' — tiap kanji diikuti pembacaannya di dalam ( ). " +
+      "Okurigana (kana setelah kanji) ditulis apa adanya di luar kurung. " +
+      "Untuk jukujikun yang tidak bisa dipecah per-kanji (mis. 今日→きょう), tulis utuh '今日(きょう)'. " +
+      "Kalau jp tidak mengandung kanji, readingRuby = kosong. " +
       "Setiap contoh kalimat WAJIB punya reading + meaning sendiri yang cocok DENGAN KALIMAT ITU. " +
       "DILARANG memakai readingnya kalimat lain.\n" +
       "  - beginnerExampleReading = hiragana penuh DARI beginnerExample SAJA.\n" +
@@ -93,7 +98,7 @@ export class AiService {
       "normalExample='\u8a66\u9a13\u306e\u524d\u306b\u5fc5\u305a\u5fa9\u7fd2\u3057\u307e\u3059\u3002', normalExampleReading='\u3057\u3051\u3093\u306e\u307e\u3048\u306b\u304b\u306a\u3089\u305a\u3075\u304f\u3057\u3085\u3046\u3057\u307e\u3059\u3002', normalExampleMeaning='Saya selalu mengulang sebelum ujian.'. " +
       "Contoh SALAH: beginnerExampleReading=normalExampleReading (BERBEDA KALIMAT, jangan!). " +
       "Contoh SALAH: beginnerExampleMeaning='pasti' (cuma mengulang meaning). " +
-      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","beginnerExampleReading":"string","beginnerExampleMeaning":"string","normalExample":"string","normalExampleReading":"string","normalExampleMeaning":"string","exampleReading":"string","exampleMeaning":"string","note":"string"}';
+      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","jp":"string","reading":"string","readingRuby":"string","romaji":"string","meaning":"string","type":"string","level":"N5|N4|N3|N2|N1","beginnerExample":"string","beginnerExampleReading":"string","beginnerExampleMeaning":"string","normalExample":"string","normalExampleReading":"string","normalExampleMeaning":"string","exampleReading":"string","exampleMeaning":"string","note":"string"}';
     const usr =
       `Input user: "${dto.jp}". ` +
       "Identifikasi kotoba Jepang yang paling sesuai dan kembalikan struktur lengkap. " +
@@ -197,7 +202,7 @@ export class AiService {
       "examples sebagai array {jp,reading,meaning} berisi 1-3 kalimat contoh lengkap; reading harus hiragana penuh, meaning harus terjemahan Indonesia natural. " +
       "commonMistakes sebagai array string pendek (jangan paragraph panjang). " +
       "note pendek opsional. JANGAN tag <ruby> atau <rt>. JANGAN markdown. JANGAN gabungkan formula dan contoh perubahan dalam satu field. " +
-      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","meaning":"string","level":"N5|N4|N3|N2|N1|","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string","readingFrom":"string","readingTo":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
+      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","readingRuby":"string","meaning":"string","level":"N5|N4|N3|N2|N1|","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string","readingFrom":"string","readingTo":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
     const usr =
       `Input user: "${dto.pattern}". ` +
       "sourceInput = teks asli yang user ketik. inputLanguage = bahasa input. " +
@@ -227,7 +232,7 @@ export class AiService {
       "Contoh BENAR: 'kata kerja bentuk masu (tanpa masu) + nagara'. Contoh SALAH: '動詞ます形 + ながら'. " +
       "Partikel/akhiran Jepang boleh dalam kana, tapi nama bentuk kata HARUS Indonesia. " +
       "transformExamples sebagai array {from,to}. usage sebagai array kalimat pendek. examples sebagai array {jp, reading, meaning}. commonMistakes sebagai array. JANGAN tag <ruby>. JANGAN markdown. " +
-      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","meaning":"string","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
+      'Schema: {"sourceInput":"string","inputLanguage":"japanese|indonesian|mixed|unknown","detectedFromSentence":false,"pattern":"string","reading":"string","readingRuby":"string","meaning":"string","formulaPatterns":["string"],"transformExamples":[{"from":"string","to":"string"}],"usage":["string"],"examples":[{"jp":"string","reading":"string","meaning":"string"}],"commonMistakes":["string"],"note":"string"}';
     const usr =
       `Input user: "${dto.pattern}". ` +
       "sourceInput = teks asli yang user ketik. inputLanguage = bahasa input. " +

@@ -259,6 +259,7 @@ export class KotobaService {
       type?: string;
       level?: string;
       reading?: string;
+      readingRuby?: string;
       kana?: string;
       yomi?: string;
       furigana?: string;
@@ -291,6 +292,7 @@ export class KotobaService {
     const patch: Record<string, string> = {};
     if (!item.type && data.type) patch.type = data.type;
     if (!item.reading && reading) patch.reading = reading;
+    if (!item.readingRuby && data.readingRuby) patch.readingRuby = data.readingRuby;
     if (!item.romaji && data.romaji) patch.romaji = data.romaji;
     if (!item.beginnerExample && exampleJp) patch.beginnerExample = exampleJp;
     if (!item.normalExample && exampleJp) patch.normalExample = exampleJp;

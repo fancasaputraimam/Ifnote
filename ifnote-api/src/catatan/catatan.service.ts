@@ -101,6 +101,7 @@ export class CatatanService {
         example: k.normalExample ?? k.beginnerExample ?? null,
         detail: {
           reading: k.reading,
+          readingRuby: k.readingRuby,
           romaji: k.romaji,
           type: k.type,
           beginnerExample: k.beginnerExample,
@@ -127,6 +128,7 @@ export class CatatanService {
         example: b.normalExample ?? b.beginnerExample ?? null,
         detail: {
           reading: b.reading,
+          readingRuby: b.readingRuby,
           formula: b.formula,
           usage: b.usage,
           beginnerExample: b.beginnerExample,
