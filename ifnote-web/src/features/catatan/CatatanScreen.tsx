@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -237,10 +238,19 @@ export function CatatanScreen() {
         />
       ) : (
         <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={`${item.noteType}-${item.id}`}>
+          {items.map((item, i) => (
+            <motion.li
+              key={`${item.noteType}-${item.id}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.25,
+                ease: "easeOut",
+                delay: Math.min(i * 0.03, 0.3),
+              }}
+            >
               <CatatanRow item={item} onEdit={onEdit} />
-            </li>
+            </motion.li>
           ))}
         </ul>
       )}

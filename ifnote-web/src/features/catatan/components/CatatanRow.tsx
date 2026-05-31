@@ -49,38 +49,28 @@ export function CatatanRow({ item, onEdit }: Props) {
   const aiPending = isKotoba ? aiKotoba.isPending : aiBunpou.isPending;
 
   const onExplain = async () => {
+    // Loader inline (ExplainLoading, digerakkan `aiPending`) sudah jadi
+    // indikator proses. Jangan pakai notify.promise di sini — itu memunculkan
+    // toast loading kedua yang berputar bersamaan (loading dobel). Cukup
+    // toast hasil: sukses / error.
     try {
-      await notify.promise(
-        async () => {
-          if (isKotoba) {
-            await aiKotoba.mutateAsync(item.id);
-          } else {
-            await aiBunpou.mutateAsync(item.id);
-          }
-        },
-        {
-          loading: {
-            title: "AI sedang membuat penjelasan…",
-            message: "Tunggu sebentar ya.",
-            icon: "✨",
-          },
-          success: {
-            title: "Penjelasan disimpan",
-            message: "Kamu bisa membukanya lagi tanpa analisa ulang.",
-            icon: "🌸",
-          },
-          error: (err) => {
-            const m = mapApiErrorToUserMessage(err, {
-              title: "Penjelasan gagal dibuat",
-              message: "Coba lagi sebentar.",
-            });
-            return { title: m.title, message: m.message, icon: "⚠️" };
-          },
-        },
+      if (isKotoba) {
+        await aiKotoba.mutateAsync(item.id);
+      } else {
+        await aiBunpou.mutateAsync(item.id);
+      }
+      notify.success(
+        "Penjelasan disimpan",
+        "Kamu bisa membukanya lagi tanpa analisa ulang.",
+        { icon: "🌸" },
       );
       // Invalidasi sudah di-handle oleh hook bila `generated: true`.
-    } catch {
-      // notify.promise sudah menampilkan toast error — swallow.
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Penjelasan gagal dibuat",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
@@ -170,10 +160,15 @@ export function CatatanRow({ item, onEdit }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-paper-200 px-3 py-4 text-sm dark:border-ink-700 sm:px-4">
+            <motion.div
+              initial={{ y: 6, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.22, ease: "easeOut", delay: 0.06 }}
+              className="border-t border-paper-200 px-3 py-4 text-sm dark:border-ink-700 sm:px-4"
+            >
               {/* Cached vs missing explanation states */}
               {!explained && aiPending ? (
                 <ExplainLoading />
@@ -206,7 +201,7 @@ export function CatatanRow({ item, onEdit }: Props) {
                   Hapus
                 </Button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         ) : null}
       </AnimatePresence>

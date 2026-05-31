@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { loadEnv } from "./config/env";
 import { HttpErrorFilter } from "./common/filters/http-error.filter";
@@ -14,6 +15,7 @@ async function bootstrap() {
   });
 
   app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(cookieParser());
   app.enableCors({
     origin: env.frontendUrl,
     credentials: true,

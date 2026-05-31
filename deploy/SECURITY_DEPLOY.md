@@ -137,7 +137,7 @@ Setelah hardening sekarang:
 
 - `POST /api/auth/login`     : 5 attempt / 15 menit per IP
 - `POST /api/auth/register`  : 5 attempt / 1 jam per IP
-- AI endpoints              : tidak ada limit khusus (di-cover global default 60/min)
+- AI endpoints              : 20 request / menit per user (bulk-kotoba, generate-quiz, create-hafalan dibatasi 5/menit)
 - Default global            : 60 request / menit per IP (lapisan paling kasar)
 
 Limiter saat ini in-memory (`@nestjs/throttler` default). Kalau scale

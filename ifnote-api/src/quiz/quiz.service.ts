@@ -48,8 +48,10 @@ export class QuizService {
     const meaningsBunpou = bunpou.map((b) => b.meaning).filter(Boolean);
 
     const pickDistractors = (excluded: string, pool: string[]): string[] => {
-      const filtered = pool.filter((p) => p && p !== excluded);
-      const shuffled = filtered.slice().sort(() => Math.random() - 0.5);
+      // Dedup dulu: kalau dua catatan punya arti sama, jangan sampai
+      // muncul dua pilihan identik (4 opsi tapi kembar = membingungkan).
+      const unique = Array.from(new Set(pool.filter((p) => p && p !== excluded)));
+      const shuffled = unique.slice().sort(() => Math.random() - 0.5);
       return shuffled.slice(0, 3);
     };
 

@@ -9,6 +9,9 @@ interface ChatMessage {
   content: string;
 }
 
+/** Batas waktu satu panggilan ke provider AI. Lewat ini → abort + error rapi. */
+const AI_FETCH_TIMEOUT_MS = 30_000;
+
 export interface AiChatJsonResult<T = unknown> {
   ok: boolean;
   source: "ai" | "mock";
@@ -235,11 +238,19 @@ export class AiClientService {
     const body = this.buildBody(cfg, system, user);
     const headers = this.buildHeaders(cfg);
 
+    // Hard timeout: tanpa ini, provider yang hang membuat request
+    // menggantung tanpa batas — koneksi Node tertahan dan toast loading
+    // di frontend berputar selamanya. AbortController membatalkan fetch
+    // dan jatuh ke catch di bawah (jadi error rapi, bukan hang).
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT_MS);
+
     try {
       const res = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -314,9 +325,21 @@ export class AiClientService {
       await this.log(userId, mode, user, "ok", undefined, content);
       return { ok: true, source: "ai", data: parsed };
     } catch (err) {
-      this.logger.error(`AI call failed (${mode}): ${(err as Error).message}`);
-      await this.log(userId, mode, user, "error", (err as Error).message);
-      return { ok: false, source: "mock", message: "AI tidak dapat dihubungi" };
+      const aborted = (err as Error).name === "AbortError";
+      const detail = aborted
+        ? `timeout setelah ${AI_FETCH_TIMEOUT_MS / 1000}s`
+        : (err as Error).message;
+      this.logger.error(`AI call failed (${mode}): ${detail}`);
+      await this.log(userId, mode, user, "error", detail);
+      return {
+        ok: false,
+        source: "mock",
+        message: aborted
+          ? "AI terlalu lama merespon. Coba lagi atau ganti model."
+          : "AI tidak dapat dihubungi",
+      };
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

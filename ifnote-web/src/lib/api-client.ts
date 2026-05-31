@@ -1,17 +1,19 @@
-import { TOKEN_STORAGE_KEY } from "./constants";
-import { safeStorage } from "./utils";
-
 /**
  * Tiny typed fetch wrapper around the backend.
  *
- * - Reads NEXT_PUBLIC_API_BASE_URL at runtime (never hardcoded).
- * - Optionally attaches the Bearer token from localStorage (MVP).
- * - Always returns parsed JSON (or throws ApiError).
- * - 401 triggers a custom event 'ifnote:unauthorized' so the AuthProvider
- *   can clear the session.
+ * AUTH MODEL (httpOnly cookie):
+ *  - Requests use RELATIVE paths ("/api/...") so the browser talks
+ *    same-origin. Production VPS routes /api → backend via Nginx; Vercel
+ *    and local dev use a Next.js rewrite proxy (see next.config.js).
+ *  - `credentials: "include"` sends the httpOnly auth cookie automatically.
+ *  - No Authorization header / no token in JS: the JWT lives only in the
+ *    httpOnly cookie, so XSS cannot read it.
+ *  - 401 triggers a custom event 'ifnote:unauthorized' so the AuthProvider
+ *    can clear the session.
  *
- * SECURITY TODO: localStorage tokens are vulnerable to XSS. Move to
- * httpOnly cookies once backend supports cookie/session auth.
+ * To point at a cross-origin backend WITHOUT the proxy you would also need
+ * the backend cookie to be SameSite=None; Secure. The proxy approach keeps
+ * everything same-origin and is the supported path.
  */
 
 export class ApiError extends Error {
@@ -30,16 +32,20 @@ interface RequestOpts {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined | null>;
   signal?: AbortSignal;
-  /** Skip Authorization header even if token exists (auth/login etc). */
+  /** Kept for source-compat; cookie auth means we never attach a token anyway. */
   anonymous?: boolean;
 }
 
+/**
+ * Base URL for API calls. Default is "" (relative → same-origin), which is
+ * what the cookie auth model needs. An explicit NEXT_PUBLIC_API_BASE_URL is
+ * honored for legacy/absolute setups, but cross-origin cookies then require
+ * SameSite=None on the backend.
+ */
 function getBaseUrl(): string {
-  // Read each call so a runtime change picks up. Falls back to localhost dev.
-  return (
-    (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_BASE_URL) ||
-    "http://localhost:3001"
-  ).replace(/\/+$/, "");
+  const explicit =
+    typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_BASE_URL : undefined;
+  return (explicit ?? "").replace(/\/+$/, "");
 }
 
 function buildQuery(query?: RequestOpts["query"]): string {
@@ -63,17 +69,13 @@ export async function apiRequest<T = unknown>(
   };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
-  if (!opts.anonymous) {
-    const token = safeStorage.get(TOKEN_STORAGE_KEY);
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     signal: opts.signal,
-    credentials: "omit", // switch to "include" once backend uses cookies
+    // Send + receive the httpOnly auth cookie.
+    credentials: "include",
   });
 
   // 401 → broadcast for auth provider

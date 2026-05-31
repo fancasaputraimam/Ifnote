@@ -4,7 +4,7 @@ import { ReactNode, createContext, useCallback, useContext, useEffect, useState 
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
-import { ROUTES, TOKEN_STORAGE_KEY } from "@/lib/constants";
+import { ROUTES, AUTH_PRESENT_KEY } from "@/lib/constants";
 import { ApiError } from "@/lib/api-client";
 import type { MeResponse, SessionUser } from "@/lib/types";
 import { safeStorage } from "@/lib/utils";
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: ProviderProps) {
   // Cross-tab sync: if another tab logs out, reflect here
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== TOKEN_STORAGE_KEY) return;
+      if (e.key !== AUTH_PRESENT_KEY) return;
       void refresh();
     };
     window.addEventListener("storage", onStorage);

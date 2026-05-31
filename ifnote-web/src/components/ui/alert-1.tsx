@@ -133,9 +133,10 @@ const alertVariants = cva(
   },
 );
 
-// Per-variant left accent stripe. The `secondary` variant intentionally
-// renders a transparent stripe so notification cards (which always use
-// `variant="secondary"`) stay visually neutral — no colored left bar.
+// Per-variant left accent stripe. Toasts map each notification type to its
+// own variant (success→leaf, error→destructive, dst — lihat VARIANT_TO_ALERT
+// di Toast.tsx), jadi tiap toast membawa warna stripe-nya sendiri. Hanya
+// `secondary` yang sengaja transparan, untuk alert inline yang netral.
 const STRIPE: Record<NonNullable<AlertProps["variant"]>, string> = {
   primary: "bg-accent-500",
   success: "bg-leaf-500",
@@ -146,8 +147,8 @@ const STRIPE: Record<NonNullable<AlertProps["variant"]>, string> = {
 };
 
 // Per-variant icon bubble background (only used when appearance="light").
-// `secondary` uses a neutral paper bubble so toasts — which always pick
-// the secondary variant — don't carry a colored icon halo.
+// Toasts pick a colored bubble per type (lihat VARIANT_TO_ALERT di Toast.tsx).
+// `secondary` uses a neutral paper bubble — dipakai alert inline yang netral.
 const ICON_BUBBLE: Record<NonNullable<AlertProps["variant"]>, string> = {
   primary: "bg-accent-500/15 text-accent-600 dark:text-accent-300",
   success: "bg-leaf-500/15 text-leaf-600 dark:text-leaf-500",

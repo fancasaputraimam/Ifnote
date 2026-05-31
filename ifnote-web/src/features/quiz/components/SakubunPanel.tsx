@@ -86,34 +86,25 @@ export function SakubunPanel() {
       return;
     }
     try {
-      const r = await notify.promise(
-        gen.mutateAsync({ bunpouIds: ids, level: "beginner" }),
-        {
-          loading: {
-            title: "AI sedang membuat sakubun…",
-            message: "Menggunakan bunpou yang kamu pilih.",
-            icon: "✨",
-          },
-          success: {
-            title: "Sakubun selesai",
-            message: "Periksa hasilnya dan pelajari bunpou yang dipakai.",
-            icon: "🌸",
-          },
-          error: (err) => {
-            const m = mapApiErrorToUserMessage(err, {
-              title: "Sakubun gagal dibuat",
-              message: "Coba lagi sebentar.",
-            });
-            return { title: m.title, message: m.message, icon: "⚠️" };
-          },
-        },
+      // Loader inline (<AiLoading>, digerakkan `gen.isPending`) sudah jadi
+      // indikator proses. Jangan pakai notify.promise — itu memunculkan toast
+      // loading kedua yang berputar bersamaan (loading dobel). Cukup toast hasil.
+      const r = await gen.mutateAsync({ bunpouIds: ids, level: "beginner" });
+      notify.success(
+        "Sakubun selesai",
+        "Periksa hasilnya dan pelajari bunpou yang dipakai.",
+        { icon: "🌸" },
       );
       setResult(r.data ?? null);
       setRequested(
         (r.requested ?? []).map((x) => ({ id: x.id, pattern: x.pattern })),
       );
-    } catch {
-      // notify.promise sudah menampilkan toast error — swallow.
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Sakubun gagal dibuat",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 

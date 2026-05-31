@@ -125,37 +125,26 @@ export function KotobaDialog({
   /** Bulk flow — save all selected items here, then close modal. */
   const onBulkSaveAll = async (payloads: KotobaWritePayload[]) => {
     if (payloads.length === 0) return;
+    // Loader inline (LoadingState "Menyimpan kotoba…" di KotobaBulkAi, state
+    // `saving`) sudah jadi indikator proses. Jangan pakai notify.promise — itu
+    // memunculkan toast loading kedua yang berputar bersamaan (loading dobel).
     try {
-      await notify.promise(
-        async () => {
-          // Sequential to keep hafalan_order deterministic.
-          for (const p of payloads) {
-            await create.mutateAsync(p);
-          }
-        },
-        {
-          loading: {
-            title: "Menyimpan kotoba",
-            message: `Sedang menambahkan ${payloads.length} kotoba…`,
-            icon: "📚",
-          },
-          success: {
-            title: "Kotoba berhasil disimpan",
-            message: `${payloads.length} kotoba baru masuk ke Catatan.`,
-            icon: "🌸",
-          },
-          error: (err) => {
-            const m = mapApiErrorToUserMessage(err, {
-              title: "Gagal menyimpan kotoba",
-              message: "Coba lagi sebentar.",
-            });
-            return { title: m.title, message: m.message, icon: "⚠️" };
-          },
-        },
+      // Sequential to keep hafalan_order deterministic.
+      for (const p of payloads) {
+        await create.mutateAsync(p);
+      }
+      notify.success(
+        "Kotoba berhasil disimpan",
+        `${payloads.length} kotoba baru masuk ke Catatan.`,
+        { icon: "🌸" },
       );
       onClose();
-    } catch {
-      // notify.promise sudah menampilkan toast error — swallow.
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Gagal menyimpan kotoba",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 

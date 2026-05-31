@@ -5,12 +5,15 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { Throttle } from "@nestjs/throttler";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
 import { JwtUser } from "../common/auth/jwt.types";
+import { setAuthCookie, clearAuthCookie } from "../common/auth/auth-cookie";
 import { AuthService } from "./auth.service";
 import { LoginDto, RegisterDto } from "./dto";
 
@@ -22,11 +25,19 @@ export class AuthController {
    * Register — ketat: max 5 attempt per IP per 1 jam.
    * Tujuan: cegah bot mass-register tanpa mengganggu user normal
    * yang biasanya tidak akan mendaftar lebih dari sekali.
+   *
+   * Token di-set sebagai httpOnly cookie (primary). Tetap dikembalikan
+   * di response body untuk kompatibilitas klien non-browser / transisi.
    */
   @Post("register")
   @Throttle({ default: { limit: 5, ttl: 60 * 60 * 1000 } })
-  register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.register(dto);
+    setAuthCookie(res, result.token);
+    return result;
   }
 
   /**
@@ -41,15 +52,22 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.login(dto);
+    setAuthCookie(res, result.token);
+    return result;
   }
 
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout() {
-    // Stateless JWT — frontend just discards the token.
-    // For session revocation we'd need a token blacklist; out of scope for MVP.
+  logout(@Res({ passthrough: true }) res: Response) {
+    // Stateless JWT — selain frontend membuang token, kita juga hapus
+    // httpOnly cookie supaya sesi benar-benar berakhir di browser.
+    // Untuk revocation penuh perlu token blacklist (out of scope MVP).
+    clearAuthCookie(res);
     return;
   }
 

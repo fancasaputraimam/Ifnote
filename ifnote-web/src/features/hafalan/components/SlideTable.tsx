@@ -41,8 +41,8 @@ export function SlideTable({ items, hideMeaning }: Props) {
       </div>
 
       <ul className="divide-y divide-paper-200 dark:divide-ink-700">
-        {items.map((it) => (
-          <SlideRow key={it.orderRefId} item={it} hideMeaning={hideMeaning} />
+        {items.map((it, i) => (
+          <SlideRow key={it.orderRefId} item={it} hideMeaning={hideMeaning} index={i} />
         ))}
       </ul>
     </div>
@@ -52,9 +52,10 @@ export function SlideTable({ items, hideMeaning }: Props) {
 interface RowProps {
   item: Item;
   hideMeaning: boolean;
+  index: number;
 }
 
-function SlideRow({ item, hideMeaning }: RowProps) {
+function SlideRow({ item, hideMeaning, index }: RowProps) {
   const [open, setOpen] = useState(false);
   const masteryMut = useHafalanMastery();
   const aiKotoba = useAiExplainKotoba();
@@ -92,42 +93,40 @@ function SlideRow({ item, hideMeaning }: RowProps) {
   };
 
   const onExplain = async () => {
+    // Loader inline (panel LoaderGrid, digerakkan `aiPending`) sudah jadi
+    // indikator proses. Jangan pakai notify.promise — itu memunculkan toast
+    // loading kedua yang berputar bersamaan (loading dobel). Cukup toast hasil.
     try {
-      await notify.promise(
-        async () => {
-          if (item.itemType === "kotoba") {
-            await aiKotoba.mutateAsync(item.itemId);
-          } else {
-            await aiBunpou.mutateAsync(item.itemId);
-          }
-        },
-        {
-          loading: {
-            title: "AI sedang membuat penjelasan…",
-            message: "Tunggu sebentar ya.",
-            icon: "✨",
-          },
-          success: {
-            title: "Penjelasan disimpan",
-            message: "Kamu bisa membukanya lagi tanpa analisa ulang.",
-            icon: "🌸",
-          },
-          error: (err) => {
-            const m = mapApiErrorToUserMessage(err, {
-              title: "Penjelasan gagal dibuat",
-              message: "Coba lagi sebentar.",
-            });
-            return { title: m.title, message: m.message, icon: "⚠️" };
-          },
-        },
+      if (item.itemType === "kotoba") {
+        await aiKotoba.mutateAsync(item.itemId);
+      } else {
+        await aiBunpou.mutateAsync(item.itemId);
+      }
+      notify.success(
+        "Penjelasan disimpan",
+        "Kamu bisa membukanya lagi tanpa analisa ulang.",
+        { icon: "🌸" },
       );
-    } catch {
-      // notify.promise sudah menampilkan toast error — swallow.
+    } catch (e) {
+      const m = mapApiErrorToUserMessage(e, {
+        title: "Penjelasan gagal dibuat",
+        message: "Coba lagi sebentar.",
+      });
+      notify[m.variant](m.title, m.message);
     }
   };
 
   return (
-    <li className="bg-white dark:bg-ink-800">
+    <motion.li
+      className="bg-white dark:bg-ink-800"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.25,
+        ease: "easeOut",
+        delay: Math.min(index * 0.03, 0.3),
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -180,10 +179,15 @@ function SlideRow({ item, hideMeaning }: RowProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
+            transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="space-y-3 border-t border-paper-200 px-4 py-3 dark:border-ink-700">
+            <motion.div
+              initial={{ y: 6, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.22, ease: "easeOut", delay: 0.06 }}
+              className="space-y-3 border-t border-paper-200 px-4 py-3 dark:border-ink-700"
+            >
           {/* Arti penuh kotoba/bunpou — tidak di-truncate, jadi arti dengan
               beberapa makna (mis. "X, Y, Z") kelihatan semua. */}
           {!hideMeaning && item.meaning ? (
@@ -316,10 +320,10 @@ function SlideRow({ item, hideMeaning }: RowProps) {
               </Button>
             ) : null}
           </div>
-            </div>
+            </motion.div>
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </li>
+    </motion.li>
   );
 }

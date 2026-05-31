@@ -43,7 +43,7 @@ export class CatatanService {
         const ci: Prisma.QueryMode = "insensitive";
         if (table === "kotoba") {
           w.OR = [
-            { jp: { contains: search } },
+            { jp: { contains: search, mode: ci } },
             { romaji: { contains: search, mode: ci } },
             { meaning: { contains: search, mode: ci } },
             { tags: { has: search } },

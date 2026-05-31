@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { ROUTES } from "@/lib/constants";
@@ -38,11 +39,21 @@ export function LoginForm() {
       notify.success("Berhasil masuk", "Selamat belajar lagi di ifNote.", { icon: "🌸" });
       router.replace(ROUTES.app.home);
     } catch (e) {
-      const m = mapApiErrorToUserMessage(e, {
-        title: "Gagal masuk",
-        message: "Cek email dan password kamu.",
-      });
-      notify[m.variant](m.title, m.message);
+      // Pada endpoint login, 401 = kombinasi email/password salah (atau
+      // akun belum terdaftar), BUKAN "sesi berakhir". Tangani eksplisit
+      // supaya pesan tidak menyesatkan.
+      if (e instanceof ApiError && e.status === 401) {
+        notify.warning(
+          "Gagal masuk",
+          "Email atau password salah. Belum punya akun? Daftar dulu.",
+        );
+      } else {
+        const m = mapApiErrorToUserMessage(e, {
+          title: "Gagal masuk",
+          message: "Cek email dan password kamu.",
+        });
+        notify[m.variant](m.title, m.message);
+      }
     } finally {
       setSubmitting(false);
     }

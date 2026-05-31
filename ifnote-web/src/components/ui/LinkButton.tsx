@@ -27,7 +27,9 @@ export function LinkButton({
   return (
     <Link
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium",
+        "transition-[transform,background-color,color] duration-150 ease-out",
+        "active:scale-[0.96] motion-reduce:active:scale-100 motion-reduce:transition-none",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 dark:focus-visible:ring-offset-paper-900",
         size === "sm" && "px-3 py-1.5 text-sm",
         size === "md" && "px-4 py-2 text-sm",

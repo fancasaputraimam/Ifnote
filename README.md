@@ -8,7 +8,6 @@ dengan AI proxy aman di backend.
 
 ```
 IFV2/
-├── PRD_ifNote_Web.md     Spec produk (sumber kebenaran)
 ├── index.html            HTML mockup awal (prototype lokal)
 ├── style.css             CSS mockup
 ├── script.js             JS mockup
@@ -33,7 +32,8 @@ cd ifnote-api
 npm install
 cp .env.example .env                # isi DATABASE_URL + JWT_SECRET
 npm run prisma:migrate -- --name init
-PORT=3001 npm run start:dev          # http://localhost:3001
+npm test                             # unit test (opsional tapi disarankan)
+PORT=3003 npm run start:dev          # http://localhost:3003
 
 # Frontend (terminal kedua)
 cd ifnote-web
@@ -77,20 +77,25 @@ git subtree push --prefix=ifnote-api heroku main
 ```bash
 cd ifnote-web
 npx vercel link
-npx vercel env add NEXT_PUBLIC_API_BASE_URL production
-# masukkan URL Heroku backend
+npx vercel env add API_PROXY_TARGET production
+# masukkan URL Heroku backend (mis. https://ifnote-api.herokuapp.com)
+# Browser tetap memanggil /api/* same-origin; Next.js mem-proxy ke backend
+# supaya httpOnly cookie auth ter-attribute ke domain Vercel.
 npx vercel --prod
 ```
 
 ## Security
 
+- JWT disimpan sebagai **httpOnly cookie** (`SameSite=Lax`, `Secure` di production), bukan localStorage — token tidak terbaca JavaScript sehingga aman dari pencurian via XSS
+- Browser memanggil API lewat path relatif + Next.js rewrite proxy (same-origin), jadi cookie auth bekerja di VPS/Nginx, Vercel+Heroku, maupun dev
 - JWT secret di Heroku Config Vars, tidak di-commit
 - AI API key server-side only, tidak pernah ada di frontend / DB
 - Helmet HTTP headers, CORS allowlist single origin
 - bcrypt cost 10 untuk password hashing
-- Rate limit global 60/min, auth 5-10/min, AI bulk 5/min
+- Rate limit global 60/min, auth register 5/jam & login 5/15min, AI 20/min (bulk & generate 5/min)
 - Semua query Prisma filter by `userId` dari JWT, bukan request body
 - Backup export sanitized (no passwordHash, no AI keys)
+- Unit test untuk crypto, resolusi config AI, owner-guard, hafalan ordering, dan cookie auth (`npm test` di `ifnote-api`)
 
 ## Lisensi
 

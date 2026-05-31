@@ -30,5 +30,13 @@ export const BOTTOM_NAV = [
   { href: ROUTES.app.quiz, label: "Quiz" },
 ] as const;
 
-/** localStorage key for the JWT token (MVP only — see TODO in auth-client). */
-export const TOKEN_STORAGE_KEY = "ifnote.auth.token";
+/**
+ * localStorage key untuk penanda sesi (BUKAN token).
+ *
+ * Setelah migrasi ke httpOnly cookie, JWT mentah tidak lagi disimpan di
+ * localStorage (rawan XSS). Yang disimpan hanya flag boolean "1" sebagai:
+ *   - gate UI cepat (tahu harus panggil /me atau tidak tanpa network)
+ *   - sinkronisasi lintas-tab (logout di satu tab → tab lain ikut)
+ * Token sebenarnya hidup di cookie httpOnly yang tidak terbaca JavaScript.
+ */
+export const AUTH_PRESENT_KEY = "ifnote.auth.present";

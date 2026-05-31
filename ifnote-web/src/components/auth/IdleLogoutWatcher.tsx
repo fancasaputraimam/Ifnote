@@ -25,13 +25,21 @@ export function IdleLogoutWatcher() {
   const { user, logout } = useAuth();
   const firedRef = useRef(false);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(async (reason: "idle" | "manual" = "idle") => {
     if (firedRef.current) return;
     firedRef.current = true;
-    notify.warning(
-      "🔒 Sesi berakhir",
-      "Kamu keluar otomatis karena tidak ada aktivitas.",
-    );
+    if (reason === "manual") {
+      notify.info(
+        "Kamu keluar dari sesi",
+        "Sampai jumpa lagi.",
+        { icon: "👋" },
+      );
+    } else {
+      notify.warning(
+        "🔒 Sesi berakhir",
+        "Kamu keluar otomatis karena tidak ada aktivitas.",
+      );
+    }
     try {
       await logout();
     } finally {
@@ -64,7 +72,7 @@ export function IdleLogoutWatcher() {
       onContinue={acknowledge}
       onLogout={() => {
         forceLogout();
-        void handleLogout();
+        void handleLogout("manual");
       }}
     />
   );

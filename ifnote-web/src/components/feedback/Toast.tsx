@@ -14,9 +14,6 @@
  *  - max 3 visible, stacks vertically
  *
  * Public API: import { notify } from "@/lib/toast"
- *
- * The legacy `toast(message, tone)` export is kept as a thin shim so any
- * call site we missed still renders cleanly until it's migrated.
  */
 
 import { useEffect } from "react";
@@ -288,22 +285,4 @@ function ToastCard({ item }: { item: ToastItem }) {
       </Alert>
     </motion.li>
   );
-}
-
-// ----------------------------------------------------------------------
-// Legacy compatibility shim
-// ----------------------------------------------------------------------
-
-/**
- * @deprecated Use `notify.success/error/warning/info/loading` from `@/lib/toast`.
- * Kept so any not-yet-migrated call site still renders correctly.
- */
-export function toast(
-  message: string,
-  tone: "info" | "success" | "error" | "warning" = "info",
-): void {
-  toastStore.add({
-    variant: tone,
-    title: message,
-  });
 }

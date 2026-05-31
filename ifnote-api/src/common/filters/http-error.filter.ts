@@ -49,6 +49,8 @@ export class HttpErrorFilter implements ExceptionFilter {
           message = "Terlalu banyak percobaan masuk. Coba lagi nanti.";
         } else if (path.includes("/api/auth/register")) {
           message = "Terlalu banyak percobaan daftar. Coba lagi nanti.";
+        } else if (path.includes("/api/ai/")) {
+          message = "Terlalu banyak permintaan AI. Tunggu sebentar sebelum mencoba lagi.";
         } else {
           message = "Terlalu banyak permintaan. Coba lagi sebentar.";
         }

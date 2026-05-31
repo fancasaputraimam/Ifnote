@@ -47,29 +47,6 @@ export function useExplainKotoba() {
   });
 }
 
-export interface TranslateExampleData {
-  exampleMeaning: string;
-}
-
-/**
- * Repair: minta AI mengisi exampleMeaning saja saat hasil
- * `explainKotoba` balik dengan kalimat contoh tapi tanpa terjemahan.
- */
-export function useTranslateExample() {
-  return useMutation({
-    mutationFn: (body: {
-      kotoba: string;
-      meaning: string;
-      normalExample: string;
-      exampleReading?: string;
-    }) =>
-      api.post<AiEnvelope<TranslateExampleData>>(
-        "/api/ai/translate-example",
-        body,
-      ),
-  });
-}
-
 export interface TranslateReadingData {
   reading: string;
 }

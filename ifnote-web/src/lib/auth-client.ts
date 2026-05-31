@@ -1,29 +1,34 @@
 import { api } from "./api-client";
-import { TOKEN_STORAGE_KEY } from "./constants";
+import { AUTH_PRESENT_KEY } from "./constants";
 import type { AuthResponse, MeResponse } from "./types";
 import { safeStorage } from "./utils";
 
 /**
- * Auth client. MVP storage uses localStorage. Move to httpOnly cookies
- * once the backend session/cookie path is implemented.
+ * Auth client. Token disimpan oleh backend sebagai httpOnly cookie —
+ * JavaScript tidak pernah memegang JWT mentah (mitigasi XSS).
+ *
+ * Di sisi frontend kita hanya menyimpan penanda sesi (`AUTH_PRESENT_KEY`)
+ * di localStorage untuk gating UI cepat + sinkronisasi lintas-tab. Ini
+ * bukan kredensial: dipalsukan pun, request tetap gagal di backend karena
+ * cookie-nya yang menentukan.
  *
  * Endpoints:
- *  POST /api/auth/register
- *  POST /api/auth/login
- *  POST /api/auth/logout (no-op on stateless JWT)
+ *  POST /api/auth/register  → set cookie
+ *  POST /api/auth/login     → set cookie
+ *  POST /api/auth/logout    → clear cookie
  *  GET  /api/auth/me
  */
 
 export const authClient = {
   async register(body: { email: string; password: string; name?: string }) {
     const r = await api.post<AuthResponse>("/api/auth/register", body, { anonymous: true });
-    saveToken(r.token);
+    markPresent();
     return r;
   },
 
   async login(body: { email: string; password: string }) {
     const r = await api.post<AuthResponse>("/api/auth/login", body, { anonymous: true });
-    saveToken(r.token);
+    markPresent();
     return r;
   },
 
@@ -31,7 +36,7 @@ export const authClient = {
     try {
       await api.post("/api/auth/logout").catch(() => undefined);
     } finally {
-      clearToken();
+      clearPresent();
     }
   },
 
@@ -39,18 +44,19 @@ export const authClient = {
     return api.get<MeResponse>("/api/auth/me");
   },
 
+  /** Cepat (tanpa network): apakah kemungkinan ada sesi aktif. */
   hasToken(): boolean {
-    return !!safeStorage.get(TOKEN_STORAGE_KEY);
+    return !!safeStorage.get(AUTH_PRESENT_KEY);
   },
 
-  clearToken,
-  saveToken,
+  clearToken: clearPresent,
+  saveToken: markPresent,
 };
 
-function saveToken(token: string) {
-  safeStorage.set(TOKEN_STORAGE_KEY, token);
+function markPresent() {
+  safeStorage.set(AUTH_PRESENT_KEY, "1");
 }
 
-function clearToken() {
-  safeStorage.remove(TOKEN_STORAGE_KEY);
+function clearPresent() {
+  safeStorage.remove(AUTH_PRESENT_KEY);
 }

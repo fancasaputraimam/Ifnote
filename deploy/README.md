@@ -126,7 +126,7 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d ifnote.example.com
 ```
 
-Setelah SSL active, update `FRONTEND_URL` di `.env` backend + `NEXT_PUBLIC_API_BASE_URL` di `.env.local` frontend ke `https://...`, lalu rebuild:
+Setelah SSL active, update `FRONTEND_URL` di `.env` backend ke `https://...`, lalu rebuild:
 
 ```bash
 sudo -u ifnote bash /opt/ifnote/deploy/update.sh

@@ -197,7 +197,11 @@ sudo -u "$APP_USER" bash -lc "
 # ---- 7. Frontend env + install + build -------------------------------------
 log "Setup frontend (ifnote-web)"
 cat > "$APP_DIR/ifnote-web/.env.local" <<EOF
-NEXT_PUBLIC_API_BASE_URL=$PUBLIC_URL
+# Browser memakai path relatif (/api/*) — Nginx mem-proxy ke backend
+# same-origin, dan httpOnly cookie auth ter-attribute ke domain ini.
+# API_PROXY_TARGET dipakai Next.js rewrite sebagai fallback kalau ada
+# request /api yang lolos ke Next (normalnya Nginx menangkapnya dulu).
+API_PROXY_TARGET=http://127.0.0.1:$BACKEND_PORT
 EOF
 chown "$APP_USER:$APP_USER" "$APP_DIR/ifnote-web/.env.local"
 chmod 600 "$APP_DIR/ifnote-web/.env.local"
