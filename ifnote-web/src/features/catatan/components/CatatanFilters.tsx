@@ -1,16 +1,14 @@
 "use client";
 
-import { ButtonHTMLAttributes, ReactNode, useEffect, useId, useRef, useState } from "react";
+import { ReactNode, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ActionSearchBar, type SearchAction } from "@/components/ui/action-search-bar";
-import type { CatatanFilterType } from "@/features/catatan/useCatatan";
 import type { JlptLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
   search: string;
   setSearch: (v: string) => void;
-  type: CatatanFilterType;
-  setType: (v: CatatanFilterType) => void;
   level: JlptLevel | null;
   setLevel: (v: JlptLevel | null) => void;
   /** Saran live (kotoba/bunpou yang sudah dimuat) untuk dropdown search. */
@@ -25,24 +23,16 @@ const LEVELS: { value: JlptLevel; label: string }[] = [
   { value: "N1", label: "Mahir" },
 ];
 
-const TYPE_OPTIONS: { value: CatatanFilterType; icon: string; label: string }[] = [
-  { value: "all", icon: "※", label: "Semua" },
-  { value: "kotoba", icon: "📖", label: "Kotoba" },
-  { value: "bunpou", icon: "📐", label: "Bunpou" },
-];
-
 /**
- * Catatan filter — search + tipe + JLPT level only.
+ * Catatan filter — search + JLPT level.
  *
- * Status filter (Weak/Review/Baru/Lainnya) sengaja dihapus per task spec
- * PART 2. Mastery info masih tampil di tiap row, tapi tidak lagi
- * dipakai untuk memfilter list.
+ * Filter TIPE (Kotoba/Bunpou) dipindah ke card Kotoba/Bunpou (SummaryRow)
+ * yang sekarang clickable. Dropdown ini hanya berisi level JLPT (N5–N1),
+ * ditampilkan sebagai daftar vertikal berjajar ke bawah dengan animasi.
  */
 export function CatatanFilters({
   search,
   setSearch,
-  type,
-  setType,
   level,
   setLevel,
   suggestions = [],
@@ -51,7 +41,7 @@ export function CatatanFilters({
   const panelId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const hasActiveFilter = type !== "all" || level !== null;
+  const hasActiveFilter = level !== null;
 
   // Close panel when clicking outside (mobile-friendly).
   useEffect(() => {
@@ -76,9 +66,9 @@ export function CatatanFilters({
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  const resetAll = () => {
-    setType("all");
-    setLevel(null);
+  const selectLevel = (lv: JlptLevel) => {
+    setLevel(level === lv ? null : lv);
+    setOpen(false);
   };
 
   return (
@@ -100,9 +90,10 @@ export function CatatanFilters({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={panelId}
-          aria-label={open ? "Tutup filter" : "Buka filter"}
+          aria-label={open ? "Tutup filter level" : "Buka filter level"}
           className={cn(
             "relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition-colors",
+            "active:scale-90 motion-reduce:active:scale-100",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400",
             open
               ? "border-accent-500 bg-accent-500 text-white"
@@ -125,142 +116,94 @@ export function CatatanFilters({
       {/* Active filter pill */}
       {hasActiveFilter ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-ink-400">Filter aktif:</span>
-          {type !== "all" ? (
-            <ActivePill onClear={() => setType("all")}>
-              {type === "kotoba" ? "Kotoba" : "Bunpou"}
-            </ActivePill>
-          ) : null}
-          {level ? (
-            <ActivePill onClear={() => setLevel(null)}>{level}</ActivePill>
-          ) : null}
-          <button
-            type="button"
-            onClick={resetAll}
-            className="ml-auto text-ink-400 underline-offset-4 hover:text-ink-700 hover:underline dark:hover:text-paper-50"
-          >
-            Reset semua
-          </button>
+          <span className="text-ink-400">Level aktif:</span>
+          <ActivePill onClear={() => setLevel(null)}>{level}</ActivePill>
         </div>
       ) : null}
 
-      {/* Filter panel */}
-      <div
-        id={panelId}
-        hidden={!open}
-        className={cn(
-          "absolute left-0 right-0 z-20 mt-1 origin-top overflow-hidden rounded-notebook border border-paper-200 bg-gradient-to-b from-white to-paper-100 shadow-notebook-md",
-          "dark:border-ink-700 dark:from-ink-800 dark:to-ink-700",
-        )}
-        role="dialog"
-        aria-label="Filter Catatan"
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-paper-200 px-4 py-3 dark:border-ink-700">
-          <div>
-            <div className="text-sm font-semibold text-ink-800 dark:text-paper-50">Filter Catatan</div>
-            <div className="mt-0.5 text-[11px] text-ink-400">
-              Pilih tipe atau level JLPT.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={resetAll}
-            className="shrink-0 rounded-full border border-paper-200 bg-paper-50 px-3 py-1 text-xs font-medium text-ink-400 transition-colors hover:bg-accent-50 hover:text-accent-700 dark:border-ink-700 dark:bg-ink-900/30 dark:hover:bg-accent-700/20 dark:hover:text-accent-200"
+      {/* Filter panel — daftar level JLPT vertikal berjajar ke bawah */}
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            id={panelId}
+            initial={{ opacity: 0, y: -6, scaleY: 0.96 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -6, scaleY: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
+            style={{ transformOrigin: "top" }}
+            className={cn(
+              "absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-notebook border border-paper-200 bg-white shadow-notebook-md",
+              "dark:border-ink-700 dark:bg-ink-800",
+            )}
+            role="listbox"
+            aria-label="Filter level JLPT"
           >
-            Reset
-          </button>
-        </div>
-
-        <FilterGroup label="Tipe">
-          {TYPE_OPTIONS.map((opt) => (
-            <FilterOption
-              key={opt.value}
-              icon={opt.icon}
-              label={opt.label}
-              active={type === opt.value}
-              onClick={() => setType(opt.value)}
-            />
-          ))}
-        </FilterGroup>
-
-        <FilterGroup label="JLPT Level" last>
-          {LEVELS.map((lv) => (
-            <FilterOption
-              key={lv.value}
-              icon={lv.value}
-              label={lv.label}
-              active={level === lv.value}
-              onClick={() => setLevel(level === lv.value ? null : lv.value)}
-            />
-          ))}
-        </FilterGroup>
-      </div>
+            <div className="flex items-center justify-between border-b border-paper-200 px-3 py-2 dark:border-ink-700">
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-400">
+                Level JLPT
+              </span>
+              {hasActiveFilter ? (
+                <button
+                  type="button"
+                  onClick={() => setLevel(null)}
+                  className="text-[11px] font-medium text-ink-400 underline-offset-2 hover:text-accent-600 hover:underline dark:hover:text-accent-300"
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
+            <ul className="py-1">
+              {LEVELS.map((lv, i) => {
+                const active = level === lv.value;
+                return (
+                  <motion.li
+                    key={lv.value}
+                    initial={{ opacity: 0, x: -6 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.16, ease: "easeOut", delay: i * 0.03 }}
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onClick={() => selectLevel(lv.value)}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors",
+                        "focus-visible:outline-none focus-visible:bg-accent-50 dark:focus-visible:bg-accent-700/20",
+                        active
+                          ? "bg-accent-50 text-accent-700 dark:bg-accent-700/25 dark:text-accent-200"
+                          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "grid h-7 w-9 shrink-0 place-items-center rounded-lg font-jp text-xs font-bold",
+                          active
+                            ? "bg-accent-500 text-white"
+                            : "bg-paper-100 text-ink-700 dark:bg-ink-700 dark:text-paper-50",
+                        )}
+                      >
+                        {lv.value}
+                      </span>
+                      <span className="flex-1 leading-tight">{lv.label}</span>
+                      {active ? (
+                        <span aria-hidden className="text-accent-600 dark:text-accent-300">
+                          ✓
+                        </span>
+                      ) : null}
+                    </button>
+                  </motion.li>
+                );
+              })}
+            </ul>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* -- subcomponents ----------------------------------------------------- */
-
-function FilterGroup({
-  label,
-  last,
-  children,
-}: {
-  label: string;
-  last?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "px-4 pb-3 pt-3",
-        !last && "border-b border-paper-200 dark:border-ink-700",
-      )}
-    >
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-ink-400">
-        {label}
-      </div>
-      <div className="grid grid-cols-3 gap-1.5 min-[480px]:grid-cols-4">{children}</div>
-    </div>
-  );
-}
-
-interface FilterOptionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: string;
-  label: string;
-  active?: boolean;
-}
-
-function FilterOption({ icon, label, active, className, ...rest }: FilterOptionProps) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "flex flex-col items-center justify-center gap-1.5 rounded-xl border bg-white px-2 py-2.5 text-center text-[11.5px] font-medium transition-all",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400",
-        active
-          ? "border-accent-500 bg-accent-50 text-accent-700 shadow-[0_0_0_2px_rgba(94,110,224,0.18)] dark:bg-accent-700/30 dark:text-accent-200"
-          : "border-paper-200 text-ink-700 hover:-translate-y-0.5 hover:border-accent-200 hover:bg-accent-50 hover:text-accent-700 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50 dark:hover:bg-accent-700/20",
-        className,
-      )}
-      aria-pressed={active}
-      {...rest}
-    >
-      <span
-        aria-hidden
-        className={cn(
-          "grid h-7 w-7 place-items-center rounded-lg font-jp text-[13px] font-bold transition-colors",
-          active
-            ? "bg-accent-500 text-white"
-            : "bg-paper-100 text-ink-700 dark:bg-ink-700 dark:text-paper-50",
-        )}
-      >
-        {icon}
-      </span>
-      <span className="leading-tight">{label}</span>
-    </button>
-  );
-}
 
 function ActivePill({ children, onClear }: { children: ReactNode; onClear: () => void }) {
   return (

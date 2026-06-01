@@ -168,14 +168,12 @@ export function CatatanScreen() {
       <CatatanFilters
         search={search}
         setSearch={setSearch}
-        type={type}
-        setType={setType}
         level={level}
         setLevel={setLevel}
         suggestions={searchSuggestions}
       />
 
-      <SummaryRow {...summary} />
+      <SummaryRow {...summary} type={type} setType={setType} />
 
       {list.isLoading ? (
         <LoadingState label="Memuat catatan…" />
