@@ -63,10 +63,25 @@ export class KanjiService {
       });
     }
 
-    const saved = await this.prisma.kanjiCache.create({
-      data: {
+    // Upsert (bukan create) supaya aman dari race: kalau user meng-klik
+    // kanji yang sama dua kali cepat, dua request bisa sama-sama miss cache
+    // lalu memanggil AI. Tanpa upsert, create kedua melanggar
+    // uniq_user_kanji (P2002) dan melempar 500. Upsert → request kedua
+    // sekadar me-refresh row.
+    const saved = await this.prisma.kanjiCache.upsert({
+      where: { uniq_user_kanji: { userId, kanji: trimmed } },
+      create: {
         userId,
         kanji: trimmed,
+        meaning: r.data.meaning ?? null,
+        onyomi: r.data.onyomi ?? null,
+        kunyomi: r.data.kunyomi ?? null,
+        explanation: r.data.explanation ?? null,
+        wordsJson: r.data.words ?? [],
+        exampleJp: r.data.exampleJp ?? null,
+        exampleId: r.data.exampleId ?? null,
+      },
+      update: {
         meaning: r.data.meaning ?? null,
         onyomi: r.data.onyomi ?? null,
         kunyomi: r.data.kunyomi ?? null,
