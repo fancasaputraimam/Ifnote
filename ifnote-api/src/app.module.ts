@@ -15,6 +15,7 @@ import { AiModule } from "./ai/ai.module";
 import { SettingsModule } from "./settings/settings.module";
 import { KanjiModule } from "./kanji/kanji.module";
 import { BackupModule } from "./backup/backup.module";
+import { AdminModule } from "./admin/admin.module";
 import { HealthController } from "./health.controller";
 
 @Module({
@@ -36,6 +37,7 @@ import { HealthController } from "./health.controller";
     SettingsModule,
     KanjiModule,
     BackupModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   providers: [

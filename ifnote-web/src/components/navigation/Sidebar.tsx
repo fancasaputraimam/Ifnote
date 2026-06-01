@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BOTTOM_NAV, ROUTES } from "@/lib/constants";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, string> = {
@@ -11,14 +12,18 @@ const ICONS: Record<string, string> = {
   Hafalan: "🗂",
   Quiz: "🎯",
   Settings: "⚙️",
+  Admin: "🗄",
 };
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   // On desktop, sidebar mirrors bottom nav and adds Settings link.
   const items = [
     ...BOTTOM_NAV.map((it) => ({ href: it.href, label: it.label })),
     { href: ROUTES.app.settings, label: "Settings" },
+    // Admin (database viewer) hanya untuk owner.
+    ...(user?.canManageAi ? [{ href: ROUTES.app.admin, label: "Admin" }] : []),
   ];
 
   return (

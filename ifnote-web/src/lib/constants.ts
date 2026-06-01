@@ -17,6 +17,7 @@ export const ROUTES = {
     ai: "/app/ai",
     settings: "/app/settings",
     profile: "/app/profile",
+    admin: "/app/admin",
   },
 } as const;
 
