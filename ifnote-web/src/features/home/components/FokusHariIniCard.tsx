@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { KanjiPopup } from "@/features/kanji/KanjiPopup";
 import { ROUTES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import type { CatatanItem } from "@/lib/types";
 
 interface Props {
@@ -119,6 +120,12 @@ const TONE_BADGE: Record<Tone, "leaf" | "accent" | "lilac"> = {
   lilac: "lilac",
 };
 
+const TONE_TILE: Record<Tone, string> = {
+  leaf: "ring-leaf-200/60 dark:ring-leaf-400/20",
+  accent: "ring-accent-200/60 dark:ring-accent-400/20",
+  lilac: "ring-lilac-200/60 dark:ring-lilac-400/20",
+};
+
 function FocusTile({
   label,
   tone,
@@ -135,7 +142,12 @@ function FocusTile({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-paper-200 bg-paper-50/60 p-3 dark:border-ink-700 dark:bg-ink-900/30">
+    <div
+      className={cn(
+        "rounded-xl bg-paper-50/70 p-3.5 ring-1 ring-inset transition-shadow hover:shadow-notebook dark:bg-ink-900/30",
+        TONE_TILE[tone],
+      )}
+    >
       <div className="mb-2 flex items-center justify-between">
         <Badge tone={TONE_BADGE[tone]} size="sm">
           {label}

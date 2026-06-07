@@ -35,11 +35,11 @@ export function PageHeader({
 }: Props) {
   return (
     <header className={cn("space-y-1", className)}>
-      <div className="text-xs font-medium uppercase tracking-wide text-accent-600 dark:text-accent-300">
+      <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-accent-600 dark:text-accent-300">
         {eyebrow}
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-800 dark:text-paper-50 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink-800 dark:text-paper-50 sm:text-[1.75rem]">
           {title}
         </h1>
         {actions ? (
@@ -47,7 +47,7 @@ export function PageHeader({
         ) : null}
       </div>
       {subtitle ? (
-        <p className="text-sm text-ink-400">{subtitle}</p>
+        <p className="text-sm leading-relaxed text-ink-400">{subtitle}</p>
       ) : null}
     </header>
   );

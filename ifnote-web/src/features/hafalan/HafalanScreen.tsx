@@ -103,9 +103,9 @@ export function HafalanScreen() {
       {isInitialLoading ? (
         <LoadingState label="Memuat slide…" />
       ) : isError ? (
-        <PanelCard tone="rose" stripe padding="compact">
+        <PanelCard padding="compact">
           <div className="flex items-center gap-2">
-            <Badge tone="warn">Mode offline</Badge>
+            <Badge tone="neutral">Mode offline</Badge>
             <p className="text-sm text-ink-700 dark:text-paper-50">
               Tidak bisa memuat data Hafalan. Pastikan kamu sudah login dan
               backend menyala.

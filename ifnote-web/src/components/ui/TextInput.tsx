@@ -9,6 +9,10 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
+/**
+ * Labeled text input (ifNote 2.0). Soft surface, hairline ring that lifts to
+ * an accent ring on focus, calm error state. API unchanged.
+ */
 export const TextInput = forwardRef<HTMLInputElement, Props>(function TextInput(
   { label, error, hint, className, id: idProp, ...rest },
   ref,
@@ -18,19 +22,21 @@ export const TextInput = forwardRef<HTMLInputElement, Props>(function TextInput(
   return (
     <label className="block">
       {label ? (
-        <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">{label}</span>
+        <span className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-paper-50">
+          {label}
+        </span>
       ) : null}
       <input
         ref={ref}
         id={id}
         className={cn(
-          "block w-full rounded-xl border bg-white px-3 py-2 text-sm text-ink-800 transition-colors",
-          "placeholder:text-ink-400",
-          "focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400",
+          "block w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-ink-800 shadow-sm ring-1 ring-inset transition-[box-shadow,background-color]",
+          "placeholder:text-ink-400/80",
+          "focus:outline-none focus:ring-2 focus:ring-accent-400",
           "dark:bg-ink-800 dark:text-paper-50 dark:placeholder:text-ink-400/70",
           error
-            ? "border-rose-400 dark:border-rose-500"
-            : "border-paper-200 dark:border-ink-700",
+            ? "ring-rose-400 focus:ring-rose-400 dark:ring-rose-500"
+            : "ring-paper-300 hover:ring-paper-400 dark:ring-ink-700 dark:hover:ring-ink-600",
           className,
         )}
         aria-invalid={!!error}
@@ -38,11 +44,11 @@ export const TextInput = forwardRef<HTMLInputElement, Props>(function TextInput(
         {...rest}
       />
       {error ? (
-        <p id={`${id}-error`} className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+        <p id={`${id}-error`} className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-ink-400">
+        <p id={`${id}-hint`} className="mt-1.5 text-xs text-ink-400">
           {hint}
         </p>
       ) : null}

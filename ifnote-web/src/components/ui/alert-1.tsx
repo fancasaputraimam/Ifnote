@@ -51,36 +51,21 @@ import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
   cn(
-    "relative w-full overflow-hidden rounded-notebook border ring-1 backdrop-blur",
-    "shadow-notebook",
+    // Clean neutral surface — NO colored edges (top/bottom/sides). Color is
+    // carried only by the icon bubble. A neutral hairline ring + soft shadow
+    // keep it crisp on both paper and dark surfaces.
+    "relative w-full overflow-hidden rounded-notebook bg-white shadow-notebook-md ring-1 ring-inset ring-paper-200/90",
+    "dark:bg-ink-800 dark:ring-ink-700",
   ),
   {
     variants: {
       variant: {
-        primary: cn(
-          "border-accent-200/80 bg-accent-50/80 ring-accent-200/40",
-          "dark:border-accent-500/40 dark:bg-accent-700/15 dark:ring-accent-500/20",
-        ),
-        success: cn(
-          "border-leaf-500/30 bg-leaf-500/5 ring-leaf-500/20",
-          "dark:border-leaf-500/40 dark:bg-leaf-500/10 dark:ring-leaf-500/20",
-        ),
-        destructive: cn(
-          "border-rose-300/50 bg-rose-50/70 ring-rose-300/40",
-          "dark:border-rose-500/40 dark:bg-rose-500/10 dark:ring-rose-500/30",
-        ),
-        info: cn(
-          "border-accent-200/60 bg-paper-50/80 ring-accent-200/30",
-          "dark:border-ink-700 dark:bg-ink-800/80 dark:ring-accent-500/20",
-        ),
-        warning: cn(
-          "border-amber-300/50 bg-amber-50/70 ring-amber-300/40",
-          "dark:border-amber-500/40 dark:bg-amber-500/10 dark:ring-amber-500/30",
-        ),
-        secondary: cn(
-          "border-paper-200 bg-white/95 ring-paper-200/60",
-          "dark:border-ink-700 dark:bg-ink-800/95 dark:ring-ink-700",
-        ),
+        primary: "",
+        success: "",
+        destructive: "",
+        info: "",
+        warning: "",
+        secondary: "",
       },
       appearance: {
         light: "",
@@ -92,37 +77,37 @@ const alertVariants = cva(
       },
     },
     compoundVariants: [
-      // Solid appearance overrides — kept restrained to fit ifNote's
-      // calm aesthetic. Most callers should stick with "light".
+      // Solid appearance — colored fill (rare; not used by the notification
+      // system). Kept for standalone callers that explicitly opt in.
       {
         appearance: "solid",
         variant: "primary",
-        class: "border-transparent bg-accent-500 text-white ring-accent-400/40",
+        class: "bg-accent-500 text-white ring-transparent",
       },
       {
         appearance: "solid",
         variant: "success",
-        class: "border-transparent bg-leaf-500 text-white ring-leaf-500/40",
+        class: "bg-leaf-500 text-white ring-transparent",
       },
       {
         appearance: "solid",
         variant: "destructive",
-        class: "border-transparent bg-rose-500 text-white ring-rose-500/40",
+        class: "bg-rose-500 text-white ring-transparent",
       },
       {
         appearance: "solid",
         variant: "warning",
-        class: "border-transparent bg-amber-500 text-white ring-amber-500/40",
+        class: "bg-amber-500 text-white ring-transparent",
       },
       {
         appearance: "solid",
         variant: "info",
-        class: "border-transparent bg-accent-400 text-white ring-accent-300/40",
+        class: "bg-accent-400 text-white ring-transparent",
       },
       {
         appearance: "solid",
         variant: "secondary",
-        class: "border-transparent bg-ink-800 text-paper-50 ring-ink-700/40",
+        class: "bg-ink-800 text-paper-50 ring-transparent",
       },
     ],
     defaultVariants: {
@@ -133,22 +118,9 @@ const alertVariants = cva(
   },
 );
 
-// Per-variant left accent stripe. Toasts map each notification type to its
-// own variant (success→leaf, error→destructive, dst — lihat VARIANT_TO_ALERT
-// di Toast.tsx), jadi tiap toast membawa warna stripe-nya sendiri. Hanya
-// `secondary` yang sengaja transparan, untuk alert inline yang netral.
-const STRIPE: Record<NonNullable<AlertProps["variant"]>, string> = {
-  primary: "bg-accent-500",
-  success: "bg-leaf-500",
-  destructive: "bg-rose-500",
-  info: "bg-accent-500",
-  warning: "bg-amber-500",
-  secondary: "bg-transparent",
-};
-
-// Per-variant icon bubble background (only used when appearance="light").
+// Per-variant icon bubble background — the ONLY place color appears, so each
+// notification type stays recognisable without coloring the card edges.
 // Toasts pick a colored bubble per type (lihat VARIANT_TO_ALERT di Toast.tsx).
-// `secondary` uses a neutral paper bubble — dipakai alert inline yang netral.
 const ICON_BUBBLE: Record<NonNullable<AlertProps["variant"]>, string> = {
   primary: "bg-accent-500/15 text-accent-600 dark:text-accent-300",
   success: "bg-leaf-500/15 text-leaf-600 dark:text-leaf-500",
@@ -195,8 +167,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
       className={cn(alertVariants({ variant, appearance, size }), className)}
       {...rest}
     >
-      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", STRIPE[v])} />
-      <div className="flex items-start gap-3 pl-3">
+      <div className="flex items-start gap-3">
         {/* Children render in flow: Icon, Content, Toolbar.
             Each subcomponent positions itself; we just provide the row. */}
         <AlertVariantContext.Provider value={{ variant: v, appearance: appearance ?? "light" }}>

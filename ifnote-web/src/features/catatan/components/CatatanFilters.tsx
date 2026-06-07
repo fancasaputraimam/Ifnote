@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { SlidersHorizontal } from "lucide-react";
 import { ActionSearchBar, type SearchAction } from "@/components/ui/action-search-bar";
 import type { JlptLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -92,15 +93,15 @@ export function CatatanFilters({
           aria-controls={panelId}
           aria-label={open ? "Tutup filter level" : "Buka filter level"}
           className={cn(
-            "relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition-colors",
+            "relative grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ring-inset transition-colors",
             "active:scale-90 motion-reduce:active:scale-100",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400",
             open
-              ? "border-accent-500 bg-accent-500 text-white"
-              : "border-paper-200 bg-white text-ink-700 hover:bg-paper-100 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50 dark:hover:bg-ink-700",
+              ? "bg-accent-gradient text-white ring-transparent shadow-glow-sm"
+              : "bg-white text-ink-600 ring-paper-300 hover:bg-paper-100 hover:text-ink-800 dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700 dark:hover:bg-ink-700",
           )}
         >
-          <span aria-hidden className="text-base leading-none">☷</span>
+          <SlidersHorizontal className="h-[18px] w-[18px]" aria-hidden />
           {hasActiveFilter ? (
             <span
               aria-hidden

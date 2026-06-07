@@ -236,7 +236,7 @@ export function AdminScreen() {
           ) : rowsQ.isLoading ? (
             <LoadingState label="Memuat baris…" />
           ) : rowsQ.isError ? (
-            <PanelCard tone="rose" stripe padding="compact">
+            <PanelCard padding="compact">
               <p className="text-sm text-ink-700 dark:text-paper-50">
                 Gagal memuat data. Pastikan kamu owner dan server aktif.
               </p>

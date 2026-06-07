@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +11,13 @@ import { StatsGrid } from "@/features/home/components/StatsGrid";
 import { FokusHariIniCard } from "@/features/home/components/FokusHariIniCard";
 import { RecentKotobaList } from "@/features/home/components/RecentKotobaList";
 import { RecentBunpouList } from "@/features/home/components/RecentBunpouList";
+
+const sectionMotion = {
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-40px" },
+  transition: { duration: 0.45, ease: [0.22, 0.61, 0.36, 1] as const },
+};
 
 /**
  * Home dashboard — versi simplified sesuai task spec.
@@ -56,16 +64,18 @@ export function HomeScreen() {
 
           <StatsGrid kotoba={dash.totals.kotoba} bunpou={dash.totals.bunpou} />
 
-          <FokusHariIniCard
-            kanji={dash.dailyKanjiChar}
-            kotoba={dash.focusKotoba}
-            bunpou={dash.focusBunpou}
-          />
+          <motion.div {...sectionMotion}>
+            <FokusHariIniCard
+              kanji={dash.dailyKanjiChar}
+              kotoba={dash.focusKotoba}
+              bunpou={dash.focusBunpou}
+            />
+          </motion.div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <motion.div {...sectionMotion} className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <RecentKotobaList items={dash.recentKotoba} />
             <RecentBunpouList items={dash.recentBunpou} />
-          </div>
+          </motion.div>
         </>
       )}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface Props {
@@ -20,8 +21,10 @@ export function SlideNav({ current, total, onPrev, onNext, onJump }: Props) {
         variant="secondary"
         onClick={onPrev}
         disabled={current <= 1}
+        className="gap-1"
       >
-        ← Sebelumnya
+        <ChevronLeft className="h-4 w-4" />
+        Sebelumnya
       </Button>
 
       <label className="text-sm text-ink-400">
@@ -29,7 +32,7 @@ export function SlideNav({ current, total, onPrev, onNext, onJump }: Props) {
         <select
           value={current}
           onChange={(e) => onJump(Number(e.target.value))}
-          className="rounded-full border border-paper-200 bg-white px-3 py-1.5 text-sm text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
+          className="rounded-full bg-white px-3.5 py-1.5 text-sm font-medium text-ink-700 shadow-sm ring-1 ring-inset ring-paper-300 transition-shadow hover:ring-paper-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700"
           aria-label="Pilih slide"
         >
           {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
@@ -44,8 +47,10 @@ export function SlideNav({ current, total, onPrev, onNext, onJump }: Props) {
         variant="secondary"
         onClick={onNext}
         disabled={current >= total}
+        className="gap-1"
       >
-        Selanjutnya →
+        Selanjutnya
+        <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
   );

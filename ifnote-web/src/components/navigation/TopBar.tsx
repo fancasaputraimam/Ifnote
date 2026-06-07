@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Settings as SettingsIcon } from "lucide-react";
 import { APP_NAME, ROUTES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useSettings } from "@/features/settings/useSettings";
@@ -36,19 +37,19 @@ export function TopBar({ subtitle }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-paper-200 bg-paper-50/85 backdrop-blur dark:border-ink-700 dark:bg-paper-900/85">
+    <header className="sticky top-0 z-30 border-b border-paper-200/80 bg-paper-50/80 backdrop-blur-xl dark:border-ink-700 dark:bg-paper-900/80">
       <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
         <Link
           href={ROUTES.app.home}
-          className="flex items-center gap-2 font-semibold text-ink-800 dark:text-paper-50"
+          className="flex items-center gap-2.5 font-semibold text-ink-800 dark:text-paper-50"
         >
           <span
             aria-hidden
-            className="grid h-8 w-8 place-items-center rounded-full bg-accent-500/15 text-accent-600 dark:text-accent-300 font-jp"
+            className="grid h-9 w-9 place-items-center rounded-2xl bg-accent-gradient font-jp text-lg text-white shadow-glow-sm"
           >
             ノ
           </span>
-          <span>{APP_NAME}</span>
+          <span className="text-[15px] tracking-tight">{APP_NAME}</span>
         </Link>
         {subtitle ? (
           <span className="hidden truncate text-sm text-ink-400 sm:block">— {subtitle}</span>
@@ -58,9 +59,9 @@ export function TopBar({ subtitle }: Props) {
           <IconButton
             label="Buka Settings"
             onClick={() => router.push(ROUTES.app.settings)}
-            className={cn(onSettings && "text-accent-600 dark:text-accent-300 bg-accent-50/60 dark:bg-accent-700/20")}
+            className={cn(onSettings && "bg-accent-50/70 text-accent-600 dark:bg-accent-500/15 dark:text-accent-300")}
           >
-            ⚙️
+            <SettingsIcon className="h-[18px] w-[18px]" />
           </IconButton>
           <ProfileDropdown
             user={{

@@ -257,7 +257,7 @@ export function SakubunPanel() {
 
       {/* ---------------- Result ---------------- */}
       {result ? (
-        <PanelCard tone="accent" stripe>
+        <PanelCard>
           <SakubunResult
             data={result}
             requested={requested ?? []}
@@ -310,7 +310,7 @@ function SakubunResult({
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
             Sakubun Hasil AI
           </p>
           {data.title ? (

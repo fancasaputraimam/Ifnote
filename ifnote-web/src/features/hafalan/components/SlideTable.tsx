@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ChevronDown } from "lucide-react";
 import LoaderGrid from "@/components/ui/loader-grid";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
@@ -31,9 +32,9 @@ const masteryTone: Record<Mastery, "leaf" | "warn" | "danger"> = {
 
 export function SlideTable({ items, hideMeaning }: Props) {
   return (
-    <div className="overflow-hidden rounded-notebook border border-paper-200 dark:border-ink-700">
+    <div className="overflow-hidden rounded-notebook bg-white shadow-notebook ring-1 ring-inset ring-paper-200/90 dark:bg-ink-800 dark:ring-ink-700">
       {/* Header */}
-      <div className="hidden grid-cols-[3rem_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 bg-paper-100 px-4 py-2 text-[11px] uppercase tracking-wide text-ink-400 sm:grid dark:bg-ink-700">
+      <div className="hidden grid-cols-[3rem_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 bg-paper-100/70 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400 sm:grid dark:bg-ink-700/60">
         <div className="text-center">#</div>
         <div>Japanese</div>
         <div>Arti</div>
@@ -168,7 +169,7 @@ function SlideRow({ item, hideMeaning, index }: RowProps) {
             transition={{ duration: 0.2 }}
             className="ml-1 text-ink-400"
           >
-            ▾
+            <ChevronDown className="h-4 w-4" />
           </motion.span>
         </div>
       </button>

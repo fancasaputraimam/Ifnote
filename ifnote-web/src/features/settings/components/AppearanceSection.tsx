@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Palette, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { SettingsSection } from "@/components/ui/SettingsSection";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import { useTheme } from "@/features/settings/ThemeProvider";
@@ -19,9 +21,6 @@ export function AppearanceSection() {
   const [theme, setThemePref] = useState<ThemeMode>("system");
   const [jpMode, setJpMode] = useState<JpMode>("beginner");
 
-  // Hydrate from server settings once. Lewatkan via `normalizeJpMode`
-  // supaya legacy values ("beginner"/"normal") yang masih nyangkut di
-  // DB ter-translate ke nilai canonical baru.
   useEffect(() => {
     if (!settingsQ.data) return;
     setThemePref(settingsQ.data.theme);
@@ -31,12 +30,10 @@ export function AppearanceSection() {
   const onSave = async () => {
     try {
       await update.mutateAsync({ theme, jpMode });
-      setTheme(theme); // apply locally too
-      notify.success(
-        "Tampilan disimpan",
-        "Preferensi kamu sudah diperbarui.",
-        { icon: "⚙️" },
-      );
+      setTheme(theme);
+      notify.success("Tampilan disimpan", "Preferensi kamu sudah diperbarui.", {
+        icon: "⚙️",
+      });
     } catch (e) {
       const m = mapApiErrorToUserMessage(e, {
         title: "Gagal menyimpan tampilan",
@@ -46,23 +43,16 @@ export function AppearanceSection() {
     }
   };
 
-  /**
-   * Mode Jepang berlaku global di semua halaman, jadi auto-save begitu
-   * user pilih option baru — supaya UI Catatan / Hafalan / Quiz update
-   * tanpa harus tekan tombol Simpan dulu.
-   */
+  /** Mode Jepang global → auto-save begitu user pilih option baru. */
   const onChangeJpMode = async (next: JpMode) => {
     if (next === jpMode) return;
     setJpMode(next);
     try {
       await update.mutateAsync({ jpMode: next });
-      notify.success(
-        "Mode Jepang diperbarui",
-        "Tampilan bacaan sudah disesuaikan.",
-        { icon: "⚙️" },
-      );
+      notify.success("Mode Jepang diperbarui", "Tampilan bacaan sudah disesuaikan.", {
+        icon: "⚙️",
+      });
     } catch (e) {
-      // Rollback ke nilai server kalau gagal.
       setJpMode(normalizeJpMode(settingsQ.data?.jpMode));
       const m = mapApiErrorToUserMessage(e, {
         title: "Gagal mengubah Mode Jepang",
@@ -73,35 +63,37 @@ export function AppearanceSection() {
   };
 
   return (
-    <NotebookCard className="p-5">
-      <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-        Tampilan
-      </h2>
-      <p className="mt-1 text-xs text-ink-400">
-        Atur theme dan cara teks Jepang ditampilkan.
-      </p>
-
-      <fieldset className="mt-3">
-        <legend className="text-xs uppercase tracking-wide text-ink-400">Theme</legend>
-        <div className="mt-2 inline-flex rounded-full border border-paper-200 bg-white p-0.5 text-xs dark:border-ink-700 dark:bg-ink-800">
-          {(["system", "light", "dark"] as const).map((t) => (
-            <ToggleButton
-              key={t}
-              active={theme === t}
-              onClick={() => setThemePref(t)}
-              label={t === "system" ? "Sistem" : t === "light" ? "Terang" : "Gelap"}
-            />
-          ))}
+    <SettingsSection
+      icon={<Palette className="h-5 w-5" />}
+      title="Tampilan"
+      description="Atur theme dan cara teks Jepang ditampilkan."
+    >
+      <fieldset>
+        <legend className="text-xs font-medium uppercase tracking-wide text-ink-400">
+          Theme
+        </legend>
+        <div className="mt-2">
+          <SegmentedControl<ThemeMode>
+            layoutId="settings-theme"
+            aria-label="Pilih theme"
+            value={theme}
+            onChange={setThemePref}
+            options={[
+              { value: "system", label: "Sistem" },
+              { value: "light", label: "Terang" },
+              { value: "dark", label: "Gelap" },
+            ]}
+          />
         </div>
       </fieldset>
 
-      <fieldset className="mt-5">
-        <legend className="text-xs uppercase tracking-wide text-ink-400">
+      <fieldset className="mt-6">
+        <legend className="text-xs font-medium uppercase tracking-wide text-ink-400">
           Mode Jepang
         </legend>
         <p className="mt-1 text-xs text-ink-400">
-          Berlaku di Catatan, Hafalan, Quiz, Home, dan KanjiPopup. Pilih satu
-          — perubahan langsung diterapkan.
+          Berlaku di Catatan, Hafalan, Quiz, Home, dan KanjiPopup. Perubahan
+          langsung diterapkan.
         </p>
         <div
           role="radiogroup"
@@ -119,23 +111,23 @@ export function AppearanceSection() {
                 disabled={update.isPending}
                 onClick={() => onChangeJpMode(opt.id)}
                 className={cn(
-                  "group relative flex flex-col items-start rounded-2xl border px-3.5 py-3 text-left transition-colors",
+                  "group relative flex flex-col items-start rounded-2xl p-3.5 text-left ring-1 ring-inset transition-[box-shadow,background-color]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400",
                   active
-                    ? "border-accent-400 bg-accent-50/70 dark:border-accent-500/60 dark:bg-accent-700/15"
-                    : "border-paper-200 bg-white hover:border-accent-200 hover:bg-paper-50/60 dark:border-ink-700 dark:bg-ink-800 dark:hover:bg-ink-700/60",
+                    ? "bg-accent-50/70 ring-accent-300 dark:bg-accent-500/10 dark:ring-accent-400/40"
+                    : "bg-white ring-paper-300 hover:ring-paper-400 hover:bg-paper-50/60 dark:bg-ink-800 dark:ring-ink-700 dark:hover:bg-ink-700/60",
                 )}
               >
                 <span
                   className={cn(
-                    "absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border text-[11px] font-semibold",
+                    "absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full ring-1 ring-inset transition-colors",
                     active
-                      ? "border-accent-500 bg-accent-500 text-white"
-                      : "border-paper-200 text-transparent group-hover:border-accent-300 dark:border-ink-700",
+                      ? "bg-accent-gradient text-white ring-transparent"
+                      : "text-transparent ring-paper-300 group-hover:ring-accent-300 dark:ring-ink-600",
                   )}
                   aria-hidden
                 >
-                  ✓
+                  <Check className="h-3 w-3" />
                 </span>
                 <span
                   className="font-jp text-lg leading-snug text-ink-800 dark:text-paper-50"
@@ -155,15 +147,15 @@ export function AppearanceSection() {
         </div>
       </fieldset>
 
-      <div className="mt-5">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button onClick={onSave} loading={update.isPending}>
           Simpan tampilan
         </Button>
-        <span className="ml-3 text-xs text-ink-400">
+        <span className="text-xs text-ink-400">
           Theme disimpan di sini. Mode Jepang sudah auto-save.
         </span>
       </div>
-    </NotebookCard>
+    </SettingsSection>
   );
 }
 
@@ -171,53 +163,11 @@ interface JpModeOption {
   id: JpMode;
   label: string;
   helper: string;
-  /** Mini preview dipakai sebagai accent text di kartu pilihan. */
   preview: string;
 }
 
 const JP_MODE_OPTIONS: JpModeOption[] = [
-  {
-    id: "beginner",
-    label: "Pemula",
-    helper: "Hiragana/katakana tanpa kanji",
-    preview: "たべます",
-  },
-  {
-    id: "normal",
-    label: "Normal",
-    helper: "Kanji dengan furigana",
-    preview: "食(た)べます",
-  },
-  {
-    id: "pro",
-    label: "Pro",
-    helper: "Kanji saja",
-    preview: "食べます",
-  },
+  { id: "beginner", label: "Pemula", helper: "Hiragana/katakana tanpa kanji", preview: "たべます" },
+  { id: "normal", label: "Normal", helper: "Kanji dengan furigana", preview: "食(た)べます" },
+  { id: "pro", label: "Pro", helper: "Kanji saja", preview: "食べます" },
 ];
-
-function ToggleButton({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-full px-3 py-1.5 font-medium transition-colors",
-        active
-          ? "bg-accent-500 text-white"
-          : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-      )}
-    >
-      {label}
-    </button>
-  );
-}

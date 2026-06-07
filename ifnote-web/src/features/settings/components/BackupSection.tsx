@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Database } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/feedback/ConfirmDialog";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { SettingsSection } from "@/components/ui/SettingsSection";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import {
@@ -97,16 +98,12 @@ export function BackupSection() {
   };
 
   return (
-    <NotebookCard className="p-5">
-      <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-        Backup data
-      </h2>
-      <p className="mt-1 text-xs text-ink-400">
-        Export atau import semua catatanmu sebagai file JSON. Ekspor tidak
-        memuat password atau API key.
-      </p>
-
-      <div className="mt-4 flex flex-wrap gap-2">
+    <SettingsSection
+      icon={<Database className="h-5 w-5" />}
+      title="Backup data"
+      description="Export atau import semua catatanmu sebagai file JSON. Ekspor tidak memuat password atau API key."
+    >
+      <div className="flex flex-wrap gap-2">
         <Button onClick={onExport} loading={exportMut.isPending}>Export Data</Button>
         <Button variant="secondary" onClick={() => fileRef.current?.click()}>
           Import Data
@@ -160,6 +157,6 @@ export function BackupSection() {
           </div>
         </div>
       ) : null}
-    </NotebookCard>
+    </SettingsSection>
   );
 }

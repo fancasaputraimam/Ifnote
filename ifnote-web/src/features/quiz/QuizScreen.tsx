@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Info } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/feedback/LoadingState";
@@ -9,6 +11,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { cn } from "@/lib/utils";
 
 import { QuizTypeCards } from "./components/QuizTypeCards";
 import { ProgressStrip } from "./components/ProgressStrip";
@@ -174,18 +177,25 @@ export function QuizScreen() {
       {isPoolLoading ? (
         <LoadingState label="Menyiapkan soal…" />
       ) : poolError ? (
-        <PanelCard tone="rose" stripe padding="compact">
-          <div className="flex items-center gap-2">
-            <Badge tone="warn">Tidak bisa generate quiz</Badge>
-          </div>
-          <p className="mt-2 text-sm text-ink-700 dark:text-paper-50">
-            {poolErrorMsg ??
-              "Tambah lebih banyak kotoba/bunpou di Catatan supaya AI punya bahan."}
-          </p>
-          <div className="mt-3">
-            <LinkButton size="sm" href={ROUTES.app.catatan}>
-              Buka Catatan
-            </LinkButton>
+        <PanelCard padding="default">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-paper-100 text-ink-500 ring-1 ring-inset ring-paper-300/70 dark:bg-ink-700 dark:text-paper-50 dark:ring-ink-600">
+              <Info className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-ink-800 dark:text-paper-50">
+                Belum bisa membuat quiz
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-ink-400">
+                {poolErrorMsg ??
+                  "Tambah lebih banyak kotoba/bunpou di Catatan supaya AI punya bahan."}
+              </p>
+              <div className="mt-3">
+                <LinkButton size="sm" href={ROUTES.app.catatan}>
+                  Buka Catatan
+                </LinkButton>
+              </div>
+            </div>
           </div>
         </PanelCard>
       ) : null}
@@ -277,34 +287,38 @@ function ModeSwitch({
   value: AnswerMode;
   onChange: (m: AnswerMode) => void;
 }) {
+  const opts: { key: AnswerMode; label: string }[] = [
+    { key: "choice", label: "Pilihan ganda" },
+    { key: "blank", label: "Isian" },
+  ];
   return (
-    <div className="inline-flex rounded-full border border-paper-200 bg-white p-0.5 text-xs dark:border-ink-700 dark:bg-ink-800">
-      <button
-        type="button"
-        onClick={() => onChange("choice")}
-        aria-pressed={value === "choice"}
-        className={[
-          "rounded-full px-3 py-1.5 font-medium transition-colors",
-          value === "choice"
-            ? "bg-accent-500 text-white"
-            : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-        ].join(" ")}
-      >
-        Pilihan ganda
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("blank")}
-        aria-pressed={value === "blank"}
-        className={[
-          "rounded-full px-3 py-1.5 font-medium transition-colors",
-          value === "blank"
-            ? "bg-accent-500 text-white"
-            : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-        ].join(" ")}
-      >
-        Isian
-      </button>
+    <div className="inline-flex rounded-full bg-white p-1 text-xs ring-1 ring-inset ring-paper-300 dark:bg-ink-800 dark:ring-ink-700">
+      {opts.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            aria-pressed={active}
+            className={cn(
+              "relative rounded-full px-3 py-1.5 font-medium transition-colors",
+              active
+                ? "text-white"
+                : "text-ink-600 hover:text-ink-800 dark:text-paper-50/80 dark:hover:text-paper-50",
+            )}
+          >
+            {active ? (
+              <motion.span
+                layoutId="quiz-mode-pill"
+                className="absolute inset-0 rounded-full bg-accent-gradient shadow-glow-sm"
+                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+              />
+            ) : null}
+            <span className="relative">{o.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

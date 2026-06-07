@@ -34,6 +34,47 @@ body {
   color: theme(colors.ink.50);
 }
 
+/* Selection + accent flourishes (ifNote 2.0) */
+::selection {
+  background-color: rgba(91, 99, 230, 0.18);
+  color: theme(colors.ink.800);
+}
+.dark ::selection {
+  background-color: rgba(125, 134, 243, 0.30);
+  color: theme(colors.ink.50);
+}
+
+/* Calm, slim scrollbars that match the warm surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 113, 90, 0.28) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 113, 90, 0.28);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 113, 90, 0.45);
+}
+.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.14);
+  background-clip: content-box;
+}
+
+/* Gradient text helper for hero headings. */
+.text-gradient {
+  background-image: theme(backgroundImage.accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* Notebook ruled-paper accent for cards */
 .notebook-rule {
   background-image: linear-gradient(

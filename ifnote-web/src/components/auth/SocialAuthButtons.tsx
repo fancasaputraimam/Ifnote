@@ -69,9 +69,9 @@ function SocialButton({
     <button
       type="button"
       className={
-        "flex w-full items-center justify-center gap-3 rounded-xl border border-paper-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 shadow-sm transition " +
-        "hover:bg-paper-100 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-paper-50 " +
-        "dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50 dark:hover:bg-ink-700 dark:focus:ring-offset-paper-900"
+        "flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-ink-700 shadow-sm ring-1 ring-inset ring-paper-300 transition " +
+        "hover:bg-paper-100 hover:ring-paper-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 " +
+        "dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700 dark:hover:bg-ink-700"
       }
       {...rest}
     >

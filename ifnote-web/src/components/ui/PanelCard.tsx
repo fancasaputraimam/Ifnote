@@ -84,13 +84,13 @@ export function PanelCard({
           : undefined
       }
       className={cn(
-        "relative w-full max-w-full min-w-0 overflow-hidden rounded-notebook bg-white shadow-notebook-md ring-1 ring-paper-200/80 transition-shadow",
+        "relative w-full max-w-full min-w-0 overflow-hidden rounded-notebook bg-white shadow-notebook ring-1 ring-paper-200/90 transition-[box-shadow,transform] duration-200",
         "dark:bg-ink-800 dark:ring-ink-700",
-        // Subtle warm tint matching the calm "study notebook" landing look.
-        "bg-gradient-to-b from-white to-paper-50/70 dark:from-ink-800 dark:to-ink-800/95",
+        // Subtle warm tint matching the calm "study notebook" look.
+        "bg-gradient-to-b from-white to-paper-50/60 dark:from-ink-800 dark:to-ink-800/95",
         stripe && cn("border-t-4", TONE_STRIPE[tone]),
         (interactive || isClickable) &&
-          "hover:shadow-[0_2px_4px_rgba(20,18,12,0.06),0_18px_36px_-12px_rgba(20,18,12,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 dark:focus-visible:ring-offset-paper-900",
+          "hover:-translate-y-0.5 hover:shadow-notebook-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 motion-reduce:hover:translate-y-0 dark:focus-visible:ring-offset-paper-900",
         isClickable && "cursor-pointer",
         PADDINGS[padding],
         className,

@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { NotebookCard } from "@/components/ui/NotebookCard";
+import { SettingsSection } from "@/components/ui/SettingsSection";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextInput } from "@/components/ui/TextInput";
 import { ApiError, api } from "@/lib/api-client";
 import { notify } from "@/lib/toast";
@@ -150,19 +152,12 @@ export function AiConfigSection() {
   const savedKeyHint = ownerData?.aiApiKeyHint ?? null;
 
   return (
-    <NotebookCard className="p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold text-ink-800 dark:text-paper-50">
-            Konfigurasi AI
-          </h2>
-          <p className="mt-1 text-xs text-ink-400">
-            API key dienkripsi server (AES-256-GCM). Tidak pernah dikirim balik dalam keadaan plain.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-3">
+    <SettingsSection
+      icon={<Sparkles className="h-5 w-5" />}
+      title="Konfigurasi AI"
+      description="API key dienkripsi server (AES-256-GCM). Tidak pernah dikirim balik dalam keadaan plain."
+    >
+      <div className="space-y-3">
         <TextInput
           label="Provider Name"
           placeholder="OpenAI / Azure / Lokal …"
@@ -203,10 +198,10 @@ export function AiConfigSection() {
               value={apiKeyDraft}
               onChange={(e) => setApiKeyDraft(e.currentTarget.value)}
               className={cn(
-                "block w-full rounded-xl border bg-white px-3 py-2 pr-20 text-sm text-ink-800 transition-colors",
-                "placeholder:text-ink-400 border-paper-200",
-                "focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400",
-                "dark:bg-ink-800 dark:text-paper-50 dark:border-ink-700",
+                "block w-full rounded-xl bg-white px-3.5 py-2.5 pr-20 text-sm text-ink-800 shadow-sm ring-1 ring-inset ring-paper-300 transition-shadow",
+                "placeholder:text-ink-400/80 hover:ring-paper-400",
+                "focus:outline-none focus:ring-2 focus:ring-accent-400",
+                "dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700",
                 "font-mono",
               )}
               aria-label="API key"
@@ -242,28 +237,24 @@ export function AiConfigSection() {
         />
 
         <fieldset>
-          <legend className="text-xs uppercase tracking-wide text-ink-400">Request Format</legend>
-          <div className="mt-2 inline-flex flex-wrap gap-1 rounded-full border border-paper-200 bg-white p-0.5 text-xs dark:border-ink-700 dark:bg-ink-800">
-            {(["openai", "azure", "custom"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setRequestFormat(f)}
-                aria-pressed={requestFormat === f}
-                className={cn(
-                  "rounded-full px-3 py-1.5 font-medium transition-colors",
-                  requestFormat === f
-                    ? "bg-accent-500 text-white"
-                    : "text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700",
-                )}
-              >
-                {f === "openai" ? "OpenAI Compatible" : f === "azure" ? "Azure OpenAI" : "Custom JSON"}
-              </button>
-            ))}
+          <legend className="text-xs font-medium uppercase tracking-wide text-ink-400">Request Format</legend>
+          <div className="mt-2">
+            <SegmentedControl<AiRequestFormat>
+              layoutId="ai-request-format"
+              aria-label="Request format"
+              size="sm"
+              value={requestFormat}
+              onChange={setRequestFormat}
+              options={[
+                { value: "openai", label: "OpenAI" },
+                { value: "azure", label: "Azure" },
+                { value: "custom", label: "Custom" },
+              ]}
+            />
           </div>
         </fieldset>
 
-        <label className="flex items-start gap-3 rounded-xl border border-paper-200 bg-paper-50/60 p-3 dark:border-ink-700 dark:bg-ink-900/30">
+        <label className="flex items-start gap-3 rounded-xl bg-paper-50/60 p-3 ring-1 ring-inset ring-paper-200/80 dark:bg-ink-900/30 dark:ring-ink-700">
           <input
             type="checkbox"
             checked={useReal}
@@ -304,6 +295,6 @@ export function AiConfigSection() {
         <code className="rounded bg-paper-100 px-1 py-0.5 text-[11px] dark:bg-ink-700">AI_API_KEY</code>{" "}
         di Heroku Config Vars tetap dipakai kalau user belum mengisi sendiri.
       </p>
-    </NotebookCard>
+    </SettingsSection>
   );
 }

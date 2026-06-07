@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { NotebookCard } from "@/components/ui/NotebookCard";
 import { TextInput } from "@/components/ui/TextInput";
@@ -119,23 +120,23 @@ export function QuestionCard({
                   onClick={() => submitChoice(c.id)}
                   disabled={!!feedback || submitting}
                   className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
+                    "flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-sm ring-1 ring-inset transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400",
                     "disabled:cursor-not-allowed",
                     !feedback &&
-                      "border-paper-200 bg-white hover:bg-paper-50 dark:border-ink-700 dark:bg-ink-800 dark:hover:bg-ink-700",
+                      "bg-white ring-paper-300 hover:bg-paper-50 hover:ring-paper-400 dark:bg-ink-800 dark:ring-ink-700 dark:hover:bg-ink-700",
                     showCorrectColor &&
-                      "border-leaf-500 bg-leaf-500/10 text-leaf-600 dark:text-leaf-500",
+                      "bg-leaf-50 text-leaf-700 ring-leaf-400 dark:bg-leaf-500/10 dark:text-leaf-300 dark:ring-leaf-400/50",
                     showWrongColor &&
-                      "border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-700/15 dark:text-rose-200",
+                      "bg-rose-50 text-rose-700 ring-rose-400 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-400/50",
                     !!feedback && !showCorrectColor && !showWrongColor &&
-                      "border-paper-200 bg-paper-50/50 text-ink-400 dark:border-ink-700 dark:bg-ink-900/20",
+                      "bg-paper-50/50 text-ink-400 ring-paper-200 dark:bg-ink-900/20 dark:ring-ink-700",
                   )}
                   aria-pressed={picked}
                 >
                   <span>{c.label}</span>
-                  {showCorrectColor ? <span aria-hidden>✓</span> : null}
-                  {showWrongColor ? <span aria-hidden>✗</span> : null}
+                  {showCorrectColor ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
+                  {showWrongColor ? <X className="h-4 w-4 shrink-0" aria-hidden /> : null}
                 </button>
               </li>
             );
@@ -161,16 +162,21 @@ export function QuestionCard({
       {feedback ? (
         <div
           className={cn(
-            "mt-4 rounded-xl border px-3 py-2.5 text-sm",
+            "mt-4 rounded-xl px-3.5 py-3 text-sm ring-1 ring-inset",
             feedback.correct
-              ? "border-leaf-500 bg-leaf-500/10 text-leaf-600 dark:text-leaf-500"
-              : "border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-700/15 dark:text-rose-200",
+              ? "bg-leaf-50 text-leaf-700 ring-leaf-300 dark:bg-leaf-500/10 dark:text-leaf-300 dark:ring-leaf-400/40"
+              : "bg-rose-50 text-rose-700 ring-rose-300 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-400/40",
           )}
           role="status"
           aria-live="polite"
         >
-          <p className="font-semibold">
-            {feedback.correct ? "✓ Benar!" : "✗ Belum tepat"}
+          <p className="flex items-center gap-1.5 font-semibold">
+            {feedback.correct ? (
+              <Check className="h-4 w-4" aria-hidden />
+            ) : (
+              <X className="h-4 w-4" aria-hidden />
+            )}
+            {feedback.correct ? "Benar!" : "Belum tepat"}
           </p>
           {!feedback.correct ? (
             <p className="mt-0.5">
