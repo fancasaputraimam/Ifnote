@@ -133,8 +133,8 @@ export function CatatanFilters({
             transition={{ duration: 0.18, ease: [0.22, 0.61, 0.36, 1] }}
             style={{ transformOrigin: "top" }}
             className={cn(
-              "absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-notebook border border-paper-200 bg-white shadow-notebook-md",
-              "dark:border-ink-700 dark:bg-ink-800",
+              "absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-notebook bg-white shadow-notebook-md ring-1 ring-inset ring-paper-200/90",
+              "dark:bg-ink-800 dark:ring-ink-700",
             )}
             role="listbox"
             aria-label="Filter level JLPT"
@@ -180,7 +180,7 @@ export function CatatanFilters({
                         className={cn(
                           "grid h-7 w-9 shrink-0 place-items-center rounded-lg font-jp text-xs font-bold",
                           active
-                            ? "bg-accent-500 text-white"
+                            ? "bg-accent-gradient text-white"
                             : "bg-paper-100 text-ink-700 dark:bg-ink-700 dark:text-paper-50",
                         )}
                       >

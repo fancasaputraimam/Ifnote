@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TextInput } from "@/components/ui/TextInput";
+import { Select } from "@/components/ui/Select";
 import { notify } from "@/lib/toast";
 import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 import type { Kotoba, Mastery } from "@/lib/types";
@@ -194,22 +195,14 @@ export function KotobaDialog({
               {...form.register("type")}
               placeholder="kata kerja / sifat-i / dst."
             />
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-                Level JLPT
-              </span>
-              <select
-                {...form.register("level")}
-                className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-              >
-                <option value="">— Tidak ditentukan —</option>
-                <option value="N5">N5</option>
-                <option value="N4">N4</option>
-                <option value="N3">N3</option>
-                <option value="N2">N2</option>
-                <option value="N1">N1</option>
-              </select>
-            </label>
+            <Select label="Level JLPT" {...form.register("level")}>
+              <option value="">— Tidak ditentukan —</option>
+              <option value="N5">N5</option>
+              <option value="N4">N4</option>
+              <option value="N3">N3</option>
+              <option value="N2">N2</option>
+              <option value="N1">N1</option>
+            </Select>
           </div>
           <TextInput
             label="Tags"
@@ -240,19 +233,11 @@ export function KotobaDialog({
             di Pro. Isi pembacaan (hiragana) supaya furigana &amp; mode Pemula
             tampil benar.
           </p>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-              Mastery
-            </span>
-            <select
-              {...form.register("mastery")}
-              className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-            >
-              <option value="good">good</option>
-              <option value="mid">mid</option>
-              <option value="weak">weak</option>
-            </select>
-          </label>
+          <Select label="Mastery" {...form.register("mastery")}>
+            <option value="good">good</option>
+            <option value="mid">mid</option>
+            <option value="weak">weak</option>
+          </Select>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={onClose}>

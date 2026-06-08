@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { TextInput } from "@/components/ui/TextInput";
+import { Textarea } from "@/components/ui/Textarea";
+import { Select } from "@/components/ui/Select";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { AiLoading } from "@/components/ui/ai-loading";
 import { useExplainBunpou } from "@/features/ai/useAi";
@@ -76,16 +78,13 @@ export function BunpouAiAnalyze({
     return (
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-            Bunpou, arti, atau contoh kalimat
-          </label>
-          <textarea
+          <Textarea
+            label="Bunpou, arti, atau contoh kalimat"
             rows={4}
             value={input}
             autoFocus
             onChange={(e) => setInput(e.target.value)}
             placeholder={"〜ながら\nsambil melakukan\n音楽を聞きながら勉強します"}
-            className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <p className="mt-1 text-xs text-ink-400">
             Bisa bahasa Jepang atau Indonesia.
@@ -155,47 +154,33 @@ export function BunpouAiAnalyze({
         value={draft.meaning}
         onChange={(e) => setDraft({ ...draft, meaning: e.currentTarget.value })}
       />
-      <div>
-        <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-          Formula
-        </label>
-        <textarea
-          rows={3}
-          value={draft.formula}
-          onChange={(e) => setDraft({ ...draft, formula: e.currentTarget.value })}
-          className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 font-mono text-sm text-ink-800 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-          Kapan dipakai
-        </label>
-        <textarea
-          rows={3}
-          value={draft.usage}
-          onChange={(e) => setDraft({ ...draft, usage: e.currentTarget.value })}
-          className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-        />
-      </div>
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-          Level JLPT
-        </span>
-        <select
-          value={draft.level}
-          onChange={(e) =>
-            setDraft({ ...draft, level: e.currentTarget.value as JlptLevel | "" })
-          }
-          className="block w-full rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-        >
-          <option value="">— Tidak ditentukan —</option>
-          <option value="N5">N5</option>
-          <option value="N4">N4</option>
-          <option value="N3">N3</option>
-          <option value="N2">N2</option>
-          <option value="N1">N1</option>
-        </select>
-      </label>
+      <Textarea
+        label="Formula"
+        rows={3}
+        value={draft.formula}
+        onChange={(e) => setDraft({ ...draft, formula: e.currentTarget.value })}
+        className="font-mono"
+      />
+      <Textarea
+        label="Kapan dipakai"
+        rows={3}
+        value={draft.usage}
+        onChange={(e) => setDraft({ ...draft, usage: e.currentTarget.value })}
+      />
+      <Select
+        label="Level JLPT"
+        value={draft.level}
+        onChange={(e) =>
+          setDraft({ ...draft, level: e.currentTarget.value as JlptLevel | "" })
+        }
+      >
+        <option value="">— Tidak ditentukan —</option>
+        <option value="N5">N5</option>
+        <option value="N4">N4</option>
+        <option value="N3">N3</option>
+        <option value="N2">N2</option>
+        <option value="N1">N1</option>
+      </Select>
       <TextInput
         label="Contoh kalimat (Jepang)"
         value={draft.normalExample}
@@ -222,19 +207,14 @@ export function BunpouAiAnalyze({
           setDraft({ ...draft, exampleMeaning: e.currentTarget.value })
         }
       />
-      <div>
-        <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-          Kesalahan umum
-        </label>
-        <textarea
-          rows={3}
-          value={draft.commonMistake}
-          onChange={(e) =>
-            setDraft({ ...draft, commonMistake: e.currentTarget.value })
-          }
-          className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
-        />
-      </div>
+      <Textarea
+        label="Kesalahan umum"
+        rows={3}
+        value={draft.commonMistake}
+        onChange={(e) =>
+          setDraft({ ...draft, commonMistake: e.currentTarget.value })
+        }
+      />
 
       {dupStatus === "exists" ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700/40 dark:bg-amber-700/10 dark:text-amber-200">

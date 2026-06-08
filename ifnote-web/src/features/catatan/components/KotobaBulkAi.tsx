@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Textarea } from "@/components/ui/Textarea";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { AiLoading } from "@/components/ui/ai-loading";
 import { LoadingState } from "@/components/feedback/LoadingState";
@@ -177,16 +178,13 @@ export function KotobaBulkAi({ onSaveAll, onCancel, existingJp }: Props) {
     return (
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink-700 dark:text-paper-50">
-            Kotoba atau arti
-          </label>
-          <textarea
+          <Textarea
+            label="Kotoba atau arti"
             rows={6}
             value={text}
             autoFocus
             onChange={(e) => setText(e.target.value)}
             placeholder={"食べます\nmakan\nberat\n甘い物"}
-            className="block w-full resize-y rounded-xl border border-paper-200 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-ink-700 dark:bg-ink-800 dark:text-paper-50"
           />
           <div className="mt-1 flex items-center justify-between text-xs">
             <p className="text-ink-400">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { JapaneseText } from "@/components/japanese/JapaneseText";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -102,7 +103,7 @@ export function CatatanRow({ item, onEdit }: Props) {
   return (
     <div
       className={cn(
-        "rounded-notebook border border-paper-200 bg-white transition-colors dark:border-ink-700 dark:bg-ink-800",
+        "rounded-notebook bg-white ring-1 ring-inset ring-paper-200/90 transition-shadow dark:bg-ink-800 dark:ring-ink-700",
         open && "shadow-notebook",
       )}
     >
@@ -154,7 +155,7 @@ export function CatatanRow({ item, onEdit }: Props) {
             transition={{ duration: 0.2 }}
             className="text-ink-400"
           >
-            ▾
+            <ChevronDown className="h-4 w-4" />
           </motion.span>
         </div>
       </button>
@@ -183,7 +184,7 @@ export function CatatanRow({ item, onEdit }: Props) {
               ) : isKotoba ? (
                 <KotobaDetail detail={detail} />
               ) : (
-                <BunpouDetail detail={detail} />
+                <BunpouDetail detail={detail} meaning={item.meaning} />
               )}
 
               {item.tags?.length ? (
@@ -352,7 +353,13 @@ function KotobaDetail({ detail }: { detail: Record<string, unknown> }) {
   );
 }
 
-function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
+function BunpouDetail({
+  detail,
+  meaning,
+}: {
+  detail: Record<string, unknown>;
+  meaning?: string;
+}) {
   const formula = stringOrNull(detail.formula);
   const usage = stringOrNull(detail.usage);
   const beginnerExample = stringOrNull(detail.beginnerExample);
@@ -372,8 +379,16 @@ function BunpouDetail({ detail }: { detail: Record<string, unknown> }) {
     exampleMeaning,
   });
 
+  const arti = meaning && meaning.trim().length > 0 ? meaning.trim() : null;
+
   return (
     <div className="space-y-3">
+      {arti ? (
+        <Section label="Arti">
+          <p className="leading-relaxed text-ink-700 dark:text-paper-50">{arti}</p>
+        </Section>
+      ) : null}
+
       {view.formulaLines.length ? (
         <Section label="Formula">
           <ul className="space-y-1.5">
