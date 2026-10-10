@@ -22,7 +22,7 @@ IFV2/
 | Frontend | Next.js 14 + TypeScript + Tailwind + TanStack Query + RHF + Zod | Vercel |
 | Backend | NestJS + TypeScript + Prisma 5 + JWT + bcrypt + Helmet | Heroku |
 | Database | PostgreSQL via Heroku Postgres | Heroku |
-| AI | Server-side proxy ke OpenAI/Azure compatible (mock fallback) | — |
+| AI | Server-side proxy ke Claude (Anthropic Messages API) atau OpenAI/Azure compatible | — |
 
 ## Quick start
 
@@ -63,9 +63,10 @@ cd ifnote-api
 heroku create ifnote-api
 heroku addons:create heroku-postgresql:essential-0 --app ifnote-api
 heroku config:set JWT_SECRET="$(openssl rand -hex 32)" --app ifnote-api
-heroku config:set AI_API_KEY="sk-..." --app ifnote-api
-heroku config:set AI_BASE_URL="https://api.openai.com/v1" --app ifnote-api
-heroku config:set AI_MODEL_ID="gpt-4o-mini" --app ifnote-api
+heroku config:set AI_API_KEY="sk-ant-..." --app ifnote-api
+heroku config:set AI_REQUEST_FORMAT="anthropic" --app ifnote-api
+heroku config:set AI_BASE_URL="https://api.anthropic.com/v1" --app ifnote-api
+heroku config:set AI_MODEL_ID="claude-haiku-4-5" --app ifnote-api
 heroku config:set FRONTEND_URL="https://ifnote.vercel.app" --app ifnote-api
 heroku config:set NODE_ENV="production" --app ifnote-api
 git subtree push --prefix=ifnote-api heroku main
@@ -89,7 +90,8 @@ npx vercel --prod
 - JWT disimpan sebagai **httpOnly cookie** (`SameSite=Lax`, `Secure` di production), bukan localStorage — token tidak terbaca JavaScript sehingga aman dari pencurian via XSS
 - Browser memanggil API lewat path relatif + Next.js rewrite proxy (same-origin), jadi cookie auth bekerja di VPS/Nginx, Vercel+Heroku, maupun dev
 - JWT secret di Heroku Config Vars, tidak di-commit
-- AI API key server-side only, tidak pernah ada di frontend / DB
+- AI API key server-side only, tidak pernah ada di frontend / DB (key per-user dienkripsi AES-256-GCM)
+- Halaman `/privacy` dan `/terms` menjelaskan data yang disimpan dan alur teks ke penyedia AI
 - Helmet HTTP headers, CORS allowlist single origin
 - bcrypt cost 10 untuk password hashing
 - Rate limit global 60/min, auth register 5/jam & login 5/15min, AI 20/min (bulk & generate 5/min)

@@ -1,30 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { ApiError } from "@/lib/api-client";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { FormError } from "@/components/auth/FormError";
 import { ROUTES } from "@/lib/constants";
 import { notify } from "@/lib/toast";
-import { mapApiErrorToUserMessage } from "@/lib/error-mapper";
 
-const schema = z
-  .object({
-    name: z.string().trim().min(1, "Nama wajib diisi").max(80, "Maks 80 karakter"),
-    email: z.string().email("Email tidak valid"),
-    password: z.string().min(8, "Password minimal 8 karakter"),
-    confirmPassword: z.string().min(1, "Konfirmasi password wajib"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Konfirmasi password tidak cocok",
-  });
+// Batas mengikuti RegisterDto di ifnote-api (nama 80, password 8 sampai 128).
+// Tanpa kolom konfirmasi: tombol lihat password sudah mencegah salah ketik.
+const schema = z.object({
+  name: z.string().trim().min(1, "Nama wajib diisi").max(80, "Nama maksimal 80 karakter"),
+  email: z.string().trim().email("Email tidak valid"),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .max(128, "Password maksimal 128 karakter"),
+});
 
 type FormValues = z.infer<typeof schema>;
 
@@ -32,29 +33,29 @@ export function RegisterForm() {
   const router = useRouter();
   const { refresh } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Sudah masuk: langsung ke aplikasi, jangan tampilkan form lagi.
+  useEffect(() => {
+    if (authClient.hasToken()) router.replace(ROUTES.app.home);
+  }, [router]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", password: "" },
   });
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
+    setFormError(null);
     try {
-      await authClient.register({
-        name: values.name,
-        email: values.email,
-        password: values.password,
-      });
+      await authClient.register(values);
       await refresh();
-      notify.success("Akun dibuat", "Selamat datang di ifNote.", { icon: "🌸" });
+      notify.success("Akun dibuat", "Selamat datang di ifNote.");
       router.replace(ROUTES.app.home);
     } catch (e) {
-      const m = mapApiErrorToUserMessage(e, {
-        title: "Gagal membuat akun",
-        message: "Coba lagi sebentar.",
-      });
-      notify[m.variant](m.title, m.message);
+      // Satu pesan inline saja (role="alert"); toast di sini akan dibacakan dua kali.
+      setFormError(authErrorMessage("register", e instanceof ApiError ? e.status : 0));
     } finally {
       setSubmitting(false);
     }
@@ -66,7 +67,7 @@ export function RegisterForm() {
         label="Nama"
         type="text"
         autoComplete="name"
-        placeholder="Nama lengkap"
+        placeholder="Nama kamu"
         {...form.register("name")}
         error={form.formState.errors.name?.message}
       />
@@ -86,14 +87,8 @@ export function RegisterForm() {
         {...form.register("password")}
         error={form.formState.errors.password?.message}
       />
-      <PasswordInput
-        label="Konfirmasi password"
-        autoComplete="new-password"
-        placeholder="••••••••"
-        {...form.register("confirmPassword")}
-        error={form.formState.errors.confirmPassword?.message}
-      />
-      <Button type="submit" loading={submitting} className="w-full">
+      <FormError message={formError} />
+      <Button type="submit" loading={submitting} className="min-h-11 w-full">
         Buat akun
       </Button>
     </form>

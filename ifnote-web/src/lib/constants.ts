@@ -4,11 +4,29 @@
 
 export const APP_NAME = "ifNote";
 
+/**
+ * Email kontak di halaman legal, About, dan Kontak. Default: alamat pemilik.
+ * NEXT_PUBLIC_CONTACT_EMAIL menimpanya kalau alamat berubah.
+ */
+export const CONTACT_EMAIL =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "founder@ifnote.app";
+
+/**
+ * Klaim "ditenagai Claude" di situs publik. Default mati: nyalakan hanya
+ * setelah produksi memakai model Claude lewat jalur API resmi.
+ */
+export const POWERED_BY_CLAUDE = process.env.NEXT_PUBLIC_POWERED_BY_CLAUDE === "true";
+
 export const ROUTES = {
   landing: "/",
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
+  // Tidak ada halaman terpisah lagi: keempatnya blok di landing.
+  privacy: "/#privasi",
+  terms: "/#ketentuan",
+  about: "/#tentang",
+  contact: "/#kontak",
   app: {
     home: "/app/home",
     catatan: "/app/catatan",

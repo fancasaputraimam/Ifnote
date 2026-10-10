@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Zen Kaku Gothic New", ui-sans-serif, system-ui, "Segoe UI", "Inter", sans-serif;
-  --font-serif: "Zen Old Mincho", ui-serif, Georgia, "Iowan Old Style", "Apple Garamond", serif;
+  --font-sans: var(--font-zen-sans), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-serif: var(--font-zen-serif), ui-serif, Georgia, "Iowan Old Style", "Apple Garamond", serif;
 }
 
 html, body {
@@ -32,6 +32,13 @@ body {
 .dark body {
   background-color: theme(colors.paper.900);
   color: theme(colors.ink.50);
+}
+
+/* Teks redup (ink-400, 3.4:1) tidak lolos AA di permukaan gelap. Di mode gelap
+   pakai ink-300 (7.05:1 di ink-800, 7.80:1 di paper-900). Satu aturan global
+   menggantikan edit ratusan kelas di seluruh app. */
+.dark .text-ink-400 {
+  color: theme(colors.ink.300);
 }
 
 /* Selection + accent flourishes (Zen Ink) */

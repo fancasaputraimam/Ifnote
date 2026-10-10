@@ -7,6 +7,7 @@ import {
   MaxLength,
   ValidateIf,
 } from "class-validator";
+import type { RequestFormat } from "../ai/request-format";
 
 export class UpdateSettingsDto {
   @IsOptional() @IsIn(["system", "light", "dark"])
@@ -39,8 +40,8 @@ export class UpdateSettingsDto {
   @IsOptional() @IsString() @MaxLength(120)
   aiModelId?: string;
 
-  @IsOptional() @IsIn(["openai", "azure", "custom"])
-  aiRequestFormat?: "openai" | "azure" | "custom";
+  @IsOptional() @IsIn(["openai", "azure", "anthropic", "custom"])
+  aiRequestFormat?: RequestFormat;
 
   @IsOptional() @IsBoolean()
   useRealAi?: boolean;

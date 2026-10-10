@@ -70,7 +70,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "ui-sans-serif", "Segoe UI", "sans-serif"],
-        jp: ["'Zen Kaku Gothic New'", "'Noto Sans JP'", "var(--font-sans)", "sans-serif"],
+        jp: ["var(--font-zen-sans)", "'Noto Sans JP'", "sans-serif"],
         serif: ["var(--font-serif)", "ui-serif", "Georgia", "serif"],
       },
       borderRadius: {
@@ -90,7 +90,7 @@ module.exports = {
         "glow-sm": "0 4px 12px -4px rgba(217,79,51,0.38)",
       },
       backgroundImage: {
-        "accent-gradient": "linear-gradient(135deg, #e2603f 0%, #d94f33 55%, #c03a24 100%)",
+        "accent-gradient": "linear-gradient(135deg, #c9462c 0%, #c0402a 55%, #ad351f 100%)",
         "accent-gradient-soft": "linear-gradient(135deg, #fdf2ef 0%, #f0f4f8 100%)",
         "ink-gradient": "linear-gradient(135deg, #3b3b37 0%, #1a1a18 60%, #0c0c0b 100%)",
       },

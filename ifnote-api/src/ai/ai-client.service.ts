@@ -3,6 +3,7 @@ import { loadEnv } from "../config/env";
 import { PrismaService } from "../prisma/prisma.service";
 import { decryptSecret } from "../common/crypto";
 import { isOwnerUser } from "../common/auth/owner";
+import { RequestFormat, resolveRequestFormat } from "./request-format";
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -28,20 +29,29 @@ interface ResolvedAiConfig {
   apiKey: string;
   baseUrl: string;
   modelId: string;
-  requestFormat: "openai" | "azure" | "custom";
+  requestFormat: RequestFormat;
   source: "user" | "env";
   useRealAi: boolean;
 }
 
+const ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com/v1";
+const ANTHROPIC_DEFAULT_MODEL = "claude-haiku-4-5";
+const ANTHROPIC_VERSION = "2023-06-01";
+/** Anthropic Messages API mewajibkan max_tokens. */
+const ANTHROPIC_MAX_TOKENS = 4096;
+
 /**
- * Thin wrapper around an OpenAI-compatible chat-completions endpoint.
+ * Thin wrapper around an OpenAI-compatible chat-completions endpoint, or
+ * the native Anthropic Messages API (requestFormat = "anthropic").
  *
  * - All AI calls go through here.
  * - Per-user encrypted keys take precedence over the server-side env key.
  * - If neither is set, or the call fails, callers MUST be ready to fall
  *   back to a mock implementation. This service never throws.
  * - Responses are forced to JSON via response_format=json_object when the
- *   provider format is "openai" or "azure".
+ *   provider format is "openai" or "azure". Anthropic has no such switch,
+ *   so the system prompt demands JSON and the fence/brace fallback below
+ *   recovers it.
  */
 @Injectable()
 export class AiClientService {
@@ -123,11 +133,13 @@ export class AiClientService {
 
     // Path 1: owner pakai key personal mereka, asal toggle real-AI ON.
     if (isOwner && useRealAi && userKey) {
+      const chosen = userFormat ?? this.env.ai.requestFormat;
+      const format = resolveRequestFormat(userBase, chosen);
       return {
         apiKey: userKey,
-        baseUrl: userBase ?? this.env.ai.baseUrl,
-        modelId: userModel ?? this.env.ai.modelId,
-        requestFormat: userFormat ?? this.env.ai.requestFormat,
+        baseUrl: this.pickBaseUrl(userBase, format),
+        modelId: this.pickModelId(userModel, format),
+        requestFormat: format,
         source: "user",
         useRealAi: true,
       };
@@ -145,7 +157,10 @@ export class AiClientService {
         apiKey: this.env.ai.apiKey,
         baseUrl: this.env.ai.baseUrl,
         modelId: this.env.ai.modelId,
-        requestFormat: this.env.ai.requestFormat,
+        requestFormat: resolveRequestFormat(
+          this.env.ai.baseUrl,
+          this.env.ai.requestFormat,
+        ),
         source: "env",
         useRealAi: true,
       };
@@ -199,13 +214,15 @@ export class AiClientService {
         );
         return null;
       }
+      const chosen =
+        (s.aiRequestFormat as ResolvedAiConfig["requestFormat"]) ??
+        this.env.ai.requestFormat;
+      const format = resolveRequestFormat(s.aiBaseUrl, chosen);
       return {
         apiKey: plain,
-        baseUrl: s.aiBaseUrl ?? this.env.ai.baseUrl,
-        modelId: s.aiModelId ?? this.env.ai.modelId,
-        requestFormat:
-          (s.aiRequestFormat as ResolvedAiConfig["requestFormat"]) ??
-          this.env.ai.requestFormat,
+        baseUrl: this.pickBaseUrl(s.aiBaseUrl, format),
+        modelId: this.pickModelId(s.aiModelId, format),
+        requestFormat: format,
         source: "env",
         useRealAi: true,
       };
@@ -215,6 +232,33 @@ export class AiClientService {
       );
       return null;
     }
+  }
+
+  /**
+   * Base URL / model fallback saat user tidak mengisi sendiri. Kalau format
+   * user (anthropic) beda dari format env (openai), default env tidak boleh
+   * dipakai — kita tidak mau kirim key Anthropic ke api.openai.com.
+   */
+  private pickBaseUrl(
+    userBase: string | null | undefined,
+    format: ResolvedAiConfig["requestFormat"],
+  ): string {
+    if (userBase) return userBase;
+    if (format === "anthropic" && this.env.ai.requestFormat !== "anthropic") {
+      return ANTHROPIC_DEFAULT_BASE_URL;
+    }
+    return this.env.ai.baseUrl;
+  }
+
+  private pickModelId(
+    userModel: string | null | undefined,
+    format: ResolvedAiConfig["requestFormat"],
+  ): string {
+    if (userModel) return userModel;
+    if (format === "anthropic" && this.env.ai.requestFormat !== "anthropic") {
+      return ANTHROPIC_DEFAULT_MODEL;
+    }
+    return this.env.ai.modelId;
   }
 
   /**
@@ -272,11 +316,16 @@ export class AiClientService {
         return { ok: false, source: "mock", message };
       }
       const text = await res.text();
-      let json: { choices?: { message?: { content?: string } }[] };
+      let content: string | undefined;
       try {
-        json = this.parseChatResponse(text) as {
-          choices?: { message?: { content?: string } }[];
-        };
+        content =
+          cfg.requestFormat === "anthropic"
+            ? this.extractAnthropicContent(text)
+            : (
+                this.parseChatResponse(text) as {
+                  choices?: { message?: { content?: string } }[];
+                }
+              ).choices?.[0]?.message?.content;
       } catch (e) {
         this.logger.warn(
           `AI parse failed (${mode}): ${(e as Error).message}; preview: ${text.slice(0, 200)}`,
@@ -284,7 +333,6 @@ export class AiClientService {
         await this.log(userId, mode, user, "error", "Invalid response shape");
         return { ok: false, source: "mock", message: "AI mengembalikan format tidak valid" };
       }
-      const content = json.choices?.[0]?.message?.content;
       if (!content) {
         await this.log(userId, mode, user, "error", "Empty AI response");
         return { ok: false, source: "mock", message: "AI tidak mengembalikan jawaban" };
@@ -344,6 +392,9 @@ export class AiClientService {
   }
 
   private buildUrl(cfg: ResolvedAiConfig): string {
+    if (cfg.requestFormat === "anthropic") {
+      return `${cfg.baseUrl.replace(/\/+$/, "")}/messages`;
+    }
     if (cfg.requestFormat === "azure") {
       // Azure expects deployment ID in the path:
       //   {baseUrl}/openai/deployments/{deployment}/chat/completions?api-version=...
@@ -354,6 +405,13 @@ export class AiClientService {
   }
 
   private buildHeaders(cfg: ResolvedAiConfig): Record<string, string> {
+    if (cfg.requestFormat === "anthropic") {
+      return {
+        "Content-Type": "application/json",
+        "x-api-key": cfg.apiKey,
+        "anthropic-version": ANTHROPIC_VERSION,
+      };
+    }
     if (cfg.requestFormat === "azure") {
       return {
         "Content-Type": "application/json",
@@ -367,6 +425,17 @@ export class AiClientService {
   }
 
   private buildBody(cfg: ResolvedAiConfig, system: string, user: string) {
+    if (cfg.requestFormat === "anthropic") {
+      // Messages API: `system` adalah field top-level, bukan role di messages.
+      // Tidak ada response_format, jadi JSON-only dipaksa lewat instruksi.
+      return {
+        model: cfg.modelId,
+        max_tokens: ANTHROPIC_MAX_TOKENS,
+        temperature: 0.4,
+        system: `${system}\n\nBalas HANYA dengan satu objek JSON valid, tanpa teks pembuka, penutup, atau markdown.`,
+        messages: [{ role: "user", content: user }],
+      };
+    }
     const messages: ChatMessage[] = [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -384,6 +453,24 @@ export class AiClientService {
       body.response_format = { type: "json_object" };
     }
     return body;
+  }
+
+  /**
+   * Anthropic Messages response: `{ content: [{ type: "text", text }, ...] }`.
+   * Gabungkan semua blok teks; blok lain (thinking, tool_use) diabaikan.
+   */
+  private extractAnthropicContent(text: string): string | undefined {
+    const json = JSON.parse(text) as {
+      content?: { type?: string; text?: string }[];
+    };
+    if (!Array.isArray(json.content)) {
+      throw new Error("Response Anthropic tidak punya content[]");
+    }
+    const joined = json.content
+      .filter((b) => b.type === "text" && typeof b.text === "string")
+      .map((b) => b.text as string)
+      .join("");
+    return joined || undefined;
   }
 
   /**

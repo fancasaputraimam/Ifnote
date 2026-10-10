@@ -144,3 +144,163 @@ describe("AiClientService.resolveConfig — fallback hierarchy", () => {
     await expect(svc.resolveConfig("user-id")).resolves.toBeNull();
   });
 });
+
+describe("AiClientService — native Anthropic Messages API", () => {
+  const origEnv = { ...process.env };
+  const origFetch = global.fetch;
+
+  afterEach(() => {
+    process.env = { ...origEnv };
+    global.fetch = origFetch;
+    jest.clearAllMocks();
+  });
+
+  function anthropicEnv() {
+    baseEnv();
+    process.env.AI_API_KEY = "sk-ant-test";
+    process.env.AI_REQUEST_FORMAT = "anthropic";
+    delete process.env.AI_BASE_URL;
+    delete process.env.AI_MODEL_ID;
+  }
+
+  const plainUser = {
+    role: "user",
+    email: "user@example.com",
+    settings: { aiApiKeyEnc: null, useRealAi: false, aiRequestFormat: "openai" },
+  };
+
+  it("defaults base URL and model to Anthropic when AI_REQUEST_FORMAT=anthropic", async () => {
+    anthropicEnv();
+    const svc = new AiClientService(makePrisma(plainUser));
+    const cfg = await svc.resolveConfig("user-id");
+    expect(cfg).toMatchObject({
+      requestFormat: "anthropic",
+      baseUrl: "https://api.anthropic.com/v1",
+      modelId: "claude-haiku-4-5",
+    });
+  });
+
+  it("sends x-api-key + anthropic-version, top-level system, and parses content blocks", async () => {
+    anthropicEnv();
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          content: [
+            { type: "thinking", thinking: "..." },
+            { type: "text", text: '{"arti":"makan"}' },
+          ],
+        }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const svc = new AiClientService(makePrisma(plainUser));
+    const result = await svc.chatJson<{ arti: string }>("user-id", "explain", "SYS", "USR");
+
+    expect(result).toEqual({ ok: true, source: "ai", data: { arti: "makan" } });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    const headers = init.headers as Record<string, string>;
+    expect(headers["x-api-key"]).toBe("sk-ant-test");
+    expect(headers["anthropic-version"]).toBe("2023-06-01");
+    expect(headers.Authorization).toBeUndefined();
+
+    const body = JSON.parse(init.body as string);
+    expect(body.system).toContain("SYS");
+    expect(body.max_tokens).toBeGreaterThan(0);
+    expect(body.messages).toEqual([{ role: "user", content: "USR" }]);
+    expect(body.response_format).toBeUndefined();
+  });
+
+  it("recovers JSON wrapped in a markdown fence", async () => {
+    anthropicEnv();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({ content: [{ type: "text", text: '```json\n{"ok":1}\n```' }] }),
+    }) as unknown as typeof fetch;
+
+    const svc = new AiClientService(makePrisma(plainUser));
+    await expect(svc.chatJson("user-id", "explain", "S", "U")).resolves.toMatchObject({
+      ok: true,
+      data: { ok: 1 },
+    });
+  });
+
+  it("returns a friendly error when the response has no content array", async () => {
+    anthropicEnv();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ choices: [] }),
+    }) as unknown as typeof fetch;
+
+    const svc = new AiClientService(makePrisma(plainUser));
+    await expect(svc.chatJson("user-id", "explain", "S", "U")).resolves.toMatchObject({
+      ok: false,
+      message: "AI mengembalikan format tidak valid",
+    });
+  });
+
+  it("maps 401 from Anthropic to the API-key message", async () => {
+    anthropicEnv();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => "unauthorized",
+    }) as unknown as typeof fetch;
+
+    const svc = new AiClientService(makePrisma(plainUser));
+    await expect(svc.chatJson("user-id", "explain", "S", "U")).resolves.toMatchObject({
+      ok: false,
+      message: "AI provider menolak API key. Periksa key di Settings.",
+    });
+  });
+
+  it("owner anthropic host with format openai is auto-detected as anthropic", async () => {
+    baseEnv(); // env format stays "openai"
+    const enc = encryptSecret("sk-ant-owner", JWT_SECRET);
+    const prisma = makePrisma({
+      role: "owner",
+      email: OWNER_EMAIL_FOR_TEST,
+      settings: {
+        aiApiKeyEnc: enc,
+        aiBaseUrl: "https://api.anthropic.com/v1",
+        aiModelId: null,
+        aiRequestFormat: "openai",
+        useRealAi: true,
+      },
+    });
+    const cfg = await new AiClientService(prisma).resolveConfig("owner-id");
+    expect(cfg).toMatchObject({
+      requestFormat: "anthropic",
+      baseUrl: "https://api.anthropic.com/v1",
+      modelId: "claude-haiku-4-5",
+    });
+  });
+
+  it("owner choosing anthropic without a base URL never falls back to api.openai.com", async () => {
+    baseEnv(); // env format stays "openai"
+    const enc = encryptSecret("sk-ant-owner", JWT_SECRET);
+    const prisma = makePrisma({
+      role: "owner",
+      email: OWNER_EMAIL_FOR_TEST,
+      settings: {
+        aiApiKeyEnc: enc,
+        aiBaseUrl: null,
+        aiModelId: null,
+        aiRequestFormat: "anthropic",
+        useRealAi: true,
+      },
+    });
+    const cfg = await new AiClientService(prisma).resolveConfig("owner-id");
+    expect(cfg).toMatchObject({
+      requestFormat: "anthropic",
+      baseUrl: "https://api.anthropic.com/v1",
+      modelId: "claude-haiku-4-5",
+    });
+  });
+});

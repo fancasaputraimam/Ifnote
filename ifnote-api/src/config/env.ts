@@ -1,3 +1,5 @@
+import type { RequestFormat } from "../ai/request-format";
+
 /**
  * Centralised env config. Read from process.env, validate, and expose
  * typed accessors. Never log secrets.
@@ -14,7 +16,7 @@ export interface AppConfig {
     apiKey?: string;
     baseUrl: string;
     modelId: string;
-    requestFormat: "openai" | "azure" | "custom";
+    requestFormat: RequestFormat;
     bulkMaxItems: number;
   };
   frontendUrl: string;
@@ -29,9 +31,13 @@ export function loadEnv(): AppConfig {
   const jwtSecret = process.env.JWT_SECRET ?? "";
   const jwtExpires = process.env.JWT_EXPIRES_IN ?? "7d";
   const aiKey = process.env.AI_API_KEY;
-  const aiBaseUrl = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-  const aiModelId = process.env.AI_MODEL_ID ?? "gpt-4o-mini";
   const aiFormat = (process.env.AI_REQUEST_FORMAT ?? "openai") as AppConfig["ai"]["requestFormat"];
+  const isAnthropic = aiFormat === "anthropic";
+  const aiBaseUrl =
+    process.env.AI_BASE_URL ??
+    (isAnthropic ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1");
+  const aiModelId =
+    process.env.AI_MODEL_ID ?? (isAnthropic ? "claude-haiku-4-5" : "gpt-4o-mini");
   const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:3000";
 
   if (!truthy(databaseUrl)) {

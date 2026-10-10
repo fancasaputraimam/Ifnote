@@ -21,7 +21,7 @@ export type ThemeMode = "system" | "light" | "dark";
  * `settings.service` saat read/write supaya data lama tidak rusak.
  */
 export type JpMode = "beginner" | "normal" | "pro";
-export type AiRequestFormat = "openai" | "azure" | "custom";
+export type AiRequestFormat = "openai" | "azure" | "anthropic" | "custom";
 export type HafalanMode = "kotoba" | "bunpou" | "mixed" | "weak";
 export type QuizType = "kotoba" | "bunpou" | "mixed" | "ai" | "sakubun";
 export type NoteType = "kotoba" | "bunpou";

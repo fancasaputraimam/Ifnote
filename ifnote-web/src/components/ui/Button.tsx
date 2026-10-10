@@ -32,19 +32,19 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
         "group relative inline-flex select-none items-center justify-center gap-2 rounded-full font-medium",
         "transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-out",
         "active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:transition-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 dark:focus-visible:ring-offset-paper-900",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 dark:focus-visible:ring-accent-300 focus-visible:ring-offset-2 focus-visible:ring-offset-paper-50 dark:focus-visible:ring-offset-paper-900",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none",
         size === "sm" && "px-3.5 py-1.5 text-sm",
         size === "md" && "px-5 py-2.5 text-sm",
         size === "lg" && "px-6 py-3 text-base",
         variant === "primary" &&
-          "bg-accent-gradient text-white shadow-glow-sm hover:shadow-glow hover:-translate-y-px active:translate-y-0",
+          "bg-accent-gradient text-white shadow-glow-sm hover:shadow-glow hover:-translate-y-px active:translate-y-0 motion-reduce:hover:translate-y-0",
         variant === "secondary" &&
           "bg-white text-ink-800 ring-1 ring-inset ring-paper-300 hover:bg-paper-100 hover:ring-paper-400 dark:bg-ink-800 dark:text-paper-50 dark:ring-ink-700 dark:hover:bg-ink-700",
         variant === "ghost" &&
           "bg-transparent text-ink-700 hover:bg-paper-100 dark:text-paper-50 dark:hover:bg-ink-700/70",
         variant === "danger" &&
-          "bg-rose-500 text-white shadow-[0_4px_14px_-4px_rgba(244,63,94,0.5)] hover:bg-rose-600 hover:-translate-y-px active:translate-y-0",
+          "bg-rose-500 text-white shadow-[0_4px_14px_-4px_rgba(244,63,94,0.5)] hover:bg-rose-600 hover:-translate-y-px active:translate-y-0 motion-reduce:hover:translate-y-0",
         className,
       )}
       {...rest}

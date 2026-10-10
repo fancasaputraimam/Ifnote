@@ -30,13 +30,15 @@ export const TextInput = forwardRef<HTMLInputElement, Props>(function TextInput(
         ref={ref}
         id={id}
         className={cn(
-          "block w-full rounded-xl bg-white px-3.5 py-2.5 text-sm text-ink-800 shadow-sm ring-1 ring-inset transition-[box-shadow,background-color]",
-          "placeholder:text-ink-400/80",
-          "focus:outline-none focus:ring-2 focus:ring-accent-400",
-          "dark:bg-ink-800 dark:text-paper-50 dark:placeholder:text-ink-400/70",
+          // text-base di HP: di bawah 16px Safari iOS memperbesar layar saat input disentuh.
+          "block min-h-11 w-full rounded-xl bg-white px-3.5 py-2.5 text-base text-ink-800 shadow-sm ring-1 ring-inset transition-[box-shadow,background-color] sm:text-sm",
+          "placeholder:text-ink-400",
+          "focus:outline-none focus:ring-2 focus:ring-accent-600 dark:focus:ring-accent-300",
+          "dark:bg-ink-800 dark:text-paper-50 dark:placeholder:text-ink-300",
+          // Border 3:1 terhadap latar (WCAG 1.4.11): ink-400/80 di putih 3.42, ink-400 di ink-800 3.40.
           error
             ? "ring-rose-400 focus:ring-rose-400 dark:ring-rose-500"
-            : "ring-paper-300 hover:ring-paper-400 dark:ring-ink-700 dark:hover:ring-ink-600",
+            : "ring-ink-400/80 hover:ring-ink-500 dark:ring-ink-400 dark:hover:ring-ink-300",
           className,
         )}
         aria-invalid={!!error}

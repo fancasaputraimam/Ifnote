@@ -37,13 +37,15 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
           id={id}
           type={visible ? "text" : "password"}
           className={cn(
-            "block w-full rounded-xl bg-white py-2.5 pl-3.5 pr-11 text-sm text-ink-800 shadow-sm ring-1 ring-inset transition-[box-shadow,background-color]",
-            "placeholder:text-ink-400/80",
-            "focus:outline-none focus:ring-2 focus:ring-accent-400",
-            "dark:bg-ink-800 dark:text-paper-50 dark:placeholder:text-ink-400/70",
+            // text-base di HP: di bawah 16px Safari iOS memperbesar layar saat input disentuh.
+            "block min-h-11 w-full rounded-xl bg-white py-2.5 pl-3.5 pr-12 text-base text-ink-800 shadow-sm ring-1 ring-inset transition-[box-shadow,background-color] sm:text-sm",
+            "placeholder:text-ink-400",
+            "focus:outline-none focus:ring-2 focus:ring-accent-600 dark:focus:ring-accent-300",
+            "dark:bg-ink-800 dark:text-paper-50 dark:placeholder:text-ink-300",
+            // Border 3:1 terhadap latar (WCAG 1.4.11), sama dengan TextInput.
             error
               ? "ring-rose-400 focus:ring-rose-400 dark:ring-rose-500"
-              : "ring-paper-300 hover:ring-paper-400 dark:ring-ink-700 dark:hover:ring-ink-600",
+              : "ring-ink-400/80 hover:ring-ink-500 dark:ring-ink-400 dark:hover:ring-ink-300",
             className,
           )}
           aria-invalid={!!error}
@@ -55,8 +57,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Sembunyikan password" : "Tampilkan password"}
           aria-pressed={visible}
-          tabIndex={-1}
-          className="absolute right-1.5 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-ink-400 transition hover:bg-paper-100 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:bg-ink-700 dark:hover:text-paper-50"
+          className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-xl text-ink-400 transition hover:bg-paper-100 hover:text-ink-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 dark:hover:bg-ink-700 dark:hover:text-paper-50 dark:focus-visible:ring-accent-300"
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}
         </button>

@@ -201,7 +201,7 @@ export function AiConfigSection() {
       <div className="space-y-3">
         <TextInput
           label="Provider Name"
-          placeholder="OpenAI / Azure / Lokal …"
+          placeholder="Anthropic / OpenAI / Azure …"
           value={provider}
           onChange={(e) => setProvider(e.currentTarget.value)}
         />
@@ -289,6 +289,7 @@ export function AiConfigSection() {
               options={[
                 { value: "openai", label: "OpenAI" },
                 { value: "azure", label: "Azure" },
+                { value: "anthropic", label: "Claude" },
                 { value: "custom", label: "Custom" },
               ]}
             />

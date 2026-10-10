@@ -8,7 +8,7 @@ frontend never sees an API key.
 - **Language:** TypeScript 5.3 (strict)
 - **Database:** PostgreSQL via Prisma 5.10
 - **Auth:** JWT (HS256, 7d default)
-- **AI:** OpenAI / Azure / custom-compatible chat completions, with mock fallback
+- **AI:** Claude (native Anthropic Messages API, `AI_REQUEST_FORMAT=anthropic`) or OpenAI / Azure / custom-compatible chat completions, with mock fallback
 - **Deploy:** Heroku via `Procfile` + `heroku-postbuild`
 
 ---
@@ -103,10 +103,10 @@ heroku addons:create heroku-postgresql:essential-0 --app ifnote-api
 
 # 2. Set secrets (NEVER commit these)
 heroku config:set JWT_SECRET="$(openssl rand -hex 32)" --app ifnote-api
-heroku config:set AI_API_KEY="sk-..."                   --app ifnote-api
-heroku config:set AI_BASE_URL="https://api.openai.com/v1" --app ifnote-api
-heroku config:set AI_MODEL_ID="gpt-4o-mini"             --app ifnote-api
-heroku config:set AI_REQUEST_FORMAT="openai"            --app ifnote-api
+heroku config:set AI_API_KEY="sk-ant-..."               --app ifnote-api
+heroku config:set AI_BASE_URL="https://api.anthropic.com/v1" --app ifnote-api
+heroku config:set AI_MODEL_ID="claude-haiku-4-5"        --app ifnote-api
+heroku config:set AI_REQUEST_FORMAT="anthropic"         --app ifnote-api
 heroku config:set FRONTEND_URL="https://ifnote.vercel.app" --app ifnote-api
 heroku config:set NODE_ENV="production"                  --app ifnote-api
 
